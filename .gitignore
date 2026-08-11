@@ -1,0 +1,18 @@
+# IDE
+.idea/
+.vscode/
+
+# Dependencies and builds
+node_modules/
+dist/
+.nuxt/
+.output/
+coverage/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
