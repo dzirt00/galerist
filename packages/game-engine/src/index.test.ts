@@ -119,3 +119,13 @@ it( 'name no change', () => {
   players[0].name = 'Огого'
   expect((state.players[0].name === 'Алина1')).toBe(true)
 })
+
+it( 'should throw an error when players have duplicate IDs', () => {
+  const players: PlayerState[] = [
+    { id: 'player-1', name: 'Алина1', kind: 'human' },
+    { id: 'player-1', name: 'Алина2', kind: 'human' },
+  ]
+  const conf: GameConfig = { playerCount: 2, seed: 42 }
+
+  expect(() => createGame(conf, players)).toThrow('Players must have unique IDs')
+})

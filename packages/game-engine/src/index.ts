@@ -31,6 +31,13 @@ export function createGame(
   if (players.length !== config.playerCount) {
     throw new Error('Player count must match config.playerCount')
   }
+
+  const hasDuplicates = new Set(players.map(item => item.id)).size !== players.length;
+
+  if(hasDuplicates) {
+    throw new Error('Players must have unique IDs')
+  }
+
   const newPlayers: PlayerState[] = []
 
   players.forEach((player: PlayerState) => {
