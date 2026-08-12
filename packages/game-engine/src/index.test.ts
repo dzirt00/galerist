@@ -107,3 +107,15 @@ it( 'prevents changes to the state-config', () => {
   expect( () => Object.assign( state.config as GameConfig, confEdit)).toThrow()
   expect(state.config).toEqual({ playerCount: 2, seed: 42 })
 })
+
+it( 'name no change', () => {
+  const players: PlayerState[] = [
+    { id: 'player-1', name: 'Алина1', kind: 'human' },
+    { id: 'player-2', name: 'Алина2', kind: 'human' },
+  ]
+  const conf: GameConfig = { playerCount: 2, seed: 42 }
+
+  const state = createGame( conf, players )
+  players[0].name = 'Огого'
+  expect((state.players[0].name === 'Алина1')).toBe(true)
+})

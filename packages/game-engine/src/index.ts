@@ -31,12 +31,22 @@ export function createGame(
   if (players.length !== config.playerCount) {
     throw new Error('Player count must match config.playerCount')
   }
+  const newPlayers: PlayerState[] = []
+
+  players.forEach((player: PlayerState) => {
+    newPlayers.push({
+      id: player.id,
+      name: player.name,
+      kind: player.kind,
+    })
+  })
+
   return {
     id: `game-${config.seed}`,
     status: 'setup',
     round: 0,
     activePlayerId: null,
     config: Object.freeze( { ...config }),
-    players: Object.freeze([ ...players ]),
+    players: Object.freeze([ ...newPlayers ]),
   }
 }
