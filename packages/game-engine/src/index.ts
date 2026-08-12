@@ -28,6 +28,9 @@ export function createGame(
   config: GameConfig,
   players: readonly PlayerState[],
 ): GameState {
+  if (players.length !== config.playerCount) {
+    throw new Error('Player count must match config.playerCount')
+  }
   return {
     id: `game-${config.seed}`,
     status: 'setup',

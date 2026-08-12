@@ -41,3 +41,12 @@ it('creates a deterministic initial game', () => {
   })
   expect(state.players).toHaveLength(2)
 })
+
+it('rejects a player count that differs from the configuration', () => {
+  expect(() =>
+    createGame(
+      { playerCount: 2, seed: 42 },
+      [{ id: 'player-1', name: 'Алина', kind: 'human' }],
+    ),
+  ).toThrow('Player count must match config.playerCount')
+})
