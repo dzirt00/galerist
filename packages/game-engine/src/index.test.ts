@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createGame, type GameState, type PlayerState } from './index.js'
+import { createGame, type GameConfig, type GameState, type PlayerState } from './index.js'
 
 describe( 'GameState', () => {
   it( 'stores the initial game data', () => {
@@ -79,4 +79,17 @@ it( 'prevents changes to the state-owned player list', () => {
 
   expect( () => ( state.players as PlayerState[] ).push( player ) ).toThrow()
   expect( state.players ).toHaveLength( 2 )
+})
+
+it( 'keeps its own game configuration', () => {
+  const players: PlayerState[] = [
+    { id: 'player-1', name: 'Алина', kind: 'human' },
+    { id: 'player-2', name: 'Алина', kind: 'human' },
+  ]
+  const conf: GameConfig = { playerCount: 2, seed: 42 }
+
+  const state = createGame( conf, players )
+  Object.assign(conf, { playerCount: 4, seed: 421 })
+
+  expect(state.config).toEqual({ playerCount: 2, seed: 42 })
 })

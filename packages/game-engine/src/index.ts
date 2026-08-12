@@ -20,7 +20,7 @@ export interface GameState {
   status: GameStatus
   round: number
   activePlayerId: PlayerId | null
-  config: GameConfig
+  config: Readonly<GameConfig>
   players: readonly PlayerState[]
 }
 
@@ -36,7 +36,7 @@ export function createGame(
     status: 'setup',
     round: 0,
     activePlayerId: null,
-    config,
+    config: Object.freeze( { ...config }),
     players: Object.freeze([ ...players ]),
   }
 }
