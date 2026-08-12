@@ -93,3 +93,17 @@ it( 'keeps its own game configuration', () => {
 
   expect(state.config).toEqual({ playerCount: 2, seed: 42 })
 })
+
+it( 'prevents changes to the state-config', () => {
+  const players: PlayerState[] = [
+    { id: 'player-1', name: 'Алина', kind: 'human' },
+    { id: 'player-2', name: 'Алина', kind: 'human' },
+  ]
+  const conf: GameConfig = { playerCount: 2, seed: 42 }
+  const confEdit: GameConfig = { playerCount: 3, seed: 55 }
+
+  const state = createGame( conf, players )
+
+  expect( () => Object.assign( state.config as GameConfig, confEdit)).toThrow()
+  expect(state.config).toEqual({ playerCount: 2, seed: 42 })
+})
