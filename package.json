@@ -7,7 +7,8 @@
   ],
   "scripts": {
     "dev": "npm run dev --workspace=@galerist/web",
-    "build": "npm run build --workspace=@galerist/web"
+    "build": "npm run build --workspace=@galerist/web",
+    "lint": "npm run lint --workspace=@galerist/web"
   },
   "engines": {
     "node": ">=20.19.0",
