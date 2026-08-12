@@ -37,6 +37,6 @@ export function createGame(
     round: 0,
     activePlayerId: null,
     config,
-    players: [...players],
+    players: Object.freeze([ ...players ]),
   }
 }

@@ -63,3 +63,20 @@ it('keeps its own player list', () => {
   expect(state.players).toHaveLength(2)
   expect(state.players.some(val => val.id === 'player-3')).toBe(false)
 })
+
+it( 'prevents changes to the state-owned player list', () => {
+  const players: PlayerState[] = [
+    { id: 'player-1', name: 'Алина', kind: 'human' },
+    { id: 'player-2', name: 'Алина', kind: 'human' },
+  ]
+  const player: PlayerState = {
+    id: 'player-3',
+    name: 'Алина',
+    kind: 'human',
+  }
+
+  const state = createGame( { playerCount: 2, seed: 42 }, players )
+
+  expect( () => ( state.players as PlayerState[] ).push( player ) ).toThrow()
+  expect( state.players ).toHaveLength( 2 )
+})
