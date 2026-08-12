@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { GameState } from './index.js'
+import { createGame, type GameState } from './index.js'
 
 describe('GameState', () => {
   it('stores the initial game data', () => {
@@ -21,4 +21,23 @@ describe('GameState', () => {
     expect(state.status).toBe('setup')
     expect(state.players).toHaveLength(2)
   })
+})
+
+it('creates a deterministic initial game', () => {
+  const state = createGame(
+    { playerCount: 2, seed: 42 },
+    [
+      { id: 'player-1', name: 'Алина', kind: 'human' },
+      { id: 'player-2', name: 'Бот', kind: 'bot' },
+    ],
+  )
+
+  expect(state).toMatchObject({
+    id: 'game-42',
+    status: 'setup',
+    round: 0,
+    activePlayerId: null,
+    config: { playerCount: 2, seed: 42 },
+  })
+  expect(state.players).toHaveLength(2)
 })

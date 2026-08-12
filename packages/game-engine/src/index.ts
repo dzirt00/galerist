@@ -23,3 +23,17 @@ export interface GameState {
   config: GameConfig
   players: readonly PlayerState[]
 }
+
+export function createGame(
+  config: GameConfig,
+  players: readonly PlayerState[],
+): GameState {
+  return {
+    id: `game-${config.seed}`,
+    status: 'setup',
+    round: 0,
+    activePlayerId: null,
+    config,
+    players: [...players],
+  }
+}
