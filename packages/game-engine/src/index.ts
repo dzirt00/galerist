@@ -10,9 +10,9 @@ export interface GameConfig {
 }
 
 export interface PlayerState {
-  id: PlayerId
-  name: string
-  kind: PlayerKind
+  readonly id: PlayerId
+  readonly name: string
+  readonly kind: PlayerKind
 }
 
 export interface GameState {
@@ -41,11 +41,11 @@ export function createGame(
   const newPlayers: PlayerState[] = []
 
   players.forEach((player: PlayerState) => {
-    newPlayers.push({
+    newPlayers.push(Object.freeze({
       id: player.id,
       name: player.name,
       kind: player.kind,
-    })
+    }))
   })
 
   return {

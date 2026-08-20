@@ -129,3 +129,18 @@ it( 'should throw an error when players have duplicate IDs', () => {
 
   expect(() => createGame(conf, players)).toThrow('Players must have unique IDs')
 })
+
+
+it('prohibition on modifying the player object.', () => {
+  const players: PlayerState[] = [
+    { id: 'player-1', name: 'Алина1', kind: 'human' },
+    { id: 'player-2', name: 'Алина2', kind: 'human' },
+  ]
+
+  const conf: GameConfig = { playerCount: 2, seed: 42 }
+
+  const game = createGame(conf, players)
+
+  expect(() => {(game.players[0] as any).name = 'Алина3'}).toThrow(Error)
+  expect(game.players[0].name).toBe('Алина1')
+})
