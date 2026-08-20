@@ -16,12 +16,12 @@ export interface PlayerState {
 }
 
 export interface GameState {
-  id: GameId
-  status: GameStatus
-  round: number
-  activePlayerId: PlayerId | null
-  config: Readonly<GameConfig>
-  players: readonly PlayerState[]
+  readonly id: GameId
+  readonly status: GameStatus
+  readonly round: number
+  readonly activePlayerId: PlayerId | null
+  readonly config: Readonly<GameConfig>
+  readonly players: readonly PlayerState[]
 }
 
 export function createGame(
@@ -48,12 +48,12 @@ export function createGame(
     }))
   })
 
-  return {
+  return Object.freeze({
     id: `game-${config.seed}`,
     status: 'setup',
     round: 0,
     activePlayerId: null,
     config: Object.freeze( { ...config }),
     players: Object.freeze([ ...newPlayers ]),
-  }
+  })
 }

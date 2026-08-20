@@ -144,3 +144,17 @@ it('prohibition on modifying the player object.', () => {
   expect(() => {(game.players[0] as any).name = 'Алина3'}).toThrow(Error)
   expect(game.players[0].name).toBe('Алина1')
 })
+
+it('you can\'t change the round from outside', () => {
+  const players: PlayerState[] = [
+    { id: 'player-1', name: 'Алина1', kind: 'human' },
+    { id: 'player-2', name: 'Алина2', kind: 'human' },
+  ]
+
+  const conf: GameConfig = { playerCount: 2, seed: 42 }
+
+  const game = createGame(conf, players)
+
+  expect(() => {(game.round as any) = 1}).toThrow(Error)
+  expect(game.round).toBe(0)
+})
