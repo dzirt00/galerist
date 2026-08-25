@@ -57,3 +57,14 @@ export function createGame(
     players: Object.freeze([ ...newPlayers ]),
   })
 }
+
+export function startGame(state: GameState): GameState {
+  return Object.freeze({
+    id: state.id,
+    status: 'in_progress',
+    round: 1,
+    activePlayerId: state.players[0]!.id,
+    config: state.config,
+    players: state.players
+  })
+}

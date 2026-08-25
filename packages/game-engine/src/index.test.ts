@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createGame, type GameConfig, type GameState, type PlayerState } from './index.js'
+import { createGame, startGame, type GameConfig, type GameState, type PlayerState } from './index.js'
 
 describe( 'GameState', () => {
   it( 'stores the initial game data', () => {
@@ -116,7 +116,7 @@ it( 'name no change', () => {
   const conf: GameConfig = { playerCount: 2, seed: 42 }
 
   const state = createGame( conf, players )
-  players[0].name = 'Огого'
+  players[0].name= 'Огого'
   expect((state.players[0].name === 'Алина1')).toBe(true)
 })
 
@@ -157,4 +157,35 @@ it('you can\'t change the round from outside', () => {
 
   expect(() => {(game.round as any) = 1}).toThrow(Error)
   expect(game.round).toBe(0)
+})
+
+it('startGame is const? no mutation', () => {
+  const players: PlayerState[] = [
+    { id: 'player-1', name: 'Алина1', kind: 'human' },
+    { id: 'player-2', name: 'Алина2', kind: 'human' },
+  ]
+
+  const conf: GameConfig = { playerCount: 2, seed: 42 }
+
+  const game = createGame(conf, players)
+
+
+
+  const sg = startGame(game)
+
+  expect(game.status).toBe('setup')
+  expect(game.round).toBe(0)
+  expect(game.activePlayerId).toBe(null)
+
+  expect(sg).not.toBe(game)
+
+  expect(sg.status).toBe('in_progress')
+  expect(sg.round).toBe(1)
+  expect(sg.activePlayerId).toBe('player-1')
+
+  expect(() => {
+    (sg as any).round = 2
+  }).toThrow()
+
+  expect(sg.round).toBe(1)
 })
