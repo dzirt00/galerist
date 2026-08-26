@@ -73,6 +73,13 @@ export function startGame(state: GameState): GameState {
 }
 
 export function advanceTurn(state: GameState): GameState {
+
+  if(state.status !== 'in_progress') throw new Error('Turns can only be advanced while game is in progress')
+
+  const havePlayer = state.players.find(player => player.id === state.activePlayerId)
+
+  if(havePlayer === undefined) throw new Error('Active player must belong to the game')
+
   const activePlayerId = state.activePlayerId
   const currentIndex = state.players.findIndex(p => p.id === activePlayerId)
   const nextIndex = (currentIndex + 1) % state.players.length

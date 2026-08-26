@@ -364,3 +364,77 @@ it('4 players ,next round, activePlayerId first player', () => {
   expect(arrNextSteps).toEqual(arrNextStepClone)
   expect(cloneSg).toEqual(sg)
 })
+
+it('advanceTurn status only inprogres, now setup', () => {
+  const state = createGame(
+    { playerCount: 2, seed: 42 },
+    [
+      { id: 'player-1', name: 'Алина', kind: 'human' },
+      { id: 'player-2', name: 'Бот', kind: 'bot' },
+    ],
+  )
+  const stateCLone = structuredClone(state)
+  expect(() => advanceTurn(state)).toThrow('Turns can only be advanced while game is in progress')
+  expect(state).toEqual(stateCLone)
+})
+
+it('advanceTurn status only inprogres, now finished', () => {
+
+  const state: GameState = {
+    id: 'game-1',
+    status: 'finished',
+    round: 0,
+    activePlayerId: null,
+    config: {
+      playerCount: 2,
+      seed: 42,
+    },
+    players: [
+      { id: 'player-1', name: 'Алина', kind: 'human' },
+      { id: 'player-2', name: 'Бот', kind: 'bot' },
+    ],
+  }
+  const stateCLone = structuredClone(state)
+  expect(() => advanceTurn(state)).toThrow('Turns can only be advanced while game is in progress')
+  expect(state).toEqual(stateCLone)
+})
+
+it('advanceTurn activePlayerId not null', () => {
+  const state: GameState = {
+    id: 'game-1',
+    status: 'in_progress',
+    round: 0,
+    activePlayerId: null,
+    config: {
+      playerCount: 2,
+      seed: 42,
+    },
+    players: [
+      { id: 'player-1', name: 'Алина', kind: 'human' },
+      { id: 'player-2', name: 'Бот', kind: 'bot' },
+    ],
+  }
+  const stateCLone = structuredClone(state)
+  expect(() => advanceTurn(state)).toThrow('Active player must belong to the game')
+  expect(state).toEqual(stateCLone)
+})
+
+it('advanceTurn activePlayerId random name', () => {
+  const state: GameState = {
+    id: 'game-1',
+    status: 'in_progress',
+    round: 0,
+    activePlayerId: 'random',
+    config: {
+      playerCount: 2,
+      seed: 42,
+    },
+    players: [
+      { id: 'player-1', name: 'Алина', kind: 'human' },
+      { id: 'player-2', name: 'Бот', kind: 'bot' },
+    ],
+  }
+  const stateCLone = structuredClone(state)
+  expect(() => advanceTurn(state)).toThrow('Active player must belong to the game')
+  expect(state).toEqual(stateCLone)
+})
