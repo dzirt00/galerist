@@ -23,6 +23,44 @@ describe( 'GameState', () => {
   } )
 } )
 
+it('createGame is frozen', () =>{
+  const state = createGame(
+    { playerCount: 2, seed: 42 },
+    [
+      { id: 'player-1', name: 'Алина', kind: 'human' },
+      { id: 'player-2', name: 'Бот', kind: 'bot' },
+    ],
+  )
+
+  let sg = startGame(state)
+
+  const sgClone = structuredClone(sg)
+
+  expect(() => startGame(sg)).toThrow('Game can only be started from setup')
+  expect(sg).toEqual(sgClone)
+})
+
+it('finish game', () => {
+  const state: GameState = {
+    id: 'game-1',
+    status: 'finished',
+    round: 0,
+    activePlayerId: null,
+    config: {
+      playerCount: 2,
+      seed: 42,
+    },
+    players: [
+      { id: 'player-1', name: 'Алина', kind: 'human' },
+      { id: 'player-2', name: 'Бот', kind: 'bot' },
+    ],
+  }
+
+  const stateClone = structuredClone(state)
+  expect(() => startGame(state)).toThrow('Game can only be started from setup')
+  expect(state).toEqual(stateClone)
+})
+
 it( 'creates a deterministic initial game', () => {
   const state = createGame(
     { playerCount: 2, seed: 42 },

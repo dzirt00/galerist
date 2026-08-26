@@ -59,6 +59,9 @@ export function createGame(
 }
 
 export function startGame(state: GameState): GameState {
+
+  if(state.status !== 'setup') throw new Error('Game can only be started from setup')
+
   return Object.freeze({
     id: state.id,
     status: 'in_progress',
