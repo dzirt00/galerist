@@ -227,3 +227,102 @@ it('next round, activePlayerId first player', () => {
 
   expect(nextStep2.round).toBe(2);
 })
+
+it('3 players ,next round, activePlayerId first player', () => {
+  const players: PlayerState[] = [
+    { id: 'player-1', name: 'Алина1', kind: 'human' },
+    { id: 'player-2', name: 'Алина2', kind: 'human' },
+    { id: 'player-3', name: 'Алина3', kind: 'human' },
+  ]
+
+  const conf: GameConfig = { playerCount: 3, seed: 42 }
+  const game = createGame(conf, players)
+  const sg = startGame(game)
+  const cloneSg = structuredClone(sg)
+  const arrNextSteps: GameState[] = []
+  const arrNextStepClone: GameState[] = []
+
+  for(let i = 0; i < 6; i++) {
+    if (i === 0) {
+      arrNextSteps.push(advanceTurn(sg))
+      expect(arrNextSteps[i]).not.toBe(sg);
+    } else {
+      arrNextSteps.push(advanceTurn(arrNextSteps[i-1]))
+      expect(arrNextSteps[i-1]).not.toBe(arrNextSteps[i]);
+    }
+    arrNextStepClone.push(structuredClone(arrNextSteps[i]))
+
+    expect(arrNextSteps[i].id).toBe(sg.id)
+    expect(arrNextSteps[i].status).toBe(sg.status)
+    expect(arrNextSteps[i].config).toEqual(sg.config)
+    expect(arrNextSteps[i].players).toEqual(sg.players)
+
+    expect(Object.isFrozen(arrNextSteps[i])).toBe(true);
+
+    if(i === 2 || i === 5) {
+      expect(arrNextSteps[i].activePlayerId).toBe('player-1');
+      (i === 2) ? expect(arrNextSteps[i].round).toBe(2) : expect(arrNextSteps[i].round).toBe(3)
+    } else if(i === 0 || i === 3) {
+      expect(arrNextSteps[i].activePlayerId).toBe('player-2');
+      (i === 0) ? expect(arrNextSteps[i].round).toBe(1) : expect(arrNextSteps[i].round).toBe(2)
+    } else if(i === 1 || i === 4) {
+      expect(arrNextSteps[i].activePlayerId).toBe('player-3');
+      (i === 1) ? expect(arrNextSteps[i].round).toBe(1) : expect(arrNextSteps[i].round).toBe(2)
+    }
+  }
+
+  expect(arrNextSteps).toEqual(arrNextStepClone)
+  expect(cloneSg).toEqual(sg)
+})
+
+it('4 players ,next round, activePlayerId first player', () => {
+  const players: PlayerState[] = [
+    { id: 'player-1', name: 'Алина1', kind: 'human' },
+    { id: 'player-2', name: 'Алина2', kind: 'human' },
+    { id: 'player-3', name: 'Алина3', kind: 'human' },
+    { id: 'player-4', name: 'Алина4', kind: 'human' },
+  ]
+
+  const conf: GameConfig = { playerCount: 4, seed: 42 }
+  const game = createGame(conf, players)
+  const sg = startGame(game)
+  const cloneSg = structuredClone(sg)
+  const arrNextSteps: GameState[] = []
+  const arrNextStepClone: GameState[] = []
+
+  for(let i = 0; i < 8; i++) {
+    if (i === 0) {
+      arrNextSteps.push(advanceTurn(sg))
+      expect(arrNextSteps[i]).not.toBe(sg);
+    } else {
+      arrNextSteps.push(advanceTurn(arrNextSteps[i-1]))
+      expect(arrNextSteps[i-1]).not.toBe(arrNextSteps[i]);
+    }
+
+    arrNextStepClone.push(structuredClone(arrNextSteps[i]))
+
+    expect(arrNextSteps[i].id).toBe(sg.id)
+    expect(arrNextSteps[i].status).toBe(sg.status)
+    expect(arrNextSteps[i].config).toEqual(sg.config)
+    expect(arrNextSteps[i].players).toEqual(sg.players)
+
+    expect(Object.isFrozen(arrNextSteps[i])).toBe(true);
+
+    if(i === 3 || i === 7) {
+      expect(arrNextSteps[i].activePlayerId).toBe('player-1');
+      (i === 3) ? expect(arrNextSteps[i].round).toBe(2) : expect(arrNextSteps[i].round).toBe(3)
+    } else if(i === 0 || i === 4) {
+      expect(arrNextSteps[i].activePlayerId).toBe('player-2');
+      (i === 0) ? expect(arrNextSteps[i].round).toBe(1) : expect(arrNextSteps[i].round).toBe(2)
+    } else if(i === 1 || i === 5) {
+      expect(arrNextSteps[i].activePlayerId).toBe('player-3');
+      (i === 1) ? expect(arrNextSteps[i].round).toBe(1) : expect(arrNextSteps[i].round).toBe(2)
+    } else if(i === 2 || i === 6) {
+      expect(arrNextSteps[i].activePlayerId).toBe('player-4');
+      (i === 2) ? expect(arrNextSteps[i].round).toBe(1) : expect(arrNextSteps[i].round).toBe(2)
+    }
+  }
+
+  expect(arrNextSteps).toEqual(arrNextStepClone)
+  expect(cloneSg).toEqual(sg)
+})
