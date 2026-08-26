@@ -68,3 +68,20 @@ export function startGame(state: GameState): GameState {
     players: state.players
   })
 }
+
+export function advanceTurn(state: GameState): GameState {
+  const activePlayerId = state.activePlayerId
+  const currentIndex = state.players.findIndex(p => p.id === activePlayerId)
+  const nextIndex = (currentIndex + 1) % state.players.length
+  const nextPlayer = state.players[nextIndex]!.id
+  const round = (state.players[nextIndex]!.id === state.players[0]!.id) ? state.round + 1 : state.round
+
+  return  Object.freeze({
+    id: state.id,
+    status: state.status,
+    round: round,
+    activePlayerId: nextPlayer,
+    config: state.config,
+    players: state.players
+  })
+}

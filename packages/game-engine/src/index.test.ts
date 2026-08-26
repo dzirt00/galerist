@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createGame, startGame, type GameConfig, type GameState, type PlayerState } from './index.js'
+import { createGame, startGame, advanceTurn, type GameConfig, type GameState, type PlayerState } from './index.js'
 
 describe( 'GameState', () => {
   it( 'stores the initial game data', () => {
@@ -166,11 +166,7 @@ it('startGame is const? no mutation', () => {
   ]
 
   const conf: GameConfig = { playerCount: 2, seed: 42 }
-
   const game = createGame(conf, players)
-
-
-
   const sg = startGame(game)
 
   expect(game.status).toBe('setup')
@@ -188,4 +184,46 @@ it('startGame is const? no mutation', () => {
   }).toThrow()
 
   expect(sg.round).toBe(1)
+})
+
+it('activePlayerId next active player, round is const', () => {
+  const players: PlayerState[] = [
+    { id: 'player-1', name: 'Алина1', kind: 'human' },
+    { id: 'player-2', name: 'Алина2', kind: 'human' },
+  ]
+
+  const conf: GameConfig = { playerCount: 2, seed: 42 }
+  const game = createGame(conf, players)
+  const sg = startGame(game)
+
+  let nextStep = advanceTurn(sg)
+
+  expect(nextStep.activePlayerId).toBe('player-2')
+  expect(nextStep.round).toBe(1)
+  expect(sg).not.toBe(nextStep)
+  expect(sg.activePlayerId).toBe('player-1')
+  expect(sg.round).toBe(1)
+})
+
+it('next round, activePlayerId first player', () => {
+  const players: PlayerState[] = [
+    { id: 'player-1', name: 'Алина1', kind: 'human' },
+    { id: 'player-2', name: 'Алина2', kind: 'human' },
+  ]
+
+  const conf: GameConfig = { playerCount: 2, seed: 42 }
+  const game = createGame(conf, players)
+  const sg = startGame(game)
+
+  const nextStep1 = advanceTurn(sg)
+  const nextStep2 = advanceTurn(nextStep1)
+
+  expect(nextStep1.activePlayerId).toBe('player-2');
+  expect(nextStep2.activePlayerId).toBe('player-1');
+  expect(nextStep1.round).toBe(1);
+  expect(nextStep2.round).toBe(2);
+  expect(nextStep1).not.toBe(nextStep2);
+  expect(() => {(nextStep2 as any).round = 3;}).toThrow();
+
+  expect(nextStep2.round).toBe(2);
 })
