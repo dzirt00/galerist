@@ -1,59 +1,60 @@
-import { describe, expect, it } from 'vitest'
-import { createGame, startGame, advanceTurn, type GameConfig, type GameState, type PlayerState } from './index.js'
+import { expect, it } from 'vitest'
+import { createGame, startGame, advanceTurn, type GameConfig, type GameState, type PlayerState, type FinishedGameState } from './index.js'
 
-describe( 'GameState', () => {
+const stateConst: GameState = {
+  id: 'game-1',
+  status: 'setup',
+  phase: 'setup',
+  round: 0,
+  activePlayerId: null,
+  config: {
+    playerCount: 2,
+    seed: 42,
+  },
+  players: [
+    { id: 'player-1', name: 'Алина', kind: 'human' },
+    { id: 'player-2', name: 'Бот', kind: 'bot' },
+  ],
+}
+
+const configConst: GameConfig = { playerCount: 2, seed: 42 }
+const playerConst: PlayerState[] = [
+  { id: 'player-1', name: 'Алина', kind: 'human' },
+  { id: 'player-2', name: 'Бот', kind: 'bot' },
+]
+
   it( 'stores the initial game data', () => {
-    const state: GameState = {
-      id: 'game-1',
-      status: 'setup',
-      round: 0,
-      activePlayerId: null,
-      config: {
-        playerCount: 2,
-        seed: 42,
-      },
-      players: [
-        { id: 'player-1', name: 'Алина', kind: 'human' },
-        { id: 'player-2', name: 'Бот', kind: 'bot' },
-      ],
-    }
-
+    const state = structuredClone(stateConst)
     expect( state.status ).toBe( 'setup' )
     expect( state.players ).toHaveLength( 2 )
   } )
-} )
+
 
 it('createGame is frozen', () =>{
-  const state = createGame(
-    { playerCount: 2, seed: 42 },
-    [
-      { id: 'player-1', name: 'Алина', kind: 'human' },
-      { id: 'player-2', name: 'Бот', kind: 'bot' },
-    ],
-  )
-
+  const state = createGame( configConst, playerConst )
   let sg = startGame(state)
-
   const sgClone = structuredClone(sg)
 
   expect(() => startGame(sg)).toThrow('Game can only be started from setup')
   expect(sg).toEqual(sgClone)
+  expect(state.phase).toBe('setup')
+  expect(state.activePlayerId).toBe(null)
+  expect(state).not.toHaveProperty('endTriggeredRound');
+  expect(state).not.toHaveProperty('firstPlayerId');
+
 })
 
 it('finish game', () => {
-  const state: GameState = {
+  const state: FinishedGameState = {
     id: 'game-1',
+    config: configConst,
+    players:  playerConst,
+    phase: 'finished',
     status: 'finished',
     round: 0,
     activePlayerId: null,
-    config: {
-      playerCount: 2,
-      seed: 42,
-    },
-    players: [
-      { id: 'player-1', name: 'Алина', kind: 'human' },
-      { id: 'player-2', name: 'Бот', kind: 'bot' },
-    ],
+    firstPlayerId: 'player-1',
+    endTriggeredRound: 0
   }
 
   const stateClone = structuredClone(state)
@@ -62,13 +63,7 @@ it('finish game', () => {
 })
 
 it( 'creates a deterministic initial game', () => {
-  const state = createGame(
-    { playerCount: 2, seed: 42 },
-    [
-      { id: 'player-1', name: 'Алина', kind: 'human' },
-      { id: 'player-2', name: 'Бот', kind: 'bot' },
-    ],
-  )
+  const state = createGame( configConst, playerConst )
 
   expect( state ).toMatchObject( {
     id: 'game-42',
@@ -83,7 +78,7 @@ it( 'creates a deterministic initial game', () => {
 it( 'rejects a player count that differs from the configuration', () => {
   expect( () =>
     createGame(
-      { playerCount: 2, seed: 42 },
+      configConst,
       [ { id: 'player-1', name: 'Алина', kind: 'human' } ],
     ),
   ).toThrow( 'Player count must match config.playerCount' )
@@ -382,9 +377,11 @@ it('advanceTurn status only inprogres, now finished', () => {
 
   const state: GameState = {
     id: 'game-1',
+    phase: 'finished',
     status: 'finished',
     round: 0,
     activePlayerId: null,
+    firstPlayerId: 'player-1',
     config: {
       playerCount: 2,
       seed: 42,
@@ -393,6 +390,7 @@ it('advanceTurn status only inprogres, now finished', () => {
       { id: 'player-1', name: 'Алина', kind: 'human' },
       { id: 'player-2', name: 'Бот', kind: 'bot' },
     ],
+    endTriggeredRound: 0
   }
   const stateCLone = structuredClone(state)
   expect(() => advanceTurn(state)).toThrow('Turns can only be advanced while game is in progress')
@@ -400,9 +398,10 @@ it('advanceTurn status only inprogres, now finished', () => {
 })
 
 it('advanceTurn activePlayerId not null', () => {
-  const state: GameState = {
+  const state = {
     id: 'game-1',
     status: 'in_progress',
+    phase: 'regular_play',
     round: 0,
     activePlayerId: null,
     config: {
@@ -413,9 +412,13 @@ it('advanceTurn activePlayerId not null', () => {
       { id: 'player-1', name: 'Алина', kind: 'human' },
       { id: 'player-2', name: 'Бот', kind: 'bot' },
     ],
+    firstPlayerId: 'player-1',
   }
   const stateCLone = structuredClone(state)
-  expect(() => advanceTurn(state)).toThrow('Active player must belong to the game')
+
+  expect(() => advanceTurn(state as unknown as GameState)).toThrow(
+    'Active player must belong to the game'
+  );
   expect(state).toEqual(stateCLone)
 })
 
@@ -423,6 +426,7 @@ it('advanceTurn activePlayerId random name', () => {
   const state: GameState = {
     id: 'game-1',
     status: 'in_progress',
+    phase: 'regular_play',
     round: 0,
     activePlayerId: 'random',
     config: {
@@ -433,8 +437,172 @@ it('advanceTurn activePlayerId random name', () => {
       { id: 'player-1', name: 'Алина', kind: 'human' },
       { id: 'player-2', name: 'Бот', kind: 'bot' },
     ],
+    firstPlayerId: 'player-1',
   }
+
   const stateCLone = structuredClone(state)
   expect(() => advanceTurn(state)).toThrow('Active player must belong to the game')
   expect(state).toEqual(stateCLone)
+})
+
+it('advanceTurn phase:setup error', () => {
+  const state = {
+    id: 'game-1',
+    status: 'in_progress',
+    phase: 'setup',
+    round: 0,
+    activePlayerId: 'player-1',
+    config: {
+      playerCount: 2,
+      seed: 42,
+    },
+    players: [
+      { id: 'player-1', name: 'Алина', kind: 'human' },
+      { id: 'player-2', name: 'Бот', kind: 'bot' },
+    ],
+    firstPlayerId: 'player-1',
+  }
+
+  const stateCLone = structuredClone(state)
+  expect(() => advanceTurn(state as unknown as GameState)).toThrow('Turns can only be advanced while game is in progress')
+  expect(state).toEqual(stateCLone)
+})
+
+it('advanceTurn phase:regular_play', () => {
+  const state: GameState = {
+    id: 'game-1',
+    status: 'in_progress',
+    phase: 'regular_play',
+    round: 0,
+    activePlayerId: 'player-1',
+    config: {
+      playerCount: 2,
+      seed: 42,
+    },
+    players: [
+      { id: 'player-1', name: 'Алина', kind: 'human' },
+      { id: 'player-2', name: 'Бот', kind: 'bot' },
+    ],
+    firstPlayerId: 'player-1'
+  }
+
+  const stateCLone = structuredClone(state)
+  const res = advanceTurn(state)
+  expect(res.activePlayerId).toBe('player-2')
+  expect(res.firstPlayerId).toBe('player-1')
+  expect(res.phase).toBe('regular_play')
+  expect(state).toEqual(stateCLone)
+})
+
+it('startGame phase:regular_play', () => {
+  const state = createGame(configConst, playerConst)
+  const sg = startGame(state)
+
+  expect(sg.status).toBe('in_progress')
+  expect(sg.phase).toBe('regular_play')
+  expect(sg.activePlayerId).toBe('player-1')
+  expect(sg.firstPlayerId).toBe('player-1')
+
+})
+
+it(' EndingCurrentRoundGameState ending_current_round', () => {
+  const state: GameState = {
+    id: 'game-1',
+    status: 'in_progress',
+    phase: 'ending_current_round',
+    round: 0,
+    activePlayerId: 'player-1',
+    config: {
+      playerCount: 2,
+      seed: 42,
+    },
+    players: [
+      { id: 'player-1', name: 'Алина', kind: 'human' },
+      { id: 'player-2', name: 'Бот', kind: 'bot' },
+    ],
+    firstPlayerId: 'player-1',
+    endTriggeredRound: 1
+  }
+  const et = advanceTurn(state)
+
+  expect(et.status).toBe('in_progress')
+  expect(et.phase).toBe('ending_current_round')
+  expect(et.endTriggeredRound).toBe(1)
+
+})
+
+it('phase: final_scoring error', () => {
+  const state: GameState = {
+    id: 'game-1',
+    status: 'in_progress',
+    phase: 'final_scoring',
+    round: 0,
+    activePlayerId: null,
+    config: {
+      playerCount: 2,
+      seed: 42,
+    },
+    players: [
+      { id: 'player-1', name: 'Алина', kind: 'human' },
+      { id: 'player-2', name: 'Бот', kind: 'bot' },
+    ],
+    firstPlayerId: 'player-1',
+    endTriggeredRound: 1
+  }
+
+  expect(() => advanceTurn(state)).toThrow('Turns can only be advanced while game is in progress')
+
+})
+
+it('activePlayerId and firstPlayerId', () => {
+  const state: GameState = {
+    id: 'game-1',
+    status: 'in_progress',
+    phase: 'regular_play',
+    round: 1,
+    activePlayerId: 'player-1',
+    config: {
+      playerCount: 2,
+      seed: 42,
+    },
+    players: [
+      { id: 'player-1', name: 'Алина', kind: 'human' },
+      { id: 'player-2', name: 'Бот', kind: 'bot' },
+    ],
+    firstPlayerId: 'player-2',
+  }
+  const at1 = advanceTurn(state)
+  const at2 = advanceTurn(at1)
+  expect(at2.round).toBe(2)
+  expect(at1.round).toBe(2)
+  expect(at1.activePlayerId).toBe('player-2')
+  expect(at1.firstPlayerId).toBe('player-2')
+  expect(at2.activePlayerId).toBe('player-1')
+  expect(at2.firstPlayerId).toBe('player-2')
+
+})
+
+it('final_round advanceTurn', () => {
+  const state: GameState = {
+    id: 'game-1',
+    status: 'in_progress',
+    phase: 'final_round',
+    round: 10,
+    activePlayerId: 'player-1',
+    config: {
+      playerCount: 2,
+      seed: 42,
+    },
+    players: [
+      { id: 'player-1', name: 'Алина', kind: 'human' },
+      { id: 'player-2', name: 'Бот', kind: 'bot' },
+    ],
+    firstPlayerId: 'player-2',
+    endTriggeredRound: 2
+  }
+  const at = advanceTurn(state)
+
+  expect(at.phase).toBe('final_round')
+  expect(at.firstPlayerId).toBe('player-2')
+  expect(at.endTriggeredRound).toBe(2)
 })

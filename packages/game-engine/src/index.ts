@@ -73,16 +73,17 @@ export interface PlayerState {
   readonly kind: PlayerKind
 }
 
-export interface GameState extends GameStateBase {
-  readonly status: GameStatus
-  readonly round: number
-  readonly activePlayerId: PlayerId | null
-}
+export type GameState = RegularPlayGameState
+  | EndingCurrentRoundGameState
+  | FinalRoundGameState
+  | FinalScoringGameState
+  | FinishedGameState
+  | SetupGameState
 
 export function createGame(
   config: GameConfig,
   players: readonly PlayerState[],
-): GameState {
+): SetupGameState {
   if (players.length !== config.playerCount) {
     throw new Error('Player count must match config.playerCount')
   }
@@ -110,20 +111,24 @@ export function createGame(
     activePlayerId: null,
     config: Object.freeze( { ...config }),
     players: Object.freeze([ ...newPlayers ]),
+    phase: 'setup'
   })
 }
 
-export function startGame(state: GameState): GameState {
+export function startGame(state: GameState): RegularPlayGameState {
 
-  if(state.status !== 'setup') throw new Error('Game can only be started from setup')
+  if(state.phase !== 'setup') throw new Error('Game can only be started from setup')
 
   return Object.freeze({
     id: state.id,
     status: 'in_progress',
+    phase: 'regular_play',
     round: 1,
     activePlayerId: state.players[0]!.id,
     config: state.config,
-    players: state.players
+    players: state.players,
+    firstPlayerId: state.players[0]!.id
+
   })
 }
 
@@ -131,22 +136,28 @@ export function advanceTurn(state: GameState): GameState {
 
   if(state.status !== 'in_progress') throw new Error('Turns can only be advanced while game is in progress')
 
-  const havePlayer = state.players.find(player => player.id === state.activePlayerId)
 
-  if(havePlayer === undefined) throw new Error('Active player must belong to the game')
+  if(state.phase === 'regular_play' || state.phase === 'ending_current_round' || state.phase === 'final_round') {
 
-  const activePlayerId = state.activePlayerId
-  const currentIndex = state.players.findIndex(p => p.id === activePlayerId)
-  const nextIndex = (currentIndex + 1) % state.players.length
-  const nextPlayer = state.players[nextIndex]!.id
-  const round = (state.players[nextIndex]!.id === state.players[0]!.id) ? state.round + 1 : state.round
+    const havePlayer = state.players.find(player => player.id === state.activePlayerId)
 
-  return  Object.freeze({
-    id: state.id,
-    status: state.status,
-    round: round,
-    activePlayerId: nextPlayer,
-    config: state.config,
-    players: state.players
-  })
+    if(havePlayer === undefined) throw new Error('Active player must belong to the game')
+
+    const activePlayerId = state.activePlayerId
+    const currentIndex = state.players.findIndex(p => p.id === activePlayerId)
+    const nextIndex = (currentIndex + 1) % state.players.length
+    const nextPlayer = state.players[nextIndex]!.id
+    const round = (nextPlayer === state.firstPlayerId) ? state.round + 1 : state.round
+
+    const res = {
+      ...state,
+      round: round,
+      activePlayerId: nextPlayer
+    };
+
+    return Object.freeze(res)
+
+  } else {
+    throw new Error('Turns can only be advanced while game is in progress')
+  }
 }
