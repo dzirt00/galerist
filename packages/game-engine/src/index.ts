@@ -3,6 +3,64 @@ export type PlayerId = string
 
 export type GameStatus = 'setup' | 'in_progress' | 'finished'
 export type PlayerKind = 'human' | 'bot'
+export type GamePhase = 'setup'| 'regular_play' | 'ending_current_round' | 'final_round' | 'final_scoring' | 'finished'
+
+export interface GameStateBase {
+  readonly id: GameId
+  readonly config: Readonly<GameConfig>
+  readonly players:  readonly PlayerState[]
+}
+
+export interface RegularPlayGameState extends GameStateBase {
+  readonly phase: 'regular_play'
+  readonly status: 'in_progress'
+  readonly round: number
+  readonly activePlayerId: PlayerId
+  readonly firstPlayerId: PlayerId
+}
+
+export interface EndingCurrentRoundGameState extends GameStateBase {
+  readonly phase: 'ending_current_round'
+  readonly status: 'in_progress'
+  readonly round: number
+  readonly activePlayerId: PlayerId
+  readonly firstPlayerId: PlayerId
+  readonly endTriggeredRound: number
+}
+
+export interface FinalRoundGameState extends GameStateBase {
+  readonly phase: 'final_round'
+  readonly status: 'in_progress'
+  readonly round: number
+  readonly activePlayerId: PlayerId
+  readonly firstPlayerId: PlayerId
+  readonly endTriggeredRound: number
+}
+
+export interface FinalScoringGameState extends GameStateBase {
+  readonly phase: 'final_scoring'
+  readonly status: 'in_progress'
+  readonly round: number
+  readonly activePlayerId: null
+  readonly firstPlayerId: PlayerId
+  readonly endTriggeredRound: number
+}
+
+export interface FinishedGameState extends GameStateBase {
+  readonly phase: 'finished'
+  readonly status: 'finished'
+  readonly round: number
+  readonly activePlayerId: null
+  readonly firstPlayerId: PlayerId
+  readonly endTriggeredRound: number
+}
+
+export interface SetupGameState extends GameStateBase {
+  readonly phase: 'setup'
+  readonly status: 'setup'
+  readonly round: 0
+  readonly activePlayerId: null
+}
 
 export interface GameConfig {
   playerCount: 2 | 3 | 4
@@ -15,13 +73,10 @@ export interface PlayerState {
   readonly kind: PlayerKind
 }
 
-export interface GameState {
-  readonly id: GameId
+export interface GameState extends GameStateBase {
   readonly status: GameStatus
   readonly round: number
   readonly activePlayerId: PlayerId | null
-  readonly config: Readonly<GameConfig>
-  readonly players: readonly PlayerState[]
 }
 
 export function createGame(
