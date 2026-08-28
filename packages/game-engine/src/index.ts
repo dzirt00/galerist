@@ -133,31 +133,84 @@ export function startGame(state: GameState): RegularPlayGameState {
 }
 
 export function advanceTurn(state: GameState): GameState {
+  if ( state.status !== 'in_progress' ) {
+    throw new Error( 'Turns can only be advanced while game is in progress' );
+  }
+  if ( state.phase === 'final_round' || state.phase === 'ending_current_round' || state.phase === 'regular_play' ) {
 
-  if(state.status !== 'in_progress') throw new Error('Turns can only be advanced while game is in progress')
+    const currentIndex = state.players.findIndex( p => p.id === state.activePlayerId );
+
+    if ( currentIndex === -1 ) {
+      throw new Error( 'Active player must belong to the game' );
+    }
+
+    const nextPlayer = state.players[ ( currentIndex + 1 ) % state.players.length ]!.id;
+    const isNewRound = nextPlayer === state.firstPlayerId;
+    const nextRoundNumber = isNewRound ? state.round + 1 : state.round;
 
 
-  if(state.phase === 'regular_play' || state.phase === 'ending_current_round' || state.phase === 'final_round') {
+    if ( state.phase === 'final_round' ) {
+      if ( isNewRound ) {
+        return Object.freeze( {
+          ...state,
+          phase: 'final_scoring',
+          activePlayerId: null,
+          endTriggeredRound: state.endTriggeredRound,
+        } );
+      }
 
-    const havePlayer = state.players.find(player => player.id === state.activePlayerId)
+      return Object.freeze( {
+        ...state,
+        round: nextRoundNumber,
+        phase: 'final_round',
+        activePlayerId: nextPlayer,
+        endTriggeredRound: state.endTriggeredRound,
+      } );
+    }
 
-    if(havePlayer === undefined) throw new Error('Active player must belong to the game')
+    if ( state.phase === 'ending_current_round' ) {
+      if ( isNewRound ) {
+        return Object.freeze( {
+          ...state,
+          round: nextRoundNumber,
+          phase: 'final_round',
+          activePlayerId: nextPlayer,
+          endTriggeredRound: state.endTriggeredRound,
+        } );
+      }
 
-    const activePlayerId = state.activePlayerId
-    const currentIndex = state.players.findIndex(p => p.id === activePlayerId)
-    const nextIndex = (currentIndex + 1) % state.players.length
-    const nextPlayer = state.players[nextIndex]!.id
-    const round = (nextPlayer === state.firstPlayerId) ? state.round + 1 : state.round
+      return Object.freeze( {
+        ...state,
+        round: nextRoundNumber,
+        phase: 'ending_current_round',
+        activePlayerId: nextPlayer,
+        endTriggeredRound: state.endTriggeredRound,
+      } );
+    }
 
-    const res = {
+    return Object.freeze( {
       ...state,
-      round: round,
-      activePlayerId: nextPlayer
+      round: nextRoundNumber,
+      phase: 'regular_play',
+      activePlayerId: nextPlayer,
+    } );
+  } else {
+    throw new Error('Turns can only be advanced while game is in progress');
+  }
+}
+
+
+
+export function triggerGameEnd(state: GameState): EndingCurrentRoundGameState {
+
+  if(state.phase !== 'regular_play') throw new Error('Only regular_play')
+
+  const res: EndingCurrentRoundGameState  = {
+      ...state,
+      phase: 'ending_current_round',
+      endTriggeredRound: state.round
     };
 
-    return Object.freeze(res)
+  return Object.freeze(res)
 
-  } else {
-    throw new Error('Turns can only be advanced while game is in progress')
-  }
 }

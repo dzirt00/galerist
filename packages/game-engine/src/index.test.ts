@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { createGame, startGame, advanceTurn, type GameConfig, type GameState, type PlayerState, type FinishedGameState } from './index.js'
+import { createGame, startGame, advanceTurn, type GameConfig, type GameState, type PlayerState, type FinishedGameState, triggerGameEnd, type SetupGameState } from './index.js'
 
 const stateConst: GameState = {
   id: 'game-1',
@@ -397,30 +397,87 @@ it('advanceTurn status only inprogres, now finished', () => {
   expect(state).toEqual(stateCLone)
 })
 
-it('advanceTurn activePlayerId not null', () => {
+it('triggerGameEnd creates a frozen new state without mutating input', () => {
+  const state: GameState = {
+    id: 'game-1',
+    status: 'in_progress',
+    phase: 'regular_play',
+    round: 10,
+    activePlayerId: 'player-1',
+    config: { playerCount: 2, seed: 42 },
+    players: [
+      { id: 'player-1', name: 'Алина', kind: 'human' },
+      { id: 'player-2', name: 'Бот', kind: 'bot' },
+    ],
+    firstPlayerId: 'player-2',
+  }
+  const stateBefore = structuredClone(state)
+
+  const trigger = triggerGameEnd(state)
+
+  expect(trigger).not.toBe(state)
+  expect(Object.isFrozen(trigger)).toBe(true)
+  expect(state).toEqual(stateBefore)
+
+  expect(trigger.id).toBe(state.id)
+  expect(trigger.phase).toBe('ending_current_round')
+  expect(trigger.status).toBe('in_progress')
+  expect(trigger.round).toBe(10)
+  expect(trigger.endTriggeredRound).toBe(10)
+  expect(trigger.activePlayerId).toBe('player-1')
+  expect(trigger.firstPlayerId).toBe('player-2')
+  expect(trigger.config).toBe(state.config)
+  expect(trigger.players).toBe(state.players)
+})
+
+it('advanceTurn rejects a null activePlayerId', () => {
   const state = {
     id: 'game-1',
     status: 'in_progress',
     phase: 'regular_play',
     round: 0,
     activePlayerId: null,
-    config: {
-      playerCount: 2,
-      seed: 42,
-    },
+    config: { playerCount: 2, seed: 42 },
     players: [
       { id: 'player-1', name: 'Алина', kind: 'human' },
       { id: 'player-2', name: 'Бот', kind: 'bot' },
     ],
     firstPlayerId: 'player-1',
   }
-  const stateCLone = structuredClone(state)
+  const stateBefore = structuredClone(state)
 
   expect(() => advanceTurn(state as unknown as GameState)).toThrow(
-    'Active player must belong to the game'
-  );
-  expect(state).toEqual(stateCLone)
+    'Active player must belong to the game',
+  )
+  expect(state).toEqual(stateBefore)
 })
+
+
+
+it(' should return a new frozen state and preserve the original state', () => {
+  const initialState: GameState = {
+    id: 'game-1',
+    status: 'in_progress',
+    phase: 'regular_play',
+    round: 1,
+    activePlayerId: 'player-1',
+    config: { playerCount: 2, seed: 42 },
+    players: [
+      { id: 'player-1', name: 'Алина', kind: 'human' },
+      { id: 'player-2', name: 'Бот', kind: 'bot' },
+    ],
+    firstPlayerId: 'player-1',
+  };
+
+  const originalStateSnapshot = structuredClone(initialState);
+  const nextState = advanceTurn(initialState);
+
+  expect(initialState).toEqual(originalStateSnapshot);
+  expect(nextState).not.toBe(initialState);
+  expect(Object.isFrozen(nextState)).toBe(true);
+
+});
+
 
 it('advanceTurn activePlayerId random name', () => {
   const state: GameState = {
@@ -602,7 +659,273 @@ it('final_round advanceTurn', () => {
   }
   const at = advanceTurn(state)
 
-  expect(at.phase).toBe('final_round')
+  expect(at.phase).toBe('final_scoring')
   expect(at.firstPlayerId).toBe('player-2')
   expect(at.endTriggeredRound).toBe(2)
+})
+
+it('triggerGameEnd, is regular_play', () => {
+  const state: GameState = {
+    id: 'game-1',
+    status: 'in_progress',
+    phase: 'regular_play',
+    round: 10,
+    activePlayerId: 'player-1',
+    config: {
+      playerCount: 2,
+      seed: 42,
+    },
+    players: [
+      { id: 'player-1', name: 'Алина', kind: 'human' },
+      { id: 'player-2', name: 'Бот', kind: 'bot' },
+    ],
+    firstPlayerId: 'player-2',
+  }
+
+  const trigger = triggerGameEnd(state)
+  const triggerClone = structuredClone(trigger)
+
+  expect(trigger.phase).toBe('ending_current_round')
+  expect(trigger.endTriggeredRound).toBe(10)
+  expect(trigger.players).toEqual(state.players)
+  expect(trigger.config).toEqual(state.config)
+  expect(trigger.firstPlayerId).toBe(state.firstPlayerId)
+  expect(trigger.round).toBe(state.round)
+  expect(trigger.status).toBe(state.status)
+  expect(trigger.activePlayerId).toBe(state.activePlayerId)
+  expect(trigger).toEqual(triggerClone)
+})
+
+it('triggerGameEnd rejects a repeated call', () => {
+  const regularState = startGame(createGame(configConst, playerConst))
+  const endingState = triggerGameEnd(regularState)
+  const endingStateBefore = structuredClone(endingState)
+
+  expect(() => triggerGameEnd(endingState)).toThrow('Only regular_play')
+  expect(endingState).toEqual(endingStateBefore)
+})
+
+it('final_scoring, all round', () => {
+  const state: GameState = {
+    id: 'game-1',
+    status: 'in_progress',
+    phase: 'regular_play',
+    round: 10,
+    activePlayerId: 'player-1',
+    config: {
+      playerCount: 3,
+      seed: 42,
+    },
+    players: [
+      { id: 'player-1', name: 'Алина', kind: 'human' },
+      { id: 'player-2', name: 'Бот', kind: 'bot' },
+      { id: 'player-3', name: 'Бот', kind: 'bot' },
+    ],
+    firstPlayerId: 'player-1',
+  }
+
+  const trigger = triggerGameEnd(state)
+  const at1 = advanceTurn(trigger)
+  const at2 = advanceTurn(at1)
+  const at3 = advanceTurn(at2)
+  const at4 = advanceTurn(at3)
+  const at5 = advanceTurn(at4)
+  const at6 = advanceTurn(at5)
+
+
+  expect(at1.phase).toBe('ending_current_round')
+  expect(at1.round).toBe(10)
+  expect(at1.firstPlayerId).toBe('player-1')
+  expect(at1.endTriggeredRound).toBe(10)
+  expect(at1.status).toBe('in_progress')
+  expect(at1.config).toEqual(state.config)
+  expect(at1.players).toEqual(state.players)
+  expect(at1.activePlayerId).toEqual('player-2')
+
+  expect(at2.phase).toBe('ending_current_round')
+  expect(at2.round).toBe(10)
+  expect(at2.firstPlayerId).toBe('player-1')
+  expect(at2.endTriggeredRound).toBe(10)
+  expect(at2.status).toBe('in_progress')
+  expect(at2.config).toEqual(state.config)
+  expect(at2.players).toEqual(state.players)
+  expect(at2.activePlayerId).toEqual('player-3')
+
+  expect(at3.phase).toBe('final_round')
+  expect(at3.round).toBe(11)
+  expect(at3.firstPlayerId).toBe('player-1')
+  expect(at3.endTriggeredRound).toBe(10)
+  expect(at3.status).toBe('in_progress')
+  expect(at3.config).toEqual(state.config)
+  expect(at3.players).toEqual(state.players)
+  expect(at3.activePlayerId).toEqual('player-1')
+
+  expect(at4.phase).toBe('final_round')
+  expect(at4.round).toBe(11)
+  expect(at4.firstPlayerId).toBe('player-1')
+  expect(at4.endTriggeredRound).toBe(10)
+  expect(at4.status).toBe('in_progress')
+  expect(at4.config).toEqual(state.config)
+  expect(at4.players).toEqual(state.players)
+  expect(at4.activePlayerId).toEqual('player-2')
+
+  expect(at5.phase).toBe('final_round')
+  expect(at5.round).toBe(11)
+  expect(at5.firstPlayerId).toBe('player-1')
+  expect(at5.endTriggeredRound).toBe(10)
+  expect(at5.status).toBe('in_progress')
+  expect(at5.config).toEqual(state.config)
+  expect(at5.players).toEqual(state.players)
+  expect(at5.activePlayerId).toEqual('player-3')
+
+  expect(at6.phase).toBe('final_scoring')
+  expect(at6.round).toBe(11)
+  expect(at6.firstPlayerId).toBe('player-1')
+  expect(at6.endTriggeredRound).toBe(10)
+  expect(at6.status).toBe('in_progress')
+  expect(at6.config).toEqual(state.config)
+  expect(at6.players).toEqual(state.players)
+  expect(at6.activePlayerId).toEqual(null)
+})
+
+it('final_scoring, all round firstPlayerId: player-2 activePlayerId: player-1', () => {
+  const state: GameState = {
+    id: 'game-1',
+    status: 'in_progress',
+    phase: 'regular_play',
+    round: 10,
+    activePlayerId: 'player-1',
+    config: {
+      playerCount: 3,
+      seed: 42,
+    },
+    players: [
+      { id: 'player-1', name: 'Алина', kind: 'human' },
+      { id: 'player-2', name: 'Бот', kind: 'bot' },
+      { id: 'player-3', name: 'Бот', kind: 'bot' },
+    ],
+    firstPlayerId: 'player-2',
+  }
+
+  const trigger = triggerGameEnd(state)
+  const at1 = advanceTurn(trigger)
+  const at2 = advanceTurn(at1)
+  const at3 = advanceTurn(at2)
+  const at4 = advanceTurn(at3)
+
+  expect(at1.phase).toBe('final_round')
+  expect(at1.round).toBe(11)
+  expect(at1.firstPlayerId).toBe('player-2')
+  expect(at1.endTriggeredRound).toBe(10)
+  expect(at1.status).toBe('in_progress')
+  expect(at1.config).toEqual(state.config)
+  expect(at1.players).toEqual(state.players)
+  expect(at1.activePlayerId).toEqual('player-2')
+
+  expect(at2.phase).toBe('final_round')
+  expect(at2.round).toBe(11)
+  expect(at2.firstPlayerId).toBe('player-2')
+  expect(at2.endTriggeredRound).toBe(10)
+  expect(at2.status).toBe('in_progress')
+  expect(at2.config).toEqual(state.config)
+  expect(at2.players).toEqual(state.players)
+  expect(at2.activePlayerId).toEqual('player-3')
+
+  expect(at3.phase).toBe('final_round')
+  expect(at3.round).toBe(11)
+  expect(at3.firstPlayerId).toBe('player-2')
+  expect(at3.endTriggeredRound).toBe(10)
+  expect(at3.status).toBe('in_progress')
+  expect(at3.config).toEqual(state.config)
+  expect(at3.players).toEqual(state.players)
+  expect(at3.activePlayerId).toEqual('player-1')
+
+  expect(at4.phase).toBe('final_scoring')
+  expect(at4.round).toBe(11)
+  expect(at4.firstPlayerId).toBe('player-2')
+  expect(at4.endTriggeredRound).toBe(10)
+  expect(at4.status).toBe('in_progress')
+  expect(at4.config).toEqual(state.config)
+  expect(at4.players).toEqual(state.players)
+  expect(at4.activePlayerId).toEqual(null)
+
+})
+
+it('final_scoring, all round firstPlayerId: player-2 activePlayerId: player-3', () => {
+  const state: GameState = {
+    id: 'game-1',
+    status: 'in_progress',
+    phase: 'regular_play',
+    round: 10,
+    activePlayerId: 'player-1',
+    config: {
+      playerCount: 3,
+      seed: 42,
+    },
+    players: [
+      { id: 'player-1', name: 'Алина', kind: 'human' },
+      { id: 'player-2', name: 'Бот', kind: 'bot' },
+      { id: 'player-3', name: 'Бот', kind: 'bot' },
+    ],
+    firstPlayerId: 'player-3',
+  }
+
+  const trigger = triggerGameEnd(state)
+  const at1 = advanceTurn(trigger)
+  const at2 = advanceTurn(at1)
+  const at3 = advanceTurn(at2)
+  const at4 = advanceTurn(at3)
+  const at5 = advanceTurn(at4)
+
+  expect(at1.phase).toBe('ending_current_round')
+  expect(at1.round).toBe(10)
+  expect(at1.firstPlayerId).toBe('player-3')
+  expect(at1.endTriggeredRound).toBe(10)
+  expect(at1.status).toBe('in_progress')
+  expect(at1.config).toEqual(state.config)
+  expect(at1.players).toEqual(state.players)
+  expect(at1.activePlayerId).toEqual('player-2')
+
+  expect(at2.phase).toBe('final_round')
+  expect(at2.round).toBe(11)
+  expect(at2.firstPlayerId).toBe('player-3')
+  expect(at2.endTriggeredRound).toBe(10)
+  expect(at2.status).toBe('in_progress')
+  expect(at2.config).toEqual(state.config)
+  expect(at2.players).toEqual(state.players)
+  expect(at2.activePlayerId).toEqual('player-3')
+
+  expect(at3.phase).toBe('final_round')
+  expect(at3.round).toBe(11)
+  expect(at3.firstPlayerId).toBe('player-3')
+  expect(at3.endTriggeredRound).toBe(10)
+  expect(at3.status).toBe('in_progress')
+  expect(at3.config).toEqual(state.config)
+  expect(at3.players).toEqual(state.players)
+  expect(at3.activePlayerId).toEqual('player-1')
+
+  expect(at4.phase).toBe('final_round')
+  expect(at4.round).toBe(11)
+  expect(at4.firstPlayerId).toBe('player-3')
+  expect(at4.endTriggeredRound).toBe(10)
+  expect(at4.status).toBe('in_progress')
+  expect(at4.config).toEqual(state.config)
+  expect(at4.players).toEqual(state.players)
+  expect(at4.activePlayerId).toEqual('player-2')
+
+  expect(at5.phase).toBe('final_scoring')
+  expect(at5.round).toBe(11)
+  expect(at5.firstPlayerId).toBe('player-3')
+  expect(at5.endTriggeredRound).toBe(10)
+  expect(at5.status).toBe('in_progress')
+  expect(at5.config).toEqual(state.config)
+  expect(at5.players).toEqual(state.players)
+  expect(at5.activePlayerId).toEqual(null)
+
+})
+
+
+it('final_scoring, all round firstPlayerId: player-2 activePlayerId: player-3', () => {
+  const state: SetupGameState = createGame(configConst,playerConst)
+  expect(() => triggerGameEnd(state)).toThrow('Only regular_play')
 })
