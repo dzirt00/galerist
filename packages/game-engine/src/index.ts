@@ -4,7 +4,10 @@ export type PlayerId = string
 export type GameStatus = 'setup' | 'in_progress' | 'finished'
 export type PlayerKind = 'human' | 'bot'
 export type GamePhase = 'setup'| 'regular_play' | 'ending_current_round' | 'final_round' | 'final_scoring' | 'finished'
-
+export type EndingSequenceGameState =
+  | EndingCurrentRoundGameState
+  | FinalRoundGameState
+  | FinalScoringGameState
 export interface GameStateBase {
   readonly id: GameId
   readonly config: Readonly<GameConfig>
@@ -132,6 +135,21 @@ export function startGame(state: GameState): RegularPlayGameState {
   })
 }
 
+export function advanceTurn(state: RegularPlayGameState): RegularPlayGameState
+
+export function advanceTurn(
+  state: EndingCurrentRoundGameState,
+): EndingCurrentRoundGameState | FinalRoundGameState
+
+export function advanceTurn(
+  state: FinalRoundGameState,
+): FinalRoundGameState | FinalScoringGameState
+
+export function advanceTurn(
+  state: EndingSequenceGameState,
+): EndingSequenceGameState
+
+export function advanceTurn(state: GameState): GameState
 export function advanceTurn(state: GameState): GameState {
   if ( state.status !== 'in_progress' ) {
     throw new Error( 'Turns can only be advanced while game is in progress' );
