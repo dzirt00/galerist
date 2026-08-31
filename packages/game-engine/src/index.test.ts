@@ -362,7 +362,7 @@ it('4 players ,next round, activePlayerId first player', () => {
     { id: 'player-4', name: 'Алина4', kind: 'human' },
   ]
 
-  const conf: GameConfig = { playerCount: 4, seed: 42 }
+  const conf: GameConfig = { playerCount: 4, seed: 4 }
   const game = createGame(conf, players)
   const sg = startGame(game)
 
@@ -834,4 +834,105 @@ it('final_scoring, all round firstPlayerId: player-2 activePlayerId: player-3', 
 it('final_scoring, all round firstPlayerId: player-2 activePlayerId: player-3', () => {
   const state: SetupGameState = createGame(configConst,playerConst)
   expect(() => triggerGameEnd(state)).toThrow('Only regular_play')
+})
+
+it.each([
+  { seed: 0, expectedPlayer: 'player-1' },
+  { seed: 1, expectedPlayer: 'player-2' },
+  { seed: 2, expectedPlayer: 'player-3' },
+  { seed: 3, expectedPlayer: 'player-1' },
+])('выбирает $expectedPlayer при seed: $seed', ({ seed, expectedPlayer }) => {
+  const cg = createGame(
+    { playerCount: 3, seed },
+    [
+      { id: 'player-1', name: 'Алина', kind: 'human' },
+      { id: 'player-2', name: 'Алина', kind: 'human' },
+      { id: 'player-3', name: 'Алина', kind: 'human' },
+    ]
+  )
+  const sg = startGame(cg)
+
+  expect(sg.firstPlayerId).toBe(expectedPlayer)
+  expect(sg.activePlayerId).toBe(expectedPlayer)
+})
+
+it('выбирает одного и того же игрока при одинаковом seed', () => {
+  const players: PlayerState[] = [
+    { id: 'player-1', name: 'Алина', kind: 'human' },
+    { id: 'player-2', name: 'Алина', kind: 'human' },
+    { id: 'player-3', name: 'Алина', kind: 'human' },
+  ]
+
+  const cg1 = createGame({ playerCount: 3, seed: 42 }, players)
+  const sg1 = startGame(cg1)
+
+  const cg2 = createGame({ playerCount: 3, seed: 42 }, players)
+  const sg2 = startGame(cg2)
+
+  expect(sg1.firstPlayerId).toBe(sg2.firstPlayerId)
+})
+
+it('проверка невалидных значений в seed', () => {
+  const players: PlayerState[] = [
+    { id: 'player-1', name: 'Алина', kind: 'human' },
+    { id: 'player-2', name: 'Алина', kind: 'human' },
+    { id: 'player-3', name: 'Алина', kind: 'human' },
+  ]
+  const cg = createGame({ playerCount: 3, seed: -1 }, players)
+  const sg = startGame(cg)
+  expect(sg.firstPlayerId).toBe('player-3')
+  expect(() => createGame({ playerCount: 3, seed: NaN }, players)).toThrow('Seed must be a safe integer')
+  expect(() => createGame({ playerCount: 3, seed: Infinity }, players)).toThrow('Seed must be a safe integer')
+  expect(() => createGame({ playerCount: 3, seed: 9007199254740992 },players)).toThrow('Seed must be a safe integer')
+  expect(() => createGame({ playerCount: 3, seed: 42.32 },players)).toThrow('Seed must be a safe integer')
+})
+
+it('каждый ID игрока достижим подходящим seed', () => {
+  const players: PlayerState[] = [
+    { id: 'player-1', name: 'Алина', kind: 'human' },
+    { id: 'player-2', name: 'Алина', kind: 'human' },
+    { id: 'player-3', name: 'Алина', kind: 'human' },
+  ]
+
+  const firstPlayersSelected: Set<string> = new Set()
+
+  for (let seed = 0; seed < 10; seed++) {
+    const cg = createGame({ playerCount: 3, seed }, players)
+    const sg = startGame(cg)
+
+    firstPlayersSelected.add(sg.firstPlayerId)
+  }
+
+  expect(firstPlayersSelected.size).toBe(players.length)
+
+  expect(firstPlayersSelected.has('player-1')).toBe(true)
+  expect(firstPlayersSelected.has('player-2')).toBe(true)
+  expect(firstPlayersSelected.has('player-3')).toBe(true)
+})
+
+it('переходы хода и увеличение раунда при первом игроке, отличном от players[0]', () => {
+  const players: PlayerState[] = [
+    { id: 'player-1', name: 'Алина', kind: 'human' },
+    { id: 'player-2', name: 'Алина', kind: 'human' },
+    { id: 'player-3', name: 'Алина', kind: 'human' },
+  ]
+  const conf: GameConfig = { playerCount: 3, seed: 1 }
+    const cg = createGame(conf, players)
+    const sg = startGame(cg)
+    const at1 = advanceTurn(sg)
+    const at2 = advanceTurn(at1)
+    const at3 = advanceTurn(at2)
+
+    expect(sg.round).toBe(1)
+    expect(sg.firstPlayerId).toBe('player-2')
+    expect(sg.activePlayerId).toBe('player-2')
+    expect(at1.round).toBe(1)
+    expect(at1.firstPlayerId).toBe('player-2')
+    expect(at1.activePlayerId).toBe('player-3')
+    expect(at2.round).toBe(1)
+    expect(at2.firstPlayerId).toBe('player-2')
+    expect(at2.activePlayerId).toBe('player-1')
+    expect(at3.round).toBe(2)
+    expect(at3.firstPlayerId).toBe('player-2')
+    expect(at3.activePlayerId).toBe('player-2')
 })

@@ -91,6 +91,10 @@ export function createGame(
     throw new Error('Player count must match config.playerCount')
   }
 
+  if (!Number.isSafeInteger(config.seed)) {
+    throw new Error('Seed must be a safe integer');
+  }
+
   const hasDuplicates = new Set(players.map(item => item.id)).size !== players.length;
 
   if(hasDuplicates) {
@@ -122,17 +126,18 @@ export function startGame(state: GameState): RegularPlayGameState {
 
   if(state.phase !== 'setup') throw new Error('Game can only be started from setup')
 
+  const seedNumber = state.config.seed
+  const playerIndex = ((seedNumber % state.players.length) + state.players.length) % state.players.length
+  const firstPlayerId = state.players[playerIndex]!.id
+
   return Object.freeze({
-    id: state.id,
+    ...state,
     status: 'in_progress',
     phase: 'regular_play',
     round: 1,
-    activePlayerId: state.players[0]!.id,
-    config: state.config,
-    players: state.players,
-    firstPlayerId: state.players[0]!.id
-
-  })
+    activePlayerId: firstPlayerId,
+    firstPlayerId: firstPlayerId,
+  });
 }
 
 export function advanceTurn(state: RegularPlayGameState): RegularPlayGameState
