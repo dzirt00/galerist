@@ -8,6 +8,12 @@ export type EndingSequenceGameState =
   | EndingCurrentRoundGameState
   | FinalRoundGameState
   | FinalScoringGameState
+
+export interface PlayerConfig {
+  readonly id: PlayerId
+  readonly name: string
+  readonly kind: PlayerKind
+}
 export interface GameStateBase {
   readonly id: GameId
   readonly config: Readonly<GameConfig>
@@ -74,6 +80,8 @@ export interface PlayerState {
   readonly id: PlayerId
   readonly name: string
   readonly kind: PlayerKind
+  readonly coins: number
+  readonly influence: number
 }
 
 export type GameState = RegularPlayGameState
@@ -85,7 +93,7 @@ export type GameState = RegularPlayGameState
 
 export function createGame(
   config: GameConfig,
-  players: readonly PlayerState[],
+  players: readonly PlayerConfig[],
 ): SetupGameState {
   if (players.length !== config.playerCount) {
     throw new Error('Player count must match config.playerCount')
@@ -103,11 +111,13 @@ export function createGame(
 
   const newPlayers: PlayerState[] = []
 
-  players.forEach((player: PlayerState) => {
+  players.forEach((player: PlayerConfig) => {
     newPlayers.push(Object.freeze({
       id: player.id,
       name: player.name,
       kind: player.kind,
+      coins: 10,
+      influence: 10,
     }))
   })
 

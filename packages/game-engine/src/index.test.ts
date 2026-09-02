@@ -1,5 +1,15 @@
 import { expect, it } from 'vitest'
-import { createGame ,startGame, advanceTurn, type EndingSequenceGameState, type GameConfig, type GameState, type PlayerState, type FinishedGameState, triggerGameEnd, type SetupGameState } from './index.js'
+import { createGame ,startGame, advanceTurn, type PlayerConfig, type EndingSequenceGameState, type GameConfig, type GameState, type PlayerState, type FinishedGameState, triggerGameEnd, type SetupGameState } from './index.js'
+
+const players: PlayerState[] = [
+  { id: 'player-1', name: 'Алина', kind: 'human', coins: 10, influence: 10 },
+  { id: 'player-2', name: 'Алина', kind: 'human', coins: 10, influence: 10 },
+]
+const players3: PlayerState[] = [
+  { id: 'player-1', name: 'Алина1', kind: 'human', coins: 10, influence: 10 },
+  { id: 'player-2', name: 'Алина2', kind: 'human', coins: 10, influence: 10 },
+  { id: 'player-3', name: 'Алина3', kind: 'human', coins: 10, influence: 10 },
+]
 
 const stateConst: GameState = {
   id: 'game-1',
@@ -12,15 +22,28 @@ const stateConst: GameState = {
     seed: 42,
   },
   players: [
-    { id: 'player-1', name: 'Алина', kind: 'human' },
-    { id: 'player-2', name: 'Бот', kind: 'bot' },
+    { id: 'player-1', name: 'Алина', kind: 'human', coins: 10, influence: 10 },
+    { id: 'player-2', name: 'Бот', kind: 'bot', coins: 10, influence: 10 },
   ],
 }
 
 const configConst: GameConfig = { playerCount: 2, seed: 42 }
-const playerConst: PlayerState[] = [
+const playerConfig2: PlayerConfig[] = [
   { id: 'player-1', name: 'Алина', kind: 'human' },
   { id: 'player-2', name: 'Бот', kind: 'bot' },
+]
+
+const playerConfig3: PlayerConfig[] = [
+  { id: 'player-1', name: 'Алина', kind: 'human' },
+  { id: 'player-2', name: 'Бот', kind: 'bot' },
+  { id: 'player-3', name: 'Бот', kind: 'bot' },
+]
+
+const playerConfig4: PlayerConfig[] = [
+  { id: 'player-1', name: 'Алина', kind: 'human' },
+  { id: 'player-2', name: 'Бот', kind: 'bot' },
+  { id: 'player-3', name: 'Бот', kind: 'bot' },
+  { id: 'player-4', name: 'Бот', kind: 'bot' },
 ]
 
 function advanceAndExpectTurns(
@@ -102,7 +125,7 @@ function expectEndingTurns(
 
 
 it('createGame is frozen', () =>{
-  const state = createGame( configConst, playerConst )
+  const state = createGame( configConst, playerConfig2 )
   let sg = startGame(state)
   const sgClone = structuredClone(sg)
 
@@ -119,7 +142,10 @@ it('finish game', () => {
   const state: FinishedGameState = {
     id: 'game-1',
     config: configConst,
-    players:  playerConst,
+    players: [
+      { id: 'player-1', name: 'Алина', kind: 'human', coins: 10, influence: 10 },
+      { id: 'player-2', name: 'Алина', kind: 'human', coins: 10, influence: 10 },
+    ],
     phase: 'finished',
     status: 'finished',
     round: 0,
@@ -134,7 +160,7 @@ it('finish game', () => {
 })
 
 it( 'creates a deterministic initial game', () => {
-  const state = createGame( configConst, playerConst )
+  const state = createGame( configConst, playerConfig2 )
 
   expect( state ).toMatchObject( {
     id: 'game-42',
@@ -156,57 +182,45 @@ it( 'rejects a player count that differs from the configuration', () => {
 } )
 
 it('keeps its own player list', () => {
-  const players: PlayerState[] = [
+  const playersLocal: PlayerConfig[] = [
     { id: 'player-1', name: 'Алина', kind: 'human' },
     { id: 'player-2', name: 'Алина', kind: 'human' }
   ]
-  const player: PlayerState =  { id: 'player-3', name: 'Алина', kind: 'human' }
+  const playerLocal: PlayerConfig = { id: 'player-3', name: 'Алина', kind: 'human' }
 
-  const state = createGame({ playerCount: 2, seed: 42 }, players)
-  players.push(player)
+  const state = createGame( { playerCount: 2, seed: 42 }, playersLocal )
+  playersLocal.push( playerLocal )
   expect(state.players).toHaveLength(2)
   expect(state.players.some(val => val.id === 'player-3')).toBe(false)
 })
 
 it( 'prevents changes to the state-owned player list', () => {
-  const players: PlayerState[] = [
-    { id: 'player-1', name: 'Алина', kind: 'human' },
-    { id: 'player-2', name: 'Алина', kind: 'human' },
-  ]
   const player: PlayerState = {
     id: 'player-3',
     name: 'Алина',
     kind: 'human',
+    coins: 10,
+    influence: 10
   }
-
-  const state = createGame( { playerCount: 2, seed: 42 }, players )
+  const state = createGame( { playerCount: 2, seed: 42 }, playerConfig2 )
 
   expect( () => ( state.players as PlayerState[] ).push( player ) ).toThrow()
   expect( state.players ).toHaveLength( 2 )
 })
 
 it( 'keeps its own game configuration', () => {
-  const players: PlayerState[] = [
-    { id: 'player-1', name: 'Алина', kind: 'human' },
-    { id: 'player-2', name: 'Алина', kind: 'human' },
-  ]
   const conf: GameConfig = { playerCount: 2, seed: 42 }
-
-  const state = createGame( conf, players )
+  const state = createGame( conf, playerConfig2 )
   Object.assign(conf, { playerCount: 4, seed: 421 })
-
   expect(state.config).toEqual({ playerCount: 2, seed: 42 })
 })
 
 it( 'prevents changes to the state-config', () => {
-  const players: PlayerState[] = [
-    { id: 'player-1', name: 'Алина', kind: 'human' },
-    { id: 'player-2', name: 'Алина', kind: 'human' },
-  ]
+
   const conf: GameConfig = { playerCount: 2, seed: 42 }
   const confEdit: GameConfig = { playerCount: 3, seed: 55 }
 
-  const state = createGame( conf, players )
+  const state = createGame( conf, playerConfig2 )
 
   expect( () => Object.assign( state.config as GameConfig, confEdit)).toThrow()
   expect(state.config).toEqual({ playerCount: 2, seed: 42 })
@@ -215,7 +229,7 @@ it( 'prevents changes to the state-config', () => {
 it( 'name no change', () => {
   type Mutable<T> = { -readonly [K in keyof T]: T[K] }
   const conf: GameConfig = { playerCount: 2, seed: 42 }
-  const players: Mutable<PlayerState>[] = [
+  const players: Mutable<PlayerConfig>[] = [
     { id: 'player-1', name: 'Алина1', kind: 'human' },
     { id: 'player-2', name: 'Алина2', kind: 'human' },
   ]
@@ -226,7 +240,7 @@ it( 'name no change', () => {
 })
 
 it( 'should throw an error when players have duplicate IDs', () => {
-  const players: PlayerState[] = [
+  const players: PlayerConfig[] = [
     { id: 'player-1', name: 'Алина1', kind: 'human' },
     { id: 'player-1', name: 'Алина2', kind: 'human' },
   ]
@@ -237,7 +251,7 @@ it( 'should throw an error when players have duplicate IDs', () => {
 
 
 it('prohibition on modifying the player object.', () => {
-  const players: PlayerState[] = [
+  const players: PlayerConfig[] = [
     { id: 'player-1', name: 'Алина1', kind: 'human' },
     { id: 'player-2', name: 'Алина2', kind: 'human' },
   ]
@@ -246,32 +260,27 @@ it('prohibition on modifying the player object.', () => {
 
   const game = createGame(conf, players)
 
-  expect(() => {(game.players[0] as any).name = 'Алина3'}).toThrow(Error)
+  expect( () => {
+    ( game.players[ 0 ] as any ).name = 'Алина3'
+  } ).toThrow( Error )
   expect(game.players[0]!.name).toBe('Алина1')
 })
 
 it('you can\'t change the round from outside', () => {
-  const players: PlayerState[] = [
-    { id: 'player-1', name: 'Алина1', kind: 'human' },
-    { id: 'player-2', name: 'Алина2', kind: 'human' },
-  ]
-
   const conf: GameConfig = { playerCount: 2, seed: 42 }
 
-  const game = createGame(conf, players)
+  const game = createGame( conf, playerConfig2 )
 
-  expect(() => {(game.round as any) = 1}).toThrow(Error)
+  expect( () => {
+    ( game.round as any ) = 1
+  } ).toThrow( Error )
   expect(game.round).toBe(0)
 })
 
 it('startGame is const? no mutation', () => {
-  const players: PlayerState[] = [
-    { id: 'player-1', name: 'Алина1', kind: 'human' },
-    { id: 'player-2', name: 'Алина2', kind: 'human' },
-  ]
 
   const conf: GameConfig = { playerCount: 2, seed: 42 }
-  const game = createGame(conf, players)
+  const game = createGame( conf, playerConfig2 )
   const sg = startGame(game)
 
   expect(game.status).toBe('setup')
@@ -292,13 +301,9 @@ it('startGame is const? no mutation', () => {
 })
 
 it('activePlayerId next active player, round is const', () => {
-  const players: PlayerState[] = [
-    { id: 'player-1', name: 'Алина1', kind: 'human' },
-    { id: 'player-2', name: 'Алина2', kind: 'human' },
-  ]
 
   const conf: GameConfig = { playerCount: 2, seed: 42 }
-  const game = createGame(conf, players)
+  const game = createGame( conf, playerConfig2 )
   const sg = startGame(game)
 
   let nextStep = advanceTurn(sg)
@@ -311,13 +316,9 @@ it('activePlayerId next active player, round is const', () => {
 })
 
 it('next round, activePlayerId first player', () => {
-  const players: PlayerState[] = [
-    { id: 'player-1', name: 'Алина1', kind: 'human' },
-    { id: 'player-2', name: 'Алина2', kind: 'human' },
-  ]
 
   const conf: GameConfig = { playerCount: 2, seed: 42 }
-  const game = createGame(conf, players)
+  const game = createGame( conf, playerConfig2 )
   const sg = startGame(game)
 
   const nextStep1 = advanceTurn(sg)
@@ -328,20 +329,17 @@ it('next round, activePlayerId first player', () => {
   expect(nextStep1.round).toBe(1);
   expect(nextStep2.round).toBe(2);
   expect(nextStep1).not.toBe(nextStep2);
-  expect(() => {(nextStep2 as any).round = 3;}).toThrow();
+  expect( () => {
+    ( nextStep2 as any ).round = 3;
+  } ).toThrow();
 
   expect(nextStep2.round).toBe(2);
 })
 
 it('3 players ,next round, activePlayerId first player', () => {
-  const players: PlayerState[] = [
-    { id: 'player-1', name: 'Алина1', kind: 'human' },
-    { id: 'player-2', name: 'Алина2', kind: 'human' },
-    { id: 'player-3', name: 'Алина3', kind: 'human' },
-  ]
 
   const conf: GameConfig = { playerCount: 3, seed: 42 }
-  const game = createGame(conf, players)
+  const game = createGame( conf, playerConfig3 )
   const sg = startGame(game)
 
   advanceAndExpectTurns(sg, [
@@ -355,15 +353,9 @@ it('3 players ,next round, activePlayerId first player', () => {
 })
 
 it('4 players ,next round, activePlayerId first player', () => {
-  const players: PlayerState[] = [
-    { id: 'player-1', name: 'Алина1', kind: 'human' },
-    { id: 'player-2', name: 'Алина2', kind: 'human' },
-    { id: 'player-3', name: 'Алина3', kind: 'human' },
-    { id: 'player-4', name: 'Алина4', kind: 'human' },
-  ]
 
   const conf: GameConfig = { playerCount: 4, seed: 4 }
-  const game = createGame(conf, players)
+  const game = createGame( conf, playerConfig4 )
   const sg = startGame(game)
 
   advanceAndExpectTurns(sg, [
@@ -381,10 +373,7 @@ it('4 players ,next round, activePlayerId first player', () => {
 it('advanceTurn status only progress, now setup', () => {
   const state = createGame(
     { playerCount: 2, seed: 42 },
-    [
-      { id: 'player-1', name: 'Алина', kind: 'human' },
-      { id: 'player-2', name: 'Бот', kind: 'bot' },
-    ],
+    playerConfig2,
   )
   const stateCLone = structuredClone(state)
   expect(() => advanceTurn(state)).toThrow('Turns can only be advanced while game is in progress')
@@ -404,10 +393,7 @@ it('advanceTurn status only progress, now finished', () => {
       playerCount: 2,
       seed: 42,
     },
-    players: [
-      { id: 'player-1', name: 'Алина', kind: 'human' },
-      { id: 'player-2', name: 'Бот', kind: 'bot' },
-    ],
+    players: players,
     endTriggeredRound: 0
   }
   const stateCLone = structuredClone(state)
@@ -423,10 +409,7 @@ it('triggerGameEnd creates a frozen new state without mutating input', () => {
     round: 10,
     activePlayerId: 'player-1',
     config: { playerCount: 2, seed: 42 },
-    players: [
-      { id: 'player-1', name: 'Алина', kind: 'human' },
-      { id: 'player-2', name: 'Бот', kind: 'bot' },
-    ],
+    players: players,
     firstPlayerId: 'player-2',
   }
   const stateBefore = structuredClone(state)
@@ -456,10 +439,7 @@ it('advanceTurn rejects a null activePlayerId', () => {
     round: 0,
     activePlayerId: null,
     config: { playerCount: 2, seed: 42 },
-    players: [
-      { id: 'player-1', name: 'Алина', kind: 'human' },
-      { id: 'player-2', name: 'Бот', kind: 'bot' },
-    ],
+    players: players,
     firstPlayerId: 'player-1',
   }
   const stateBefore = structuredClone(state)
@@ -471,7 +451,6 @@ it('advanceTurn rejects a null activePlayerId', () => {
 })
 
 
-
 it(' should return a new frozen state and preserve the original state', () => {
   const initialState: GameState = {
     id: 'game-1',
@@ -480,10 +459,7 @@ it(' should return a new frozen state and preserve the original state', () => {
     round: 1,
     activePlayerId: 'player-1',
     config: { playerCount: 2, seed: 42 },
-    players: [
-      { id: 'player-1', name: 'Алина', kind: 'human' },
-      { id: 'player-2', name: 'Бот', kind: 'bot' },
-    ],
+    players: players,
     firstPlayerId: 'player-1',
   };
 
@@ -508,10 +484,7 @@ it('advanceTurn activePlayerId random name', () => {
       playerCount: 2,
       seed: 42,
     },
-    players: [
-      { id: 'player-1', name: 'Алина', kind: 'human' },
-      { id: 'player-2', name: 'Бот', kind: 'bot' },
-    ],
+    players: players,
     firstPlayerId: 'player-1',
   }
 
@@ -531,10 +504,7 @@ it('advanceTurn phase:setup error', () => {
       playerCount: 2,
       seed: 42,
     },
-    players: [
-      { id: 'player-1', name: 'Алина', kind: 'human' },
-      { id: 'player-2', name: 'Бот', kind: 'bot' },
-    ],
+    players: players,
     firstPlayerId: 'player-1',
   }
 
@@ -554,10 +524,7 @@ it('advanceTurn phase:regular_play', () => {
       playerCount: 2,
       seed: 42,
     },
-    players: [
-      { id: 'player-1', name: 'Алина', kind: 'human' },
-      { id: 'player-2', name: 'Бот', kind: 'bot' },
-    ],
+    players: players,
     firstPlayerId: 'player-1'
   }
 
@@ -570,7 +537,7 @@ it('advanceTurn phase:regular_play', () => {
 })
 
 it('startGame phase:regular_play', () => {
-  const state = createGame(configConst, playerConst)
+  const state = createGame( configConst, playerConfig2 )
   const sg = startGame(state)
 
   expect(sg.status).toBe('in_progress')
@@ -591,10 +558,7 @@ it(' EndingCurrentRoundGameState ending_current_round', () => {
       playerCount: 2,
       seed: 42,
     },
-    players: [
-      { id: 'player-1', name: 'Алина', kind: 'human' },
-      { id: 'player-2', name: 'Бот', kind: 'bot' },
-    ],
+    players: players,
     firstPlayerId: 'player-1',
     endTriggeredRound: 1
   }
@@ -617,10 +581,7 @@ it('phase: final_scoring error', () => {
       playerCount: 2,
       seed: 42,
     },
-    players: [
-      { id: 'player-1', name: 'Алина', kind: 'human' },
-      { id: 'player-2', name: 'Бот', kind: 'bot' },
-    ],
+    players: players,
     firstPlayerId: 'player-1',
     endTriggeredRound: 1
   }
@@ -641,8 +602,8 @@ it('activePlayerId and firstPlayerId', () => {
       seed: 42,
     },
     players: [
-      { id: 'player-1', name: 'Алина', kind: 'human' },
-      { id: 'player-2', name: 'Бот', kind: 'bot' },
+      { id: 'player-1', name: 'Алина', kind: 'human', coins: 10, influence: 10 },
+      { id: 'player-2', name: 'Бот', kind: 'bot', coins: 10, influence: 10 },
     ],
     firstPlayerId: 'player-2',
   }
@@ -668,10 +629,7 @@ it('final_round advanceTurn', () => {
       playerCount: 2,
       seed: 42,
     },
-    players: [
-      { id: 'player-1', name: 'Алина', kind: 'human' },
-      { id: 'player-2', name: 'Бот', kind: 'bot' },
-    ],
+    players: players,
     firstPlayerId: 'player-2',
     endTriggeredRound: 2
   }
@@ -693,10 +651,7 @@ it('triggerGameEnd, is regular_play', () => {
       playerCount: 2,
       seed: 42,
     },
-    players: [
-      { id: 'player-1', name: 'Алина', kind: 'human' },
-      { id: 'player-2', name: 'Бот', kind: 'bot' },
-    ],
+    players: players,
     firstPlayerId: 'player-2',
   }
 
@@ -715,7 +670,7 @@ it('triggerGameEnd, is regular_play', () => {
 })
 
 it('triggerGameEnd rejects a repeated call', () => {
-  const regularState = startGame(createGame(configConst, playerConst))
+  const regularState = startGame( createGame( configConst, playerConfig2 ) )
   const endingState = triggerGameEnd(regularState)
   const endingStateBefore = structuredClone(endingState)
 
@@ -734,11 +689,7 @@ it('final_scoring, all round', () => {
       playerCount: 3,
       seed: 42,
     },
-    players: [
-      { id: 'player-1', name: 'Алина', kind: 'human' },
-      { id: 'player-2', name: 'Бот', kind: 'bot' },
-      { id: 'player-3', name: 'Бот', kind: 'bot' },
-    ],
+    players: players3,
     firstPlayerId: 'player-1',
   }
 
@@ -772,11 +723,7 @@ it('final_scoring, all round firstPlayerId: player-2 activePlayerId: player-1', 
       playerCount: 3,
       seed: 42,
     },
-    players: [
-      { id: 'player-1', name: 'Алина', kind: 'human' },
-      { id: 'player-2', name: 'Бот', kind: 'bot' },
-      { id: 'player-3', name: 'Бот', kind: 'bot' },
-    ],
+    players: players3,
     firstPlayerId: 'player-2',
   }
 
@@ -806,11 +753,7 @@ it('final_scoring, all round firstPlayerId: player-2 activePlayerId: player-3', 
       playerCount: 3,
       seed: 42,
     },
-    players: [
-      { id: 'player-1', name: 'Алина', kind: 'human' },
-      { id: 'player-2', name: 'Бот', kind: 'bot' },
-      { id: 'player-3', name: 'Бот', kind: 'bot' },
-    ],
+    players: players3,
     firstPlayerId: 'player-3',
   }
 
@@ -832,7 +775,7 @@ it('final_scoring, all round firstPlayerId: player-2 activePlayerId: player-3', 
 })
 
 it('final_scoring, all round firstPlayerId: player-2 activePlayerId: player-3', () => {
-  const state: SetupGameState = createGame(configConst,playerConst)
+  const state: SetupGameState = createGame( configConst, playerConfig2 )
   expect(() => triggerGameEnd(state)).toThrow('Only regular_play')
 })
 
@@ -844,11 +787,7 @@ it.each([
 ])('выбирает $expectedPlayer при seed: $seed', ({ seed, expectedPlayer }) => {
   const cg = createGame(
     { playerCount: 3, seed },
-    [
-      { id: 'player-1', name: 'Алина', kind: 'human' },
-      { id: 'player-2', name: 'Алина', kind: 'human' },
-      { id: 'player-3', name: 'Алина', kind: 'human' },
-    ]
+    playerConfig3
   )
   const sg = startGame(cg)
 
@@ -857,53 +796,40 @@ it.each([
 })
 
 it('выбирает одного и того же игрока при одинаковом seed', () => {
-  const players: PlayerState[] = [
-    { id: 'player-1', name: 'Алина', kind: 'human' },
-    { id: 'player-2', name: 'Алина', kind: 'human' },
-    { id: 'player-3', name: 'Алина', kind: 'human' },
-  ]
 
-  const cg1 = createGame({ playerCount: 3, seed: 42 }, players)
+
+  const cg1 = createGame( { playerCount: 3, seed: 42 }, playerConfig3 )
   const sg1 = startGame(cg1)
 
-  const cg2 = createGame({ playerCount: 3, seed: 42 }, players)
+  const cg2 = createGame( { playerCount: 3, seed: 42 }, playerConfig3 )
   const sg2 = startGame(cg2)
 
   expect(sg1.firstPlayerId).toBe(sg2.firstPlayerId)
 })
 
 it('проверка невалидных значений в seed', () => {
-  const players: PlayerState[] = [
-    { id: 'player-1', name: 'Алина', kind: 'human' },
-    { id: 'player-2', name: 'Алина', kind: 'human' },
-    { id: 'player-3', name: 'Алина', kind: 'human' },
-  ]
-  const cg = createGame({ playerCount: 3, seed: -1 }, players)
+
+  const cg = createGame( { playerCount: 3, seed: -1 }, playerConfig3 )
   const sg = startGame(cg)
   expect(sg.firstPlayerId).toBe('player-3')
-  expect(() => createGame({ playerCount: 3, seed: NaN }, players)).toThrow('Seed must be a safe integer')
-  expect(() => createGame({ playerCount: 3, seed: Infinity }, players)).toThrow('Seed must be a safe integer')
-  expect(() => createGame({ playerCount: 3, seed: 9007199254740992 },players)).toThrow('Seed must be a safe integer')
-  expect(() => createGame({ playerCount: 3, seed: 42.32 },players)).toThrow('Seed must be a safe integer')
+  expect( () => createGame( { playerCount: 3, seed: NaN }, playerConfig3 ) ).toThrow( 'Seed must be a safe integer' )
+  expect( () => createGame( { playerCount: 3, seed: Infinity }, playerConfig3 ) ).toThrow( 'Seed must be a safe integer' )
+  expect( () => createGame( { playerCount: 3, seed: 9007199254740992 }, playerConfig3 ) ).toThrow( 'Seed must be a safe integer' )
+  expect( () => createGame( { playerCount: 3, seed: 42.32 }, playerConfig3 ) ).toThrow( 'Seed must be a safe integer' )
 })
 
 it('каждый ID игрока достижим подходящим seed', () => {
-  const players: PlayerState[] = [
-    { id: 'player-1', name: 'Алина', kind: 'human' },
-    { id: 'player-2', name: 'Алина', kind: 'human' },
-    { id: 'player-3', name: 'Алина', kind: 'human' },
-  ]
 
   const firstPlayersSelected: Set<string> = new Set()
 
   for (let seed = 0; seed < 10; seed++) {
-    const cg = createGame({ playerCount: 3, seed }, players)
+    const cg = createGame( { playerCount: 3, seed }, playerConfig3 )
     const sg = startGame(cg)
 
     firstPlayersSelected.add(sg.firstPlayerId)
   }
 
-  expect(firstPlayersSelected.size).toBe(players.length)
+  expect( firstPlayersSelected.size ).toBe( playerConfig3.length )
 
   expect(firstPlayersSelected.has('player-1')).toBe(true)
   expect(firstPlayersSelected.has('player-2')).toBe(true)
@@ -911,13 +837,9 @@ it('каждый ID игрока достижим подходящим seed', ()
 })
 
 it('переходы хода и увеличение раунда при первом игроке, отличном от players[0]', () => {
-  const players: PlayerState[] = [
-    { id: 'player-1', name: 'Алина', kind: 'human' },
-    { id: 'player-2', name: 'Алина', kind: 'human' },
-    { id: 'player-3', name: 'Алина', kind: 'human' },
-  ]
+
   const conf: GameConfig = { playerCount: 3, seed: 1 }
-    const cg = createGame(conf, players)
+  const cg = createGame( conf, playerConfig3 )
     const sg = startGame(cg)
     const at1 = advanceTurn(sg)
     const at2 = advanceTurn(at1)
@@ -935,4 +857,127 @@ it('переходы хода и увеличение раунда при пер
     expect(at3.round).toBe(2)
     expect(at3.firstPlayerId).toBe('player-2')
     expect(at3.activePlayerId).toBe('player-2')
+})
+
+type TestPlayerConfig = PlayerConfig & {
+  readonly coins: number
+  readonly influence: number
+}
+
+interface InitialResourceCase {
+  readonly config: GameConfig
+  readonly numPlayers: readonly PlayerConfig[]
+}
+
+const playerConfigsWithResources: readonly TestPlayerConfig[] = [
+  { id: 'player-1', name: 'Алина', kind: 'human', coins: 110, influence: 1230 },
+  { id: 'player-2', name: 'Бот', kind: 'bot', coins: 11440, influence: 130 },
+  { id: 'player-3', name: 'Бот', kind: 'bot', coins: 1510, influence: 104 },
+  { id: 'player-4', name: 'Бот', kind: 'bot', coins: 1140, influence: 110 },
+]
+
+const initialResourceCases: readonly InitialResourceCase[] = [
+  { config: { playerCount: 2, seed: 1 }, numPlayers: playerConfig2 },
+  { config: { playerCount: 3, seed: -5 }, numPlayers: playerConfig3 },
+  { config: { playerCount: 4, seed: 1233 }, numPlayers: playerConfig4 },
+  {
+    config: { playerCount: 4, seed: 1232313 },
+    numPlayers: playerConfigsWithResources,
+  },
+]
+
+it.each(initialResourceCases)(
+  'выбирает количество игроков, сохраняет их данные, порядок, проверяет ресурсы и неизменность входа',
+  ({ config, numPlayers }) => {
+    const configSnapshot = structuredClone(config)
+    const numPlayersSnapshot = structuredClone(numPlayers)
+
+    const cg = createGame(config, numPlayers)
+    const sg = startGame(cg)
+    const at1 = advanceTurn(sg)
+
+    expect(Object.isFrozen(cg.config)).toBe(true)
+    expect(Object.isFrozen(cg.players)).toBe(true)
+    expect(Object.isFrozen(cg)).toBe(true)
+
+    cg.players.forEach(player => {
+      expect(Object.isFrozen(player)).toBe(true)
+    })
+    expect(cg.players).toHaveLength(numPlayers.length)
+
+    const states = [cg, sg, at1]
+    const expectedMeta = numPlayers.map(({ id, name, kind }) => ({ id, name, kind }))
+
+    states.forEach(gameState => {
+      const actualMeta = gameState.players.map(({ id, name, kind }) => ({ id, name, kind }))
+      expect(actualMeta).toEqual(expectedMeta)
+      gameState.players.forEach(player => {
+        expect(player.coins).toBe(10)
+        expect(player.influence).toBe(10)
+      })
+    })
+
+    expect(config).toEqual(configSnapshot)
+    expect(numPlayers).toEqual(numPlayersSnapshot)
+  },
+)
+
+it('влияние и монеты не изменяются с раундами', () => {
+  const cgCustom: SetupGameState = {
+    id: `game-1`,
+    status: 'setup',
+    round: 0,
+    activePlayerId: null,
+    config: Object.freeze({ playerCount: 4, seed: 2543 }),
+    players: Object.freeze([
+      {
+        id: 'player-1',
+        name: 'Алина1',
+        kind: 'human',
+        coins: 18,
+        influence: 15
+      },
+      {
+        id: 'player-2',
+        name: 'Алина2',
+        kind: 'human',
+        coins: 51,
+        influence: 9
+      },
+      {
+        id: 'player-3',
+        name: 'Алина1',
+        kind: 'human',
+        coins: 61,
+        influence: 23
+      },
+      {
+        id: 'player-4',
+        name: 'Алина',
+        kind: 'human',
+        coins: 31,
+        influence: 22
+      },
+    ]),
+    phase: 'setup'
+  }
+  const snapshot = structuredClone(cgCustom)
+  const sg = startGame(cgCustom)
+  const at1 = advanceTurn(sg)
+  const tg = triggerGameEnd(at1)
+  const at2 = advanceTurn(tg)
+  const at3 = advanceTurn(at2)
+  const at4 = advanceTurn(at3)
+  const at5 = advanceTurn(at4)
+  const at6 = advanceTurn(at5)
+  const at7 = advanceTurn(at6)
+  const at8 = advanceTurn(at7)
+
+  const states = [sg, at1, tg, at2, at3, at4, at5, at6, at7, at8]
+  states.forEach(state => {
+    expect(state.players).toEqual(snapshot.players)
+    expect(state.players).toBe(cgCustom.players)
+  })
+  expect(cgCustom).toEqual(snapshot)
+  expect(at8.phase).toBe('final_scoring')
 })
