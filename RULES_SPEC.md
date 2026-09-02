@@ -78,6 +78,7 @@
 - **События:** `GameCreated` после успешной полной подготовки.
 - **Проверки:** принять 2/3/4 места; отклонить другое число и несовпадение конфигурации со списком.
 - **Статус:** `spec: approved` · `implementation: yes` · `tests: yes`.
+- **Трассировка:** runtime-проверка допустимых значений и совпадения со списком игроков в `createGame` в [модуле движка](packages/game-engine/src/index.ts); [тесты](packages/game-engine/src/index.test.ts): параметризованные `отклоняет согласованную конфигурацию на $playerCount игроков`, `принимает допустимую конфигурацию на %i игроков` и `rejects a player count that differs from the configuration`.
 
 ### CORE-002 — Ограниченность компонентов
 

@@ -981,3 +981,28 @@ it('влияние и монеты не изменяются с раундами
   expect(cgCustom).toEqual(snapshot)
   expect(at8.phase).toBe('final_scoring')
 })
+
+it.each([1, 5])('отклоняет согласованную конфигурацию на $playerCount игроков', playerCount => {
+  const config = { playerCount, seed: 42 } as unknown as GameConfig
+  const matchingPlayers = Array.from(
+    { length: playerCount },
+    (_, index): PlayerConfig => ({
+      id: `player-${index + 1}`,
+      name: `Игрок ${index + 1}`,
+      kind: 'human',
+    }),
+  )
+
+  expect(() => createGame(config, matchingPlayers)).toThrow('Player count must be 2, 3, or 4')
+})
+
+it.each([
+  [2, playerConfig2],
+  [3, playerConfig3],
+  [4, playerConfig4],
+] as const)('принимает допустимую конфигурацию на %i игроков', (playerCount, matchingPlayers) => {
+  const game = createGame({ playerCount, seed: 42 }, matchingPlayers)
+
+  expect(game.config.playerCount).toBe(playerCount)
+  expect(game.players).toHaveLength(playerCount)
+})

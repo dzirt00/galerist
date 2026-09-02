@@ -95,6 +95,10 @@ export function createGame(
   config: GameConfig,
   players: readonly PlayerConfig[],
 ): SetupGameState {
+  if (config.playerCount !== 2 && config.playerCount !== 3 && config.playerCount !== 4) {
+    throw new Error('Player count must be 2, 3, or 4')
+  }
+
   if (players.length !== config.playerCount) {
     throw new Error('Player count must match config.playerCount')
   }
