@@ -1,6 +1,60 @@
 export type GameId = string
 export type PlayerId = string
 
+export interface MovementCommand {
+  readonly category: 'movement'
+}
+
+export interface LocationActionCommand {
+  readonly category: 'location_action'
+}
+
+export interface ManagementActionCommand {
+  readonly category: 'management_action'
+}
+
+export type ManagementTiming =
+  | 'before_location'
+  | 'after_location'
+
+export interface TimedManagementAction {
+  readonly timing: ManagementTiming
+  readonly command: ManagementActionCommand
+}
+
+export interface TurnDraft {
+  readonly playerId: PlayerId
+  readonly movement?: MovementCommand
+  readonly locationAction?: LocationActionCommand
+  readonly management?: TimedManagementAction
+}
+
+export type TurnDraftEdit =
+  | {
+      readonly type: 'set_movement'
+      readonly movement: MovementCommand
+    }
+  | {
+      readonly type: 'set_location_action'
+      readonly locationAction: LocationActionCommand
+    }
+  | {
+      readonly type: 'set_management_action'
+      readonly timing: ManagementTiming
+      readonly managementAction: ManagementActionCommand
+    }
+  | {
+      readonly type: 'clear_management_action'
+    }
+
+export interface ConfirmedTurnCommand {
+  readonly type: 'perform_turn'
+  readonly playerId: PlayerId
+  readonly movement: MovementCommand
+  readonly locationAction: LocationActionCommand
+  readonly management?: TimedManagementAction
+}
+
 export type GameStatus = 'setup' | 'in_progress' | 'finished'
 export type PlayerKind = 'human' | 'bot'
 export type GamePhase = 'setup'| 'regular_play' | 'ending_current_round' | 'final_round' | 'final_scoring' | 'finished'
@@ -14,6 +68,7 @@ export interface PlayerConfig {
   readonly name: string
   readonly kind: PlayerKind
 }
+
 export interface GameStateBase {
   readonly id: GameId
   readonly config: Readonly<GameConfig>
@@ -250,4 +305,86 @@ export function triggerGameEnd(state: GameState): EndingCurrentRoundGameState {
 
   return Object.freeze(res)
 
+}
+
+export function createTurnDraft(playerId: PlayerId): TurnDraft {
+  return Object.freeze({ playerId })
+}
+
+function copyFrozenManagement(management: TimedManagementAction): TimedManagementAction {
+  return Object.freeze({
+    timing: management.timing,
+    command: Object.freeze({ ...management.command }),
+  })
+}
+
+function copyFrozenTurnDraft(draft: TurnDraft): TurnDraft {
+
+  return Object.freeze({
+    playerId: draft.playerId,
+    ...(draft.movement === undefined ? {} : {
+      movement: Object.freeze({ ...draft.movement }),
+    }),
+    ...(draft.locationAction === undefined ? {} : {
+      locationAction: Object.freeze({ ...draft.locationAction }),
+    }),
+    ...(draft.management === undefined ? {} : {
+      management: copyFrozenManagement(draft.management),
+    }),
+  })
+}
+
+export function updateTurnDraft(
+  draft: TurnDraft,
+  edit: TurnDraftEdit,
+): TurnDraft {
+  switch (edit.type) {
+    case 'set_movement': {
+      return copyFrozenTurnDraft({
+        ...draft,
+        movement: edit.movement,
+      })
+    }
+    case 'set_location_action': {
+      return copyFrozenTurnDraft({
+        ...draft,
+        locationAction: edit.locationAction,
+      })
+    }
+    case 'set_management_action': {
+      return copyFrozenTurnDraft({
+        ...draft,
+        management: {
+          timing: edit.timing,
+          command: edit.managementAction,
+        },
+      })
+    }
+    case 'clear_management_action': {
+      const { management, ...updated } = draft
+      return copyFrozenTurnDraft(updated)
+    }
+  }
+}
+
+export function confirmTurnDraft(
+  draft: TurnDraft,
+): ConfirmedTurnCommand {
+  if (!draft.movement) {
+    throw new Error('Turn draft requires movement')
+  }
+
+  if (!draft.locationAction) {
+    throw new Error('Turn draft requires location action')
+  }
+
+  return Object.freeze({
+    type: 'perform_turn',
+    playerId: draft.playerId,
+    movement: Object.freeze({ ...draft.movement }),
+    locationAction: Object.freeze({ ...draft.locationAction }),
+    ...(draft.management === undefined ? {} : {
+      management: copyFrozenManagement(draft.management),
+    }),
+  })
 }
