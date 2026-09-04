@@ -1,6 +1,24 @@
 export type GameId = string
 export type PlayerId = string
 
+export type TurnExecutionSteps =
+  | readonly [MovementCommand, LocationActionCommand]
+  | readonly [
+      MovementCommand,
+      ManagementActionCommand,
+      LocationActionCommand,
+    ]
+  | readonly [
+      MovementCommand,
+      LocationActionCommand,
+      ManagementActionCommand,
+    ]
+
+export interface PreparedTurn {
+  readonly playerId: PlayerId
+  readonly steps: TurnExecutionSteps
+}
+
 export interface MovementCommand {
   readonly category: 'movement'
 }
@@ -386,5 +404,67 @@ export function confirmTurnDraft(
     ...(draft.management === undefined ? {} : {
       management: copyFrozenManagement(draft.management),
     }),
+  })
+}
+
+export function prepareTurn(
+  state: GameState,
+  command: ConfirmedTurnCommand,
+): PreparedTurn {
+  if (state.status !== 'in_progress') {
+    throw new Error('Game status must be in_progress')
+  }
+
+  if (
+    state.phase !== 'regular_play'
+    && state.phase !== 'ending_current_round'
+    && state.phase !== 'final_round'
+  ) {
+    throw new Error(`Turn preparation is not allowed in phase: ${state.phase}`)
+  }
+
+  if (
+    state.activePlayerId === null
+    || !state.players.some(player => player.id === state.activePlayerId)
+  ) {
+    throw new Error('activePlayerId is invalid or not in the game')
+  }
+
+  if (command.playerId !== state.activePlayerId) {
+    throw new Error('Command playerId does not match activePlayerId')
+  }
+
+  if (
+    !('movement' in command)
+    || command.movement == null
+    || !('locationAction' in command)
+    || command.locationAction == null
+  ) {
+    throw new Error('Confirmed turn requires movement and location action')
+  }
+
+  const movement = Object.freeze({ ...command.movement })
+  const locationAction = Object.freeze({ ...command.locationAction })
+
+  let steps: TurnExecutionSteps
+  switch (command.management?.timing) {
+    case 'before_location': {
+      const managementCommand = Object.freeze({ ...command.management.command })
+      steps = [movement, managementCommand, locationAction]
+      break
+    }
+    case 'after_location': {
+      const managementCommand = Object.freeze({ ...command.management.command })
+      steps = [movement, locationAction, managementCommand]
+      break
+    }
+    default: {
+      steps = [movement, locationAction]
+    }
+  }
+
+  return Object.freeze({
+    playerId: command.playerId,
+    steps: Object.freeze(steps),
   })
 }
