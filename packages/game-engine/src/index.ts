@@ -12,3 +12,4 @@ export {
 } from './turn-draft.js'
 export { prepareTurn } from './turn-preparation.js'
 export { determineWinners } from './winner-determination.js'
+export { calculateFinalInfluenceCoins } from './influence-scoring.js'
