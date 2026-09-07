@@ -161,3 +161,14 @@ export interface WinnerCandidate {
   readonly galleryVisitorCount: number
   readonly assistantsInPlayCount: number
 }
+
+export interface IntermediateVisitorCounts {
+  readonly investors: number
+  readonly celebrities: number
+  readonly collectors: number
+}
+
+export interface IntermediateIncome {
+  readonly coins: number
+  readonly influence: number
+}
