@@ -153,3 +153,11 @@ export type GameState =
   | FinalScoringGameState
   | FinishedGameState
   | SetupGameState
+
+export interface WinnerCandidate {
+  readonly playerId: PlayerId
+  readonly coins: number
+  readonly acquiredArtworkCount: number
+  readonly galleryVisitorCount: number
+  readonly assistantsInPlayCount: number
+}

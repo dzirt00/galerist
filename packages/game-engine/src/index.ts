@@ -11,3 +11,4 @@ export {
   updateTurnDraft,
 } from './turn-draft.js'
 export { prepareTurn } from './turn-preparation.js'
+export { determineWinners } from './winner-determination.js'
