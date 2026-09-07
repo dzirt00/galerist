@@ -887,8 +887,8 @@
 - **Исключения:** значения символов монет, используемые во время игры, не определяют эту сумму напрямую.
 - **События:** `InfluenceScored`.
 - **Проверки:** границы каждого диапазона шкалы.
-- **Статус:** `spec: approved` · `implementation: partial` · `tests: partial` — чистый расчёт финальной выплаты реализован и протестирован; применение выплаты к игроку, событие `InfluenceScored` и оркестрация `final_scoring` отсутствуют.
-- **Трассировка:** `calculateFinalInfluenceCoins` в [модуле подсчёта влияния](packages/game-engine/src/influence-scoring.ts); [тесты](packages/game-engine/test/influence-scoring.test.ts).
+- **Статус:** `spec: approved` · `implementation: partial` · `tests: partial` — чистый расчёт финальной выплаты и её неизменяемое применение к одному игроку реализованы и протестированы; событие `InfluenceScored` и оркестрация `final_scoring` отсутствуют.
+- **Трассировка:** `calculateFinalInfluenceCoins` в [модуле подсчёта влияния](packages/game-engine/src/influence-scoring.ts), `applyFinalInfluenceScoreToPlayer` в [модуле применения финальной выплаты](packages/game-engine/src/final-influence-award.ts); [тесты расчёта](packages/game-engine/test/influence-scoring.test.ts) и [тесты применения](packages/game-engine/test/final-influence-award.test.ts).
 
 ### SCORE-007 — Разрешение ничьей
 
