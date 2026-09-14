@@ -142,6 +142,24 @@ describe('applyIntermediateIncomeToPlayers', () => {
     })
   })
 
+  it('сохраняет результаты независимыми от последующей мутации исходных данных', () => {
+    const player = createPlayer('first', 2, 2)
+    const visitors = { investors: 1, celebrities: 1, collectors: 1 }
+    const entries: IntermediateIncomeAwardInput[] = [{ player, visitors }]
+
+    const result = applyIntermediateIncomeToPlayers(entries)
+    const snapshot = structuredClone(result)
+
+    player.coins = 100
+    player.influence = 35
+    visitors.investors = 100
+    visitors.celebrities = 100
+    visitors.collectors = 100
+
+    expect(result).toEqual(snapshot)
+    expect(result).toEqual([createPlayer('first', 5, 5)])
+  })
+
   it('для пустого входа возвращает новый замороженный пустой массив', () => {
     const entries: IntermediateIncomeAwardInput[] = []
 
