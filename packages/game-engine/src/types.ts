@@ -172,3 +172,31 @@ export interface IntermediateIncome {
   readonly coins: number
   readonly influence: number
 }
+
+export interface ArtistFameState {
+  readonly artistId: string
+  readonly fame: number
+}
+
+export type FameIncreaseContext =
+  | {
+  readonly kind: 'eligible'
+  readonly source: 'artwork_purchase' | 'promotion'
+  readonly baseFameGain: number
+}
+  | {
+  readonly kind: 'blocked_by_artwork_x'
+  readonly source: 'artwork_purchase'
+}
+
+export interface ApplyAdditionalFameSpendInput {
+  readonly player: Readonly<PlayerState>
+  readonly artist: Readonly<ArtistFameState>
+  readonly targetInfluence: number
+  readonly fameIncrease: FameIncreaseContext
+}
+
+export interface ApplyAdditionalFameSpendResult {
+  readonly player: Readonly<PlayerState>
+  readonly artist: Readonly<ArtistFameState>
+}

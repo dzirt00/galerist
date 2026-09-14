@@ -21,3 +21,4 @@ export { applyIntermediateIncomeToPlayer, applyIntermediateIncomeToPlayers, type
 export { applyFinalInfluenceScoreToPlayer, applyFinalInfluenceScoreToPlayers } from './final-influence-award.js'
 export { applyInfluenceGainToPlayers, applyInfluenceGainToPlayer, type PlayerGainedInfluence } from './influence-gain-award.js'
 export {spendInfluenceForImmediatePayment} from './influence-spending-award.js'
+export {applyAdditionalFameSpend} from './influence-fame-spending-award.js'

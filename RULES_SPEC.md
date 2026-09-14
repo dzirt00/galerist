@@ -761,8 +761,8 @@
 - **Исключения:** этот расход недоступен вне действия, которое само увеличивает известность. Покупка работы с крестиком X по `ARTWORK-004` не даёт известности и не разрешает этот расход, в том числе при наличии коллекционеров.
 - **События:** `InfluenceSpent`, дополнительное `ArtistFameIncreased`.
 - **Проверки:** один и несколько символов; переход с 1–4 к 0 даёт одну дополнительную известность; отсутствие расхода при 0; запрет отдельного увеличения без исходного действия.
-- **Статус:** `spec: approved` · `implementation: partial` · `tests: partial` — позиции символов, включая допустимый переход к нулю, подтверждены в `INFLUENCE-DATA-001`. Чистый расчёт дополнительной известности за достигнутые символы реализован и протестирован; применение расхода влияния и известности, проверка контекста исходного роста и запрета для работ с крестиком X, а также события отсутствуют.
-- **Трассировка:** `calculateAdditionalFameFromInfluenceSpend` в [модуле расхода влияния на дополнительную известность](packages/game-engine/src/influence-fame-spending.ts); [тесты](packages/game-engine/test/influence-fame-spending.test.ts).
+- **Статус:** `spec: approved` · `implementation: partial` · `tests: partial` — позиции символов, включая допустимый переход к нулю, подтверждены в `INFLUENCE-DATA-001`. Чистый расчёт и неизменяемое применение расхода к отдельным состояниям игрока и художника реализованы и протестированы; применение принимает только контекст уже существующего базового роста, а контекст покупки работы X отклоняет. Интеграция с игровым состоянием и события `InfluenceSpent`/`ArtistFameIncreased` отсутствуют.
+- **Трассировка:** `calculateAdditionalFameFromInfluenceSpend` в [модуле расхода влияния на дополнительную известность](packages/game-engine/src/influence-fame-spending.ts), `applyAdditionalFameSpend` в [модуле применения расхода](packages/game-engine/src/influence-fame-spending-award.ts); [тесты расчёта](packages/game-engine/test/influence-fame-spending.test.ts) и [тесты применения](packages/game-engine/test/influence-fame-spending-award.test.ts).
 
 ### TICKET-001 — Получение билетов
 
