@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   applyFinalInfluenceScoreToPlayer,
+  applyFinalInfluenceScoreToPlayers,
   type PlayerState,
 } from '../src/index.js'
 
@@ -58,5 +59,82 @@ describe('applyFinalInfluenceScoreToPlayer', () => {
 
     expect(firstResult).toEqual(secondResult)
     expect(firstResult).not.toBe(secondResult)
+  })
+})
+
+describe('applyFinalInfluenceScoreToPlayers', () => {
+  it('применяет выплату каждому игроку в исходном порядке, включая границы шкалы', () => {
+    const players: readonly PlayerState[] = [
+      {
+        id: 'first',
+        name: 'Алина',
+        kind: 'human',
+        coins: 10,
+        influence: 0,
+      },
+      {
+        id: 'second',
+        name: 'Борис',
+        kind: 'bot',
+        coins: 7,
+        influence: 35,
+      },
+    ]
+
+    const result = applyFinalInfluenceScoreToPlayers(players)
+
+    expect(result).toEqual([
+      { ...players[0], coins: 10 },
+      { ...players[1], coins: 27 },
+    ])
+    expect(result.map((player) => player.id)).toEqual(['first', 'second'])
+  })
+
+  it('не изменяет и не замораживает входы, а возвращает замороженные независимые результаты', () => {
+    const firstPlayer: PlayerState = {
+      id: 'first',
+      name: 'Алина',
+      kind: 'human',
+      coins: 4,
+      influence: 23,
+    }
+    const secondPlayer: PlayerState = {
+      id: 'second',
+      name: 'Борис',
+      kind: 'bot',
+      coins: 6,
+      influence: 34,
+    }
+    const players: readonly PlayerState[] = [firstPlayer, secondPlayer]
+    const snapshot = structuredClone(players)
+
+    const firstResult = applyFinalInfluenceScoreToPlayers(players)
+    const secondResult = applyFinalInfluenceScoreToPlayers(players)
+
+    expect(players).toEqual(snapshot)
+    expect(Object.isFrozen(players)).toBe(false)
+    expect(Object.isFrozen(firstPlayer)).toBe(false)
+    expect(Object.isFrozen(secondPlayer)).toBe(false)
+    expect(Object.isFrozen(firstResult)).toBe(true)
+    expect(firstResult.every(Object.isFrozen)).toBe(true)
+    expect(firstResult).not.toBe(players)
+    expect(firstResult[0]).not.toBe(firstPlayer)
+    expect(firstResult[1]).not.toBe(secondPlayer)
+    expect(firstResult).toEqual(secondResult)
+    expect(firstResult).not.toBe(secondResult)
+    expect(firstResult[0]).not.toBe(secondResult[0])
+    expect(firstResult[1]).not.toBe(secondResult[1])
+  })
+
+  it('возвращает новый замороженный пустой массив', () => {
+    const players: readonly PlayerState[] = []
+
+    const firstResult = applyFinalInfluenceScoreToPlayers(players)
+    const secondResult = applyFinalInfluenceScoreToPlayers(players)
+
+    expect(firstResult).toEqual([])
+    expect(Object.isFrozen(firstResult)).toBe(true)
+    expect(firstResult).not.toBe(players)
+    expect(secondResult).not.toBe(firstResult)
   })
 })
