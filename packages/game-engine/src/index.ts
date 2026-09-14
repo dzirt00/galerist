@@ -22,3 +22,10 @@ export { applyFinalInfluenceScoreToPlayer, applyFinalInfluenceScoreToPlayers } f
 export { applyInfluenceGainToPlayers, applyInfluenceGainToPlayer, type PlayerGainedInfluence } from './influence-gain-award.js'
 export {spendInfluenceForImmediatePayment} from './influence-spending-award.js'
 export {applyAdditionalFameSpend} from './influence-fame-spending-award.js'
+export {
+  replaceUnavailableTicket,
+  type ReplaceUnavailableTicketInput,
+  type TicketColor,
+  type TicketReplacementResult,
+  type TicketSupplies,
+} from './ticket-replacement.js'
