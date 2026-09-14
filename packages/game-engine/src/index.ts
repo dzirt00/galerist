@@ -23,6 +23,16 @@ export { applyInfluenceGainToPlayers, applyInfluenceGainToPlayer, type PlayerGai
 export {spendInfluenceForImmediatePayment} from './influence-spending-award.js'
 export {applyAdditionalFameSpend} from './influence-fame-spending-award.js'
 export {
+  setupComponentCatalog,
+  type ArtistCategory,
+  type ArtworkGenre,
+  type MarketColumn,
+  type RewardId,
+  type SetupComponentCatalog,
+  type SetupTicketColor,
+  type VisitorType,
+} from './component-catalog.js'
+export {
   replaceUnavailableTicket,
   type ReplaceUnavailableTicketInput,
   type TicketColor,
