@@ -739,8 +739,8 @@
 - **Исключения:** нет компенсации за потерянный избыток.
 - **События:** `InfluenceReceived` с фактическим изменением.
 - **Проверки:** обычный прирост и переполнение шкалы.
-- **Статус:** `spec: approved` · `implementation: partial` · `tests: partial` — границы 0–35 подтверждены пользователем и фотографией поля. Чистый расчёт получения влияния реализован и протестирован; применение результата к игроку и событие `InfluenceReceived` отсутствуют.
-- **Трассировка:** `calculateInfluenceAfterGain` в [модуле получения влияния](packages/game-engine/src/influence-gain.ts); [тесты](packages/game-engine/test/influence-gain.test.ts).
+- **Статус:** `spec: approved` · `implementation: partial` · `tests: partial` — границы 0–35 подтверждены пользователем и фотографией поля. Чистый расчёт и неизменяемое применение результата к одному игроку или набору игроков реализованы и протестированы; событие `InfluenceReceived` и интеграция с игровым состоянием отсутствуют.
+- **Трассировка:** `calculateInfluenceAfterGain` в [модуле получения влияния](packages/game-engine/src/influence-gain.ts), `applyInfluenceGainToPlayer` и `applyInfluenceGainToPlayers` в [модуле применения наград влияния](packages/game-engine/src/influence-gain-award.ts); [тесты расчёта](packages/game-engine/test/influence-gain.test.ts) и [тесты применения](packages/game-engine/test/influence-gain-award.test.ts).
 
 ### INFLUENCE-002 — Получение монет через влияние
 
@@ -1425,7 +1425,7 @@
 | Переходы окончания минимальной партии | `ADR-002`, `END-002`–`END-005` | Явный `triggerGameEnd` и последовательность `regular_play` → `ending_current_round` → `final_round` → `final_scoring` реализованы и протестированы без доменных событий |
 | Автоматическая проверка условий окончания | `END-001`, `END-002` | Не реализована: текущий `triggerGameEnd` не оценивает кассу билетов, художников или мешочек посетителей |
 | Определение победителей и разрешение ничьей | `CORE-003`, `SCORE-007` | Чистая функция `determineWinners` реализует сравнение итоговых показателей и возвращает всех победителей при полной ничьей; получение показателей из `GameState`, событие и завершение партии отсутствуют |
-| Расчёт получения влияния с верхней границей | `INFLUENCE-001`, `INFLUENCE-DATA-001` | Чистая функция `calculateInfluenceAfterGain` ограничивает результат значением 35, сжигает избыток и проверяет текущую позицию и награду; применение результата к игроку и событие `InfluenceReceived` отсутствуют |
+| Расчёт получения влияния с верхней границей | `INFLUENCE-001`, `INFLUENCE-DATA-001` | Чистая функция `calculateInfluenceAfterGain` ограничивает результат значением 35, сжигает избыток и проверяет текущую позицию и награду; `applyInfluenceGainToPlayer` и `applyInfluenceGainToPlayers` неизменно применяют его к игрокам. Событие `InfluenceReceived` и интеграция с `GameState` отсутствуют |
 | Расчёт монет при расходе влияния | `INFLUENCE-002`, `INFLUENCE-DATA-001` | Чистая функция `calculateCoinsFromInfluenceSpend` считает достигнутые денежные точки, не засчитывает текущую позицию и учитывает точку 0; применение ресурсов к игроку, контекст немедленного платежа и события `InfluenceSpent`, `CoinsReceived`, `CoinsSpent` отсутствуют |
 | Расчёт дополнительной известности при расходе влияния | `INFLUENCE-003`, `INFLUENCE-DATA-001` | Чистая функция `calculateAdditionalFameFromInfluenceSpend` считает достигнутые символы известности, не засчитывает текущую позицию и учитывает точку 0; применение ресурсов, контекст исходного роста, запрет для работ X и события `InfluenceSpent`, `ArtistFameIncreased` отсутствуют |
 | Расчёт финальной выплаты за влияние | `SCORE-006`, `INFLUENCE-DATA-001` | Чистая функция `calculateFinalInfluenceCoins` реализована и протестирована для всей шкалы 0–35; применение выплаты к игроку, событие `InfluenceScored` и оркестрация `final_scoring` отсутствуют |

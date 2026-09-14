@@ -19,3 +19,4 @@ export { calculateAdditionalFameFromInfluenceSpend } from './influence-fame-spen
 export { calculateIntermediateIncome } from './intermediate-income.js'
 export { applyIntermediateIncomeToPlayer, applyIntermediateIncomeToPlayers, type IntermediateIncomeAwardInput } from './intermediate-income-award.js'
 export { applyFinalInfluenceScoreToPlayer } from './final-influence-award.js'
+export { applyInfluenceGainToPlayers, applyInfluenceGainToPlayer, type PlayerGainedInfluence } from './influence-gain-award.js'
