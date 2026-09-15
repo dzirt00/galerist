@@ -31,7 +31,7 @@ export interface SetupComponentCatalog {
   readonly superstarTokenIds: readonly string[]
 }
 
-function deepFreeze<T>(value: T): Readonly<T> {
+export function deepFreeze<T>(value: T): Readonly<T> {
   if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
     Object.values(value).forEach(deepFreeze)
     Object.freeze(value)
