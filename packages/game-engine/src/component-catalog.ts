@@ -15,6 +15,13 @@ export interface VisitorInstance {
   readonly type: VisitorType
 }
 
+export interface PromotionTokenDefinition {
+  readonly id: string
+  readonly level: 1 | 2 | 3 | 4 | 5
+  readonly influenceCost: 1 | 2 | 3 | 4 | 5
+  readonly reward: RewardId
+}
+
 export interface ArtistDefinition {
   readonly id: string
   readonly genre: ArtworkGenre
@@ -45,7 +52,7 @@ export interface SetupComponentCatalog {
   readonly boardReputationCells: readonly { readonly id: string; readonly row: 1 | 2 | 3; readonly side: 'L' | 'R'; readonly reward: RewardId }[]
   readonly boardOrderCells: readonly { readonly id: string; readonly position: 1 | 2 | 3; readonly reward: RewardId }[]
   readonly assistantsPerPlayer: { readonly office: 2; readonly hireQueue: 8 }
-  readonly promotionTokens: readonly { readonly id: string; readonly level: 1 | 2 | 3 | 4 | 5; readonly influenceCost: 1 | 2 | 3 | 4 | 5; readonly reward: RewardId }[]
+  readonly promotionTokens: readonly Readonly<PromotionTokenDefinition>[]
   readonly superstarTokenIds: readonly string[]
   readonly componentsVersion: string
   readonly startingLocationOrder: readonly StartingLocationId[]

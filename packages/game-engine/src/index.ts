@@ -28,6 +28,7 @@ export { applyInfluenceGainToPlayers, applyInfluenceGainToPlayer, type PlayerGai
 export {spendInfluenceForImmediatePayment} from './influence-spending-award.js'
 export {applyAdditionalFameSpend} from './influence-fame-spending-award.js'
 export { dealer, curator, type CuratorDealer, type TargetCuratorDealer } from './setupComponentCatalog.js'
+export { type PreparedPromotionSupply, preparePromotionSupply} from './setup-promotion.js'
 export {
   setupComponentCatalog,
   type ArtistCategory,
@@ -39,7 +40,8 @@ export {
   type VisitorType,
   type StartingLocationId,
   type VisitorInstance,
-  type ArtistDefinition
+  type ArtistDefinition,
+  type PromotionTokenDefinition
 } from './component-catalog.js'
 export {
   replaceUnavailableTicket,
