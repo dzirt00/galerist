@@ -47,3 +47,4 @@ export {
   type TicketReplacementResult,
   type TicketSupplies,
 } from './ticket-replacement.js'
+export {prepareOrderMarket, type PreparedOrderMarket} from './setup-orders.js'
