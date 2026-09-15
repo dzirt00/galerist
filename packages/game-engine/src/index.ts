@@ -11,6 +11,11 @@ export {
   updateTurnDraft,
 } from './turn-draft.js'
 export { prepareTurn } from './turn-preparation.js'
+export {
+  createSetupRng,
+  type SetupRng,
+  type SetupRngConfig,
+} from './setup-rng.js'
 export { determineWinners } from './winner-determination.js'
 export { calculateFinalInfluenceCoins } from './influence-scoring.js'
 export { calculateInfluenceAfterGain } from './influence-gain.js'
