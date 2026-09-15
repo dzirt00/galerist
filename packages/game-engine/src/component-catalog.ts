@@ -4,6 +4,16 @@ export type SetupTicketColor = 'B' | 'R' | 'W'
 export type VisitorType = SetupTicketColor
 export type MarketColumn = 1 | 2 | 3
 export type RewardId = 'COINS' | 'INFLUENCE' | 'FAME-C' | 'VISITOR-ANY' | 'VISITOR-BR' | 'VISITOR-BAG' | 'HIRE-FREE' | 'ORDER-ACTION' | 'TICKET-ANY' | 'TICKET-DIFF2' | 'TICKET-B' | 'TICKET-R'
+export type StartingLocationId =
+  | 'LOC-ARTISTS_COLONY'
+  | 'LOC-MEDIA_CENTER'
+  | 'LOC-INTERNATIONAL_MARKET'
+  | 'LOC-SALES_OFFICE'
+
+export interface VisitorInstance {
+  readonly id: string
+  readonly type: VisitorType
+}
 
 export interface SetupComponentCatalog {
   readonly version: string
@@ -29,6 +39,9 @@ export interface SetupComponentCatalog {
   readonly assistantsPerPlayer: { readonly office: 2; readonly hireQueue: 8 }
   readonly promotionTokens: readonly { readonly id: string; readonly level: 1 | 2 | 3 | 4 | 5; readonly influenceCost: 1 | 2 | 3 | 4 | 5; readonly reward: RewardId }[]
   readonly superstarTokenIds: readonly string[]
+  readonly componentsVersion: string
+  readonly startingLocationOrder: readonly StartingLocationId[]
+  readonly visitorInstancesByPlayerCount: Readonly<Record<2 | 3 | 4, readonly VisitorInstance[]>>
 }
 
 export function deepFreeze<T>(value: T): Readonly<T> {
@@ -38,6 +51,8 @@ export function deepFreeze<T>(value: T): Readonly<T> {
   }
   return value
 }
+
+const APPROVED_COMPONENTS_VERSION = 'components-transcription-2026-09-15-v4'
 
 const artistRows: readonly [ArtworkGenre, ArtistCategory, number, number][] = [
   ['D', 'blue', 1, 0], ['D', 'blue', 4, 1], ['D', 'red', 5, 2], ['D', 'red', 8, 3],
@@ -57,8 +72,26 @@ const orderRows: readonly [ArtworkGenre, RewardId][] = [
   ['D','INFLUENCE'],['P','ORDER-ACTION'],['P','COINS'],['A','ORDER-ACTION'],['A','VISITOR-BR'],['P','VISITOR-BAG'],['D','ORDER-ACTION'],['S','ORDER-ACTION'],['A','HIRE-FREE'],['A','COINS'],['D','HIRE-FREE'],['A','VISITOR-BAG'],['P','VISITOR-BR'],['S','VISITOR-BAG'],['S','VISITOR-BR'],['D','VISITOR-BAG'],['D','VISITOR-BR'],['P','HIRE-FREE'],['S','INFLUENCE'],['S','HIRE-FREE'],
 ]
 
+function createVisitorInstances(playerCount: 2 | 3 | 4): VisitorInstance[] {
+  const counts: Readonly<Record<2 | 3 | 4, Readonly<Record<VisitorType, number>>>> = {
+    2: { B: 10, R: 10, W: 8 },
+    3: { B: 12, R: 12, W: 10 },
+    4: { B: 14, R: 14, W: 12 },
+  }
+
+  return (['B', 'R', 'W'] as const).flatMap(type =>
+    Array.from({ length: counts[playerCount][type] }, (_, index) => ({
+      id: `VIS-${type}-${String(index + 1).padStart(2, '0')}`,
+      type,
+    })),
+  )
+}
+
 export const setupComponentCatalog: Readonly<SetupComponentCatalog> = deepFreeze({
-  version: 'components-transcription-2026-09-06-v3',
+  version: APPROVED_COMPONENTS_VERSION,
+  componentsVersion: APPROVED_COMPONENTS_VERSION,
+  startingLocationOrder: ['LOC-ARTISTS_COLONY', 'LOC-MEDIA_CENTER', 'LOC-INTERNATIONAL_MARKET', 'LOC-SALES_OFFICE', ],
+  visitorInstancesByPlayerCount: { 2: createVisitorInstances(2), 3: createVisitorInstances(3), 4: createVisitorInstances(4) },
   genreOrder: ['D', 'P', 'S', 'A'],
   categoryOrder: ['blue', 'red'],
   ticketColors: ['B', 'R', 'W'],

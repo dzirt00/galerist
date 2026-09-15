@@ -1,5 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import { setupComponentCatalog } from '../src/index.js'
+import {
+  setupComponentCatalog,
+  type StartingLocationId,
+  type VisitorInstance,
+} from '../src/index.js'
+
+const visitorIds = (type: VisitorInstance['type'], count: number): string[] =>
+  Array.from({ length: count }, (_, index) => `VIS-${type}-${String(index + 1).padStart(2, '0')}`)
+
+const expectedVisitors = (blue: number, red: number, white: number): readonly VisitorInstance[] => [
+  ...visitorIds('B', blue).map(id => ({ id, type: 'B' as const })),
+  ...visitorIds('R', red).map(id => ({ id, type: 'R' as const })),
+  ...visitorIds('W', white).map(id => ({ id, type: 'W' as const })),
+]
 
 describe('setupComponentCatalog', () => {
   it('содержит согласованные количества и устойчивые уникальные ID компонентов подготовки', () => {
@@ -24,6 +37,52 @@ describe('setupComponentCatalog', () => {
     expect(Object.isFrozen(setupComponentCatalog.artists[0])).toBe(true)
     expect(Object.isFrozen(setupComponentCatalog.visitorPools)).toBe(true)
     expect(Object.isFrozen(setupComponentCatalog.visitorPools[2])).toBe(true)
+  })
+
+  it('содержит версионированные стабильные экземпляры посетителей для каждого числа игроков', () => {
+    const expectedByPlayerCount: Readonly<Record<2 | 3 | 4, readonly VisitorInstance[]>> = {
+      2: expectedVisitors(10, 10, 8),
+      3: expectedVisitors(12, 12, 10),
+      4: expectedVisitors(14, 14, 12),
+    }
+
+    expect(setupComponentCatalog.componentsVersion).toBe('components-transcription-2026-09-15-v4')
+    expect(setupComponentCatalog.version).toBe(setupComponentCatalog.componentsVersion)
+
+    for (const playerCount of [2, 3, 4] as const) {
+      const visitors = setupComponentCatalog.visitorInstancesByPlayerCount[playerCount]
+      expect(visitors).toEqual(expectedByPlayerCount[playerCount])
+      expect(visitors).toHaveLength(expectedByPlayerCount[playerCount].length)
+      expect(new Set(visitors.map(visitor => visitor.id)).size).toBe(visitors.length)
+      expect(visitors.map(visitor => visitor.id)).toEqual([...visitors.map(visitor => visitor.id)].sort())
+      expect(Object.isFrozen(visitors)).toBe(true)
+      expect(visitors.every(Object.isFrozen)).toBe(true)
+    }
+
+    const fourPlayers = setupComponentCatalog.visitorInstancesByPlayerCount[4]
+    for (const playerCount of [2, 3] as const) {
+      const visitors = setupComponentCatalog.visitorInstancesByPlayerCount[playerCount]
+      expect(fourPlayers).toEqual(expect.arrayContaining(visitors))
+      for (const type of ['B', 'R', 'W'] as const) {
+        const smallerTypeIds = visitors.filter(visitor => visitor.type === type).map(visitor => visitor.id)
+        const largerTypeIds = fourPlayers.filter(visitor => visitor.type === type).map(visitor => visitor.id)
+        expect(largerTypeIds.slice(0, smallerTypeIds.length)).toEqual(smallerTypeIds)
+      }
+    }
+
+    expect(Object.isFrozen(setupComponentCatalog.visitorInstancesByPlayerCount)).toBe(true)
+  })
+
+  it('задаёт неизменяемый фиксированный порядок стартовых локаций', () => {
+    const expectedOrder: readonly StartingLocationId[] = [
+      'LOC-ARTISTS_COLONY',
+      'LOC-MEDIA_CENTER',
+      'LOC-INTERNATIONAL_MARKET',
+      'LOC-SALES_OFFICE',
+    ]
+
+    expect(setupComponentCatalog.startingLocationOrder).toEqual(expectedOrder)
+    expect(Object.isFrozen(setupComponentCatalog.startingLocationOrder)).toBe(true)
   })
 
   it('описывает клетки рынка и исключает среднюю колонку для двух игроков', () => {

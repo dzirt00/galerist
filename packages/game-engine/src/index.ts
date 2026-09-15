@@ -37,6 +37,8 @@ export {
   type SetupComponentCatalog,
   type SetupTicketColor,
   type VisitorType,
+  type StartingLocationId,
+  type VisitorInstance
 } from './component-catalog.js'
 export {
   replaceUnavailableTicket,
