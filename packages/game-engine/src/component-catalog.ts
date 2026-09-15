@@ -15,12 +15,20 @@ export interface VisitorInstance {
   readonly type: VisitorType
 }
 
+export interface ArtistDefinition {
+  readonly id: string
+  readonly genre: ArtworkGenre
+  readonly category: ArtistCategory
+  readonly initialFame: number
+  readonly initialPromotion: number
+}
+
 export interface SetupComponentCatalog {
   readonly version: string
   readonly genreOrder: readonly ArtworkGenre[]
   readonly categoryOrder: readonly ArtistCategory[]
   readonly ticketColors: readonly SetupTicketColor[]
-  readonly artists: readonly { readonly id: string; readonly genre: ArtworkGenre; readonly category: ArtistCategory; readonly initialFame: number; readonly initialPromotion: number }[]
+  readonly artists: readonly Readonly<ArtistDefinition>[]
   readonly artworks: readonly { readonly id: string; readonly genre: ArtworkGenre; readonly fameGain: number | 'X'; readonly ticketReward: string; readonly visitorCount: number }[]
   readonly artistBonuses: readonly { readonly id: string; readonly reward: RewardId }[]
   readonly orders: readonly { readonly id: string; readonly genre: ArtworkGenre; readonly reward: RewardId }[]

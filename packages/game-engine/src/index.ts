@@ -38,7 +38,8 @@ export {
   type SetupTicketColor,
   type VisitorType,
   type StartingLocationId,
-  type VisitorInstance
+  type VisitorInstance,
+  type ArtistDefinition
 } from './component-catalog.js'
 export {
   replaceUnavailableTicket,
@@ -48,3 +49,4 @@ export {
   type TicketSupplies,
 } from './ticket-replacement.js'
 export {prepareOrderMarket, type PreparedOrderMarket} from './setup-orders.js'
+export { type PreparedArtistSlot, type PreparedArtistMarket, prepareArtistMarket } from './setup-artists.js'
