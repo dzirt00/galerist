@@ -55,3 +55,4 @@ export {
 } from './ticket-replacement.js'
 export {prepareOrderMarket, type PreparedOrderMarket} from './setup-orders.js'
 export { type PreparedArtistSlot, type PreparedArtistMarket, prepareArtistMarket } from './setup-artists.js'
+export {type SetupInternationalMarket, prepareInternationalMarket} from './setup-international-market.js'
