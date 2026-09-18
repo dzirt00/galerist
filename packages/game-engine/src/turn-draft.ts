@@ -6,6 +6,7 @@ import type {
   TurnDraftEdit,
 } from './types.js'
 
+/** Копирует действие управления вместе с командой и замораживает обе части. */
 function copyFrozenManagement(management: TimedManagementAction): TimedManagementAction {
   return Object.freeze({
     timing: management.timing,
@@ -13,6 +14,7 @@ function copyFrozenManagement(management: TimedManagementAction): TimedManagemen
   })
 }
 
+/** Создаёт независимую замороженную копию черновика хода. */
 function copyFrozenTurnDraft(draft: TurnDraft): TurnDraft {
   return Object.freeze({
     playerId: draft.playerId,
@@ -28,10 +30,12 @@ function copyFrozenTurnDraft(draft: TurnDraft): TurnDraft {
   })
 }
 
+/** Создаёт пустой замороженный черновик хода выбранного игрока. */
 export function createTurnDraft(playerId: PlayerId): TurnDraft {
   return Object.freeze({ playerId })
 }
 
+/** Применяет правку к копии черновика, сохраняя исходный черновик неизменным. */
 export function updateTurnDraft(draft: TurnDraft, edit: TurnDraftEdit): TurnDraft {
   switch (edit.type) {
     case 'set_movement':
@@ -53,6 +57,7 @@ export function updateTurnDraft(draft: TurnDraft, edit: TurnDraftEdit): TurnDraf
   }
 }
 
+/** Проверяет обязательные действия и создаёт замороженную команду подтверждённого хода. */
 export function confirmTurnDraft(draft: TurnDraft): ConfirmedTurnCommand {
   if (!draft.movement) {
     throw new Error('Turn draft requires movement')

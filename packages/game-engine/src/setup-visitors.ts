@@ -5,6 +5,7 @@ export interface PreparedVisitorBag {
   readonly visitors: readonly VisitorInstance[]
 }
 
+/** Сортирует и перемешивает копии посетителей для стартового мешка. */
 export function prepareVisitorBag(
   visitors: readonly VisitorInstance[],
   rng: SetupRng,

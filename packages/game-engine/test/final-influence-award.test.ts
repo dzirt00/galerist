@@ -5,6 +5,7 @@ import {
   type PlayerState,
 } from '../src/index.js'
 
+/** Создаёт игрока с заданными ресурсами для проверки итоговой выплаты. */
 function createPlayer(
   coins: number,
   influence: number,
@@ -18,7 +19,7 @@ function createPlayer(
   })
 }
 
-describe('applyFinalInfluenceScoreToPlayer', () => {
+describe('Итоговая выплата игроку через applyFinalInfluenceScoreToPlayer', () => {
   it.each([
     [10, 0, 10],
     [10, 23, 18],
@@ -62,7 +63,7 @@ describe('applyFinalInfluenceScoreToPlayer', () => {
   })
 })
 
-describe('applyFinalInfluenceScoreToPlayers', () => {
+describe('Итоговые выплаты игрокам через applyFinalInfluenceScoreToPlayers', () => {
   it('применяет выплату каждому игроку в исходном порядке, включая границы шкалы', () => {
     const players: readonly PlayerState[] = [
       {

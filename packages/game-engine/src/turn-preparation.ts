@@ -5,6 +5,7 @@ import type {
   TurnExecutionSteps,
 } from './types.js'
 
+/** Проверяет команду активного игрока и упорядочивает действия подтверждённого хода. */
 export function prepareTurn(
   state: GameState,
   command: ConfirmedTurnCommand,

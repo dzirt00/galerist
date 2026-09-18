@@ -5,16 +5,18 @@ import {
   type VisitorInstance,
 } from '../src/index.js'
 
+/** Формирует ожидаемые ID посетителей заданного типа. */
 const visitorIds = (type: VisitorInstance['type'], count: number): string[] =>
   Array.from({ length: count }, (_, index) => `VIS-${type}-${String(index + 1).padStart(2, '0')}`)
 
+/** Создаёт ожидаемый состав посетителей по цветам. */
 const expectedVisitors = (blue: number, red: number, white: number): readonly VisitorInstance[] => [
   ...visitorIds('B', blue).map(id => ({ id, type: 'B' as const })),
   ...visitorIds('R', red).map(id => ({ id, type: 'R' as const })),
   ...visitorIds('W', white).map(id => ({ id, type: 'W' as const })),
 ]
 
-describe('setupComponentCatalog', () => {
+describe('Каталог компонентов setupComponentCatalog', () => {
   it('содержит согласованные количества и устойчивые уникальные ID компонентов подготовки', () => {
     expect(setupComponentCatalog.genreOrder).toEqual(['D', 'P', 'S', 'A'])
     expect(setupComponentCatalog.artists).toHaveLength(16)

@@ -3,7 +3,7 @@ import { calculateCoinsFromInfluenceSpend } from '../src/index.js'
 
 const INVALID_INFLUENCE_SPEND_MESSAGE = 'Invalid influence spend'
 
-describe('calculateCoinsFromInfluenceSpend', () => {
+describe('Расчёт монет за влияние через calculateCoinsFromInfluenceSpend', () => {
   it.each([
     [10, 8, 1],
     [10, 4, 2],

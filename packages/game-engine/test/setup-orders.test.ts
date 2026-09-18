@@ -14,7 +14,7 @@ const config: SetupRngConfig = {
 
 const orderIds = Array.from({ length: 20 }, (_, index) => `ORDER-${String(index + 1).padStart(2, '0')}`)
 
-describe('prepareOrderMarket', () => {
+describe('Подготовка рынка заказов через prepareOrderMarket', () => {
   it('детерминированно открывает первые четыре заказа и сохраняет остальные без потерь', () => {
     const expectedOrder = createSetupRng(config).shuffle('orders', orderIds)
     const result = prepareOrderMarket(orderIds, createSetupRng(config))

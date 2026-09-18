@@ -8,25 +8,31 @@ export interface SetupRngConfig {
 }
 
 export interface SetupRng {
+  /** Возвращает следующее 32-битное значение отдельного этапа. */
   nextUint32(stageId: string): number
+  /** Выбирает равновероятный индекс среди элементов этапа. */
   chooseIndex(stageId: string, itemCount: number): number
+  /** Перемешивает копию элементов указанного этапа. */
   shuffle<T>(stageId: string, items: readonly T[]): readonly T[]
 }
 
 const UINT32_RANGE = 2 ** 32
 
+/** Проверяет, что идентификатор этапа генерации непустой. */
 function assertStageId(stageId: string): void {
   if (typeof stageId !== 'string' || stageId.length === 0) {
     throw new Error('Stage ID must be a non-empty string')
   }
 }
 
+/** Проверяет допустимый размер набора для случайного выбора индекса. */
 function assertItemCount(itemCount: number): void {
   if (!Number.isInteger(itemCount) || itemCount < 1 || itemCount > UINT32_RANGE) {
     throw new Error('Item count must be an integer from 1 to 2^32')
   }
 }
 
+/** Создаёт детерминированный генератор подготовки с отдельным счётчиком для каждого этапа. */
 export function createSetupRng(config: SetupRngConfig): SetupRng {
   if (!Number.isSafeInteger(config.seed)) {
     throw new Error('Seed must be a safe integer')
@@ -36,6 +42,7 @@ export function createSetupRng(config: SetupRngConfig): SetupRng {
   const seedString = Object.is(config.seed, -0) ? '0' : String(config.seed)
   const stageCounters = new Map<string, bigint>()
 
+  /** Возвращает следующее 32-битное значение для указанного этапа. */
   function nextUint32(stageId: string): number {
     assertStageId(stageId)
 
@@ -60,6 +67,7 @@ export function createSetupRng(config: SetupRngConfig): SetupRng {
     )
   }
 
+  /** Выбирает индекс без смещения вероятностей с помощью отбрасывания лишних значений. */
   function chooseIndex(stageId: string, itemCount: number): number {
     assertStageId(stageId)
     assertItemCount(itemCount)
@@ -73,6 +81,7 @@ export function createSetupRng(config: SetupRngConfig): SetupRng {
     return value % itemCount
   }
 
+  /** Перемешивает копию набора и возвращает замороженный массив. */
   function shuffle<T>(stageId: string, items: readonly T[]): readonly T[] {
     assertStageId(stageId)
 

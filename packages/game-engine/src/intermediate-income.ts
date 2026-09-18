@@ -2,12 +2,14 @@ import type { IntermediateIncome, IntermediateVisitorCounts } from './types.js'
 
 const INVALID_VISITOR_COUNT_MESSAGE = 'Invalid visitor count'
 
+/** Проверяет, что значение является неотрицательным целым числом. */
 function isNonNegativeInteger(value: unknown): value is number {
   return typeof value === 'number'
     && Number.isInteger(value)
     && value >= 0
 }
 
+/** Проверяет наличие корректных счётчиков всех типов посетителей. */
 function isIntermediateVisitorCounts(
   value: unknown,
 ): value is IntermediateVisitorCounts {
@@ -22,6 +24,7 @@ function isIntermediateVisitorCounts(
     && isNonNegativeInteger(visitors.collectors)
 }
 
+/** Рассчитывает монеты и влияние от состава посетителей галереи. */
 export function calculateIntermediateIncome(
   visitors: IntermediateVisitorCounts,
 ): Readonly<IntermediateIncome> {

@@ -7,6 +7,7 @@ const FAME_CHECKPOINTS: readonly number[] = Object.freeze([
 const FAME_CHECKPOINTS_SET = new Set(FAME_CHECKPOINTS)
 const INVALID_INFLUENCE_SPEND_MESSAGE = 'Invalid influence spend'
 
+/** Считает дополнительную славу за отметки шкалы, достигнутые при расходе влияния. */
 export function calculateAdditionalFameFromInfluenceSpend(
   currentInfluence: number,
   targetInfluence: number,

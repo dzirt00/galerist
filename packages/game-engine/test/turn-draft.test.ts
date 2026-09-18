@@ -12,7 +12,7 @@ import {
 } from '../src/index.js'
 import { expectDraftFrozen } from './helpers.js'
 
-it('createTurnDraft creates an empty frozen draft for the player', () => {
+it('создаёт пустой замороженный черновик хода для игрока', () => {
   const draft = createTurnDraft('player-1')
 
   expect(draft).toEqual({ playerId: 'player-1' })
@@ -23,6 +23,7 @@ it('createTurnDraft creates an empty frozen draft for the player', () => {
   expect(Object.isFrozen(draft)).toBe(true)
 })
 
+/** Проверяет, что замена действия создаёт новый черновик и сохраняет прежние данные. */
 function expectDraftReplacementIsImmutable({
   initialDraft,
   initialSnapshot,
@@ -50,7 +51,7 @@ function expectDraftReplacementIsImmutable({
   expect(previousDraft).not.toBe(initialDraft)
 }
 
-it('проверка case set_movement в updateTurnDraft',() => {
+it('обновляет перемещение в черновике без изменения прежнего черновика',() => {
   const turnDraft: TurnDraft = { playerId: 'player-1' }
   const turnDraftClone = structuredClone(turnDraft)
   const firstMovement: MovementCommand = { category: 'movement' }
@@ -60,7 +61,7 @@ it('проверка case set_movement в updateTurnDraft',() => {
   }
   const draftWithFirstMovement = updateTurnDraft(turnDraft, firstEdit)
   const firstDraftSnapshot = structuredClone(draftWithFirstMovement)
-  // Test-only labels distinguish abstract commands without defining game actions.
+  // Тестовые метки различают абстрактные команды без добавления игровых действий.
   const secondMovement = { category: 'movement' as const, testId: 'replacement' }
   const secondEdit: TurnDraftEdit = {
     type: 'set_movement',
@@ -82,7 +83,7 @@ it('проверка case set_movement в updateTurnDraft',() => {
   })
 })
 
-it('проверка case set_location_action в updateTurnDraft',() => {
+it('обновляет действие локации без изменения прежнего черновика',() => {
   const turnDraft: TurnDraft = { playerId: 'player-1' }
   const turnDraftClone = structuredClone(turnDraft)
   const firstMovement: LocationActionCommand = { category: 'location_action' }
@@ -116,7 +117,7 @@ it('проверка case set_location_action в updateTurnDraft',() => {
 it.each([
   ['before_location', 'after_location'],
   ['after_location', 'before_location'],
-] as const)('replaces management timing from %s to %s', (firstTiming, secondTiming) => {
+] as const)('заменяет время действия управления с %s на %s', (firstTiming, secondTiming) => {
   const turnDraft: TurnDraft = { playerId: 'player-1' }
   const turnDraftClone = structuredClone(turnDraft)
   const firstManagementAction: ManagementActionCommand = { category: 'management_action' }
@@ -154,6 +155,7 @@ it.each([
   expect(turnDraft).toEqual({ playerId: 'player-1' })
 })
 
+/** Создаёт изменяемый полный черновик для проверки независимости копий. */
 function createCompleteMutableTurnDraftFixture() {
   return {
     playerId: 'player-1',
@@ -166,6 +168,7 @@ function createCompleteMutableTurnDraftFixture() {
   }
 }
 
+/** Проверяет заморозку черновика и вложенных действий. */
 function expectDraftFrozen(draft: TurnDraft, frozen: boolean) {
   const objects = [draft, draft.movement, draft.locationAction, draft.management, draft.management?.command]
   for (const object of objects) {
@@ -173,7 +176,7 @@ function expectDraftFrozen(draft: TurnDraft, frozen: boolean) {
   }
 }
 
-it.each([true, false])('clears management immutably when present: %s', present => {
+it.each([true, false])('удаляет действие управления без изменения входа; наличие: %s', present => {
   const complete = createCompleteMutableTurnDraftFixture()
   const { management, ...withoutManagement } = complete
   const input = present ? complete : withoutManagement
@@ -195,7 +198,7 @@ const immutableDraftEditCases: readonly TurnDraftEdit[] = [
   { type: 'clear_management_action' },
 ]
 
-it.each(immutableDraftEditCases)('owns all nested objects after $type on a mutable draft', edit => {
+it.each(immutableDraftEditCases)('копирует вложенные объекты после правки $type изменяемого черновика', edit => {
   const input = createCompleteMutableTurnDraftFixture()
   const inputSnapshot = structuredClone(input)
   const editSnapshot = structuredClone(edit)
@@ -227,7 +230,7 @@ it.each(immutableDraftEditCases)('owns all nested objects after $type on a mutab
 })
 
 it.each(['before_location', 'after_location', undefined] as const)(
-  'confirms an independent frozen command with management timing: %s', timing => {
+  'подтверждает независимую замороженную команду со временем управления: %s', timing => {
     const complete = createCompleteMutableTurnDraftFixture()
     const { management, ...withoutManagement } = complete
     if (timing !== undefined) management.timing = timing
@@ -259,13 +262,13 @@ it.each(['before_location', 'after_location', undefined] as const)(
 )
 
 it.each([
-  { name: 'both absent', parts: {}, error: 'Turn draft requires movement' },
-  { name: 'movement absent', parts: { locationAction: { category: 'location_action' } }, error: 'Turn draft requires movement' },
-  { name: 'location action absent', parts: { movement: { category: 'movement' } }, error: 'Turn draft requires location action' },
-  { name: 'movement undefined', parts: { movement: undefined, locationAction: { category: 'location_action' } }, error: 'Turn draft requires movement' },
-  { name: 'location action undefined', parts: { movement: { category: 'movement' }, locationAction: undefined }, error: 'Turn draft requires location action' },
-])('rejects $name without mutating or freezing input', ({ parts, error }) => {
-  // Explicit undefined simulates a JavaScript caller outside the static TS contract.
+  { name: 'оба действия отсутствуют', parts: {}, error: 'Turn draft requires movement' },
+  { name: 'перемещение отсутствует', parts: { locationAction: { category: 'location_action' } }, error: 'Turn draft requires movement' },
+  { name: 'действие локации отсутствует', parts: { movement: { category: 'movement' } }, error: 'Turn draft requires location action' },
+  { name: 'перемещение не определено', parts: { movement: undefined, locationAction: { category: 'location_action' } }, error: 'Turn draft requires movement' },
+  { name: 'действие локации не определено', parts: { movement: { category: 'movement' }, locationAction: undefined }, error: 'Turn draft requires location action' },
+])('отклоняет случай «$name» без изменения и заморозки входа', ({ parts, error }) => {
+  // Явное undefined имитирует вызов из JavaScript вне статического контракта TypeScript.
   const input = {
     playerId: 'player-1',
     management: createCompleteMutableTurnDraftFixture().management,
@@ -278,7 +281,7 @@ it.each([
   expectDraftFrozen(input, false)
 })
 
-it('keeps earlier drafts unchanged throughout creation, editing and confirmation', () => {
+it('сохраняет прежние черновики при создании, правке и подтверждении', () => {
   const empty = createTurnDraft('player-1')
   const snapshots = [structuredClone(empty)]
   const fixture = createCompleteMutableTurnDraftFixture()

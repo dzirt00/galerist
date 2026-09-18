@@ -13,6 +13,7 @@ export interface PreparedArtistMarket {
   readonly unselectedArtistIds: readonly string[]
 }
 
+/** Выбирает художников для восьми пар жанра и категории и открывает первого синего. */
 export function prepareArtistMarket(
   artists: readonly ArtistDefinition[],
   rng: SetupRng,

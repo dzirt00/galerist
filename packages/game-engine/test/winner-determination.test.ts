@@ -2,34 +2,34 @@ import { expect, it, describe } from 'vitest'
 import { determineWinners } from "../src";
 import { acquiredArtworkCountWin, allWin, assistantsInPlayCountWin, galleryVisitorCountWin, nextWin, onePlayer, player10, player7, player8, player9, soleLeaderCoins } from "./fixtures";
 import { PlayerId, WinnerCandidate } from "../src";
-it('expect soleLeaderCoins',() => {
+it('выбирает единственного лидера по монетам',() => {
   const dw = determineWinners(soleLeaderCoins)
   expect(dw).toStrictEqual(['player-4'])
 })
 
-it('expect acquiredArtworkCountWin',() => {
+it('разрешает равенство по числу приобретённых работ',() => {
   const dw = determineWinners(acquiredArtworkCountWin)
   expect(dw).toStrictEqual(['player-5'])
 })
 
-it('expect galleryVisitorCountWin',() => {
+it('разрешает равенство по числу посетителей галереи',() => {
   const dw = determineWinners(galleryVisitorCountWin)
   expect(dw).toStrictEqual(['player-6'])
 })
 
-it('expect galleryVisitorCountWin',() => {
+it('разрешает равенство по числу помощников в игре',() => {
   const dw = determineWinners(assistantsInPlayCountWin)
   expect(dw).toStrictEqual(['player-7'])
 })
 
 
-it('expect allWin',() => {
+it('сохраняет всех победителей при полном равенстве',() => {
   const dw = determineWinners(allWin)
   expect(dw).toStrictEqual(['player-10', 'player-9', 'player-7', 'player-8'])
 
 })
 
-it('expect don have player-13',() => {
+it('исключает игрока с меньшим числом монет',() => {
   const dw = determineWinners(nextWin)
   expect(dw).toStrictEqual(['player-11', 'player-12'])
 })
@@ -85,6 +85,7 @@ describe('determineWinners — параметризованная проверк
 
 describe('determineWinners — отклонение невалидных входных данных', () => {
   // Базовый корректный кандидат для создания тестовых данных
+  /** Создаёт корректного кандидата для проверок ошибок. */
   const validCandidate = (id: string): WinnerCandidate => ({
     playerId: id as PlayerId,
     coins: 10,
@@ -158,6 +159,7 @@ describe('determineWinners — отклонение невалидных вхо�
 
 describe('determineWinners — иммутабельность входных данных', () => {
   // Функция-фабрика для получения свежего массива кандидатов перед каждым тестом
+  /** Создаёт новый набор кандидатов для проверок неизменности. */
   const createFreshCandidates = (): WinnerCandidate[] => [
     { playerId: 'player_A' as PlayerId, coins: 50, acquiredArtworkCount: 2, galleryVisitorCount: 5, assistantsInPlayCount: 1 },
     { playerId: 'player_B' as PlayerId, coins: 100, acquiredArtworkCount: 4, galleryVisitorCount: 10, assistantsInPlayCount: 2 },

@@ -11,6 +11,7 @@ import type {
   SetupGameState,
 } from './types.js'
 
+/** Создаёт замороженное начальное состояние игры после проверки конфигурации и игроков. */
 export function createGame(
   config: GameConfig,
   players: readonly PlayerConfig[],
@@ -47,6 +48,7 @@ export function createGame(
   })
 }
 
+/** Начинает игру и детерминированно выбирает первого игрока по seed. */
 export function startGame(state: GameState): RegularPlayGameState {
   if (state.phase !== 'setup') {
     throw new Error('Game can only be started from setup')
@@ -66,6 +68,7 @@ export function startGame(state: GameState): RegularPlayGameState {
   })
 }
 
+/** Передаёт ход следующему игроку и переключает раунд или фазу завершения при необходимости. */
 export function advanceTurn(state: RegularPlayGameState): RegularPlayGameState
 export function advanceTurn(
   state: EndingCurrentRoundGameState,
@@ -141,6 +144,7 @@ export function advanceTurn(state: GameState): GameState {
   })
 }
 
+/** Запускает последовательность завершения после текущего раунда обычной игры. */
 export function triggerGameEnd(state: GameState): EndingCurrentRoundGameState {
   if (state.phase !== 'regular_play') {
     throw new Error('Only regular_play')

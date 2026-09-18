@@ -47,7 +47,7 @@ const influenceRanges = [
   [35, 35, 20],
 ] as const
 
-describe('calculateFinalInfluenceCoins', () => {
+describe('Расчёт монет за итоговое влияние через calculateFinalInfluenceCoins', () => {
   it.each(expectedCoinsByInfluence.map((coins, influence) => [influence, coins]))(
     'возвращает $1 монет для влияния $0',
     (influence, expectedCoins) => {

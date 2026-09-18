@@ -14,6 +14,7 @@ const config: SetupRngConfig = {
   playerIds: ['player-1', 'player-2', 'player-3'],
 }
 
+/** Создаёт четыре отложенные работы разных жанров для теста. */
 const inputArtworks = (): ArtworkDefinition[] => [
   { id: 'WORK-S-09', genre: 'S', fameGain: 'X', ticketReward: 'B+R+W', visitorCount: 3 },
   { id: 'WORK-D-01', genre: 'D', fameGain: 0, ticketReward: 'R', visitorCount: 1 },
@@ -21,15 +22,18 @@ const inputArtworks = (): ArtworkDefinition[] => [
   { id: 'WORK-P-01', genre: 'P', fameGain: 1, ticketReward: 'DIFF2', visitorCount: 2 },
 ]
 
+/** Сравнивает ASCII-идентификаторы работ для проверки порядка. */
 const compareAsciiIds = (left: ArtworkDefinition, right: ArtworkDefinition): number =>
   left.id < right.id ? -1 : left.id > right.id ? 1 : 0
 
+/** Подменяет первую работу в тестовом наборе заданным значением. */
 function replaceFirst(value: unknown): ArtworkDefinition[] {
   const input = inputArtworks()
   input[0] = value as ArtworkDefinition
   return input
 }
 
+/** Проверяет отказ до обращения к генератору случайных чисел. */
 function expectRejectedWithoutRng(input: unknown, playerCount: unknown, message: string): void {
   const snapshot = structuredClone(input)
   const shuffle = vi.fn()
@@ -48,7 +52,7 @@ function expectRejectedWithoutRng(input: unknown, playerCount: unknown, message:
   }
 }
 
-describe('prepareMasterpieceAuction', () => {
+describe('Подготовка аукциона работ через prepareMasterpieceAuction', () => {
   it.each([2, 3, 4] as const)(
     'детерминированно выставляет %i игрокам нужное число полных уникальных работ',
     playerCount => {
@@ -122,19 +126,19 @@ describe('prepareMasterpieceAuction', () => {
   it.each([
     ['null', null],
     ['undefined', undefined],
-    ['empty ID', { ...inputArtworks()[0], id: '' }],
-    ['non-ASCII ID', { ...inputArtworks()[0], id: 'WORK-é' }],
-    ['non-string ID', { ...inputArtworks()[0], id: 1 }],
-    ['unknown genre', { ...inputArtworks()[0], genre: 'Z' }],
-    ['negative fame', { ...inputArtworks()[0], fameGain: -1 }],
-    ['fractional fame', { ...inputArtworks()[0], fameGain: 1.5 }],
-    ['NaN fame', { ...inputArtworks()[0], fameGain: NaN }],
-    ['invalid fame', { ...inputArtworks()[0], fameGain: null }],
-    ['non-string ticket reward', { ...inputArtworks()[0], ticketReward: 1 }],
-    ['negative visitors', { ...inputArtworks()[0], visitorCount: -1 }],
-    ['fractional visitors', { ...inputArtworks()[0], visitorCount: 1.5 }],
-    ['NaN visitors', { ...inputArtworks()[0], visitorCount: NaN }],
-    ['invalid visitors', { ...inputArtworks()[0], visitorCount: null }],
+    ['пустой ID', { ...inputArtworks()[0], id: '' }],
+    ['ID с символом вне ASCII', { ...inputArtworks()[0], id: 'WORK-é' }],
+    ['ID не является строкой', { ...inputArtworks()[0], id: 1 }],
+    ['неизвестный жанр', { ...inputArtworks()[0], genre: 'Z' }],
+    ['отрицательная слава', { ...inputArtworks()[0], fameGain: -1 }],
+    ['дробная слава', { ...inputArtworks()[0], fameGain: 1.5 }],
+    ['слава равна NaN', { ...inputArtworks()[0], fameGain: NaN }],
+    ['недопустимая слава', { ...inputArtworks()[0], fameGain: null }],
+    ['награда билетами не является строкой', { ...inputArtworks()[0], ticketReward: 1 }],
+    ['отрицательное число посетителей', { ...inputArtworks()[0], visitorCount: -1 }],
+    ['дробное число посетителей', { ...inputArtworks()[0], visitorCount: 1.5 }],
+    ['число посетителей равно NaN', { ...inputArtworks()[0], visitorCount: NaN }],
+    ['недопустимое число посетителей', { ...inputArtworks()[0], visitorCount: null }],
   ])('отклоняет повреждённую работу: %s', (_description, value) => {
     expectRejectedWithoutRng(replaceFirst(value), 3, 'Invalid deferred artwork')
   })

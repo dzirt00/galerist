@@ -3,7 +3,7 @@ import { calculateAdditionalFameFromInfluenceSpend } from '../src/index.js'
 
 const INVALID_INFLUENCE_SPEND_MESSAGE = 'Invalid influence spend'
 
-describe('calculateAdditionalFameFromInfluenceSpend', () => {
+describe('Расчёт славы за влияние через calculateAdditionalFameFromInfluenceSpend', () => {
   it.each([
     [10, 5, 1],
     [10, 0, 2],

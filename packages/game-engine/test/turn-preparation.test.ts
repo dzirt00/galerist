@@ -15,22 +15,26 @@ import {
 import { twoPlayerConfigs, twoPlayerGameConfig } from './fixtures.js'
 import { expectPreparedTurnFrozen } from './helpers.js'
 
+/** Создаёт состояние обычного хода для тестов. */
 function createRegularTurnState(): GameState {
   return startGame(createGame(twoPlayerGameConfig, twoPlayerConfigs))
 }
 
+/** Доводит тестовую игру до финального раунда. */
 function createFinalRoundTurnState(): GameState {
   let state: GameState = triggerGameEnd(createRegularTurnState())
   state = advanceTurn(state)
   return advanceTurn(state)
 }
 
+/** Доводит тестовую игру до итогового подсчёта. */
 function createFinalScoringTurnState(): GameState {
   let state = createFinalRoundTurnState()
   state = advanceTurn(state)
   return advanceTurn(state)
 }
 
+/** Создаёт подтверждённую команду хода с заданным временем управления. */
 function createConfirmedTurn(
   timing?: ManagementTiming,
 ): ConfirmedTurnCommand {
@@ -48,6 +52,7 @@ function createConfirmedTurn(
   }
 }
 
+/** Проверяет заморозку плана хода и всех его шагов. */
 function expectPreparedTurnFrozen(
   prepared: ReturnType<typeof prepareTurn>,
 ) {
@@ -56,6 +61,7 @@ function expectPreparedTurnFrozen(
   prepared.steps.forEach(step => expect(Object.isFrozen(step)).toBe(true))
 }
 
+/** Сохраняет признаки заморозки входного состояния и команды. */
 function inputFreezeFlags(
   state: GameState,
   command: ConfirmedTurnCommand,
@@ -77,6 +83,7 @@ function inputFreezeFlags(
     .map(value => Object.isFrozen(value))
 }
 
+/** Проверяет отказ в подготовке хода без изменения входных данных. */
 function expectPreparationRejectedWithoutChangingInputs(
   state: GameState,
   command: ConfirmedTurnCommand,
@@ -105,7 +112,7 @@ it.each([
     timing: 'after_location' as const,
     expectedCategories: ['movement', 'location_action', 'management_action'],
   },
-])('prepares the exact step order for management timing $timing', ({
+])('составляет точный порядок шагов при времени управления $timing', ({
   timing,
   expectedCategories,
 }) => {
@@ -123,7 +130,7 @@ it.each([
   ['regular_play', createRegularTurnState],
   ['ending_current_round', () => triggerGameEnd(createRegularTurnState())],
   ['final_round', createFinalRoundTurnState],
-] as const)('prepares a turn during %s', (phase, createState) => {
+] as const)('подготавливает ход в фазе %s', (phase, createState) => {
   const prepared = prepareTurn(createState(), createConfirmedTurn())
 
   expect(prepared.playerId).toBe('player-1')
@@ -150,7 +157,7 @@ it.each([
     } as unknown as GameState),
     'Game status must be in_progress',
   ],
-] as const)('rejects turn preparation during %s', (_phase, createState, message) => {
+] as const)('отклоняет подготовку хода в фазе %s', (_phase, createState, message) => {
   expectPreparationRejectedWithoutChangingInputs(
     createState(),
     createConfirmedTurn(),
@@ -158,7 +165,7 @@ it.each([
   )
 })
 
-it('rejects an inconsistent runtime status in a turn phase', () => {
+it('отклоняет несогласованный статус игры в фазе хода', () => {
   const state = {
     ...createRegularTurnState(),
     status: 'finished',
@@ -172,9 +179,9 @@ it('rejects an inconsistent runtime status in a turn phase', () => {
 })
 
 it.each([
-  ['another participant', 'player-2'],
-  ['an unknown player', 'player-unknown'],
-])('rejects a command from %s', (_case, playerId) => {
+  ['другой участник', 'player-2'],
+  ['неизвестный игрок', 'player-unknown'],
+])('отклоняет команду, которую отправил %s', (_case, playerId) => {
   const command = { ...createConfirmedTurn(), playerId }
 
   expectPreparationRejectedWithoutChangingInputs(
@@ -185,9 +192,9 @@ it.each([
 })
 
 it.each([
-  ['null', null],
-  ['an unknown player', 'player-unknown'],
-])('rejects %s as activePlayerId', (_case, activePlayerId) => {
+  ['пустой ID', null],
+  ['неизвестный игрок', 'player-unknown'],
+])('отклоняет активного игрока: %s', (_case, activePlayerId) => {
   const state = {
     ...createRegularTurnState(),
     activePlayerId,
@@ -206,21 +213,21 @@ const invalidConfirmedTurnMutationCases: readonly (readonly [
   caseName: string,
   changeCommand: InvalidConfirmedTurnChange,
 ])[] = [
-  ['missing movement', command => {
+  ['отсутствует перемещение', command => {
     const changed: Record<string, unknown> = { ...command }
     delete changed.movement
     return changed
   }],
-  ['undefined movement', command => ({ ...command, movement: undefined })],
-  ['missing location action', command => {
+  ['перемещение не определено', command => ({ ...command, movement: undefined })],
+  ['отсутствует действие локации', command => {
     const changed: Record<string, unknown> = { ...command }
     delete changed.locationAction
     return changed
   }],
-  ['undefined location action', command => ({ ...command, locationAction: undefined })],
+  ['действие локации не определено', command => ({ ...command, locationAction: undefined })],
 ]
 
-it.each(invalidConfirmedTurnMutationCases)('rejects a confirmed turn with %s', (_case, changeCommand) => {
+it.each(invalidConfirmedTurnMutationCases)('отклоняет подтверждённый ход: %s', (_case, changeCommand) => {
   const command = changeCommand(createConfirmedTurn())
 
   expectPreparationRejectedWithoutChangingInputs(
@@ -230,7 +237,7 @@ it.each(invalidConfirmedTurnMutationCases)('rejects a confirmed turn with %s', (
   )
 })
 
-it('returns a new frozen plan independent from mutable inputs', () => {
+it('возвращает новый замороженный план, независимый от изменяемых входов', () => {
   const state = structuredClone(createRegularTurnState())
   const command = structuredClone(createConfirmedTurn('before_location'))
   const stateSnapshot = structuredClone(state)
@@ -258,7 +265,7 @@ it('returns a new frozen plan independent from mutable inputs', () => {
   prepared.steps.forEach(step => expect(step).not.toHaveProperty('testMarker'))
 })
 
-it('returns equal but independent plans for repeated preparation', () => {
+it('возвращает равные независимые планы при повторной подготовке', () => {
   const state = structuredClone(createRegularTurnState())
   const command = structuredClone(createConfirmedTurn('after_location'))
 
@@ -273,7 +280,7 @@ it('returns equal but independent plans for repeated preparation', () => {
   expectPreparedTurnFrozen(second)
 })
 
-it('rechecks the active player after the turn advances', () => {
+it('повторно проверяет активного игрока после передачи хода', () => {
   const state = createRegularTurnState()
   const command = createConfirmedTurn()
 
@@ -287,7 +294,7 @@ it('rechecks the active player after the turn advances', () => {
   )
 })
 
-it('prepares a turn created through the complete draft flow', () => {
+it('подготавливает ход, созданный через полный цикл черновика', () => {
   const empty = createTurnDraft('player-1')
   const moved = updateTurnDraft(empty, {
     type: 'set_movement',

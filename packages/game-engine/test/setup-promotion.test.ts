@@ -5,10 +5,11 @@ import {
   type PromotionTokenDefinition,
 } from '../src/index.js'
 
+/** Создаёт входные рекламные жетоны для проверки подготовки запаса. */
 const inputTokens = (): PromotionTokenDefinition[] =>
   setupComponentCatalog.promotionTokens.map(token => ({ ...token }))
 
-describe('preparePromotionSupply', () => {
+describe('Подготовка запаса рекламы через preparePromotionSupply', () => {
   it('группирует все двадцать токенов в пять уровней по четыре', () => {
     const result = preparePromotionSupply(inputTokens())
 

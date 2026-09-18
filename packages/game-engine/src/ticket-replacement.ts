@@ -17,10 +17,12 @@ export interface TicketReplacementResult {
   readonly exchanged: boolean
 }
 
+/** Проверяет, что цвет билета задан непустой строкой. */
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.length > 0
 }
 
+/** Проверяет корректность количества билетов каждого цвета. */
 function isTicketCounts(value: unknown): value is Readonly<Record<TicketColor, number>> {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
     return false
@@ -31,6 +33,7 @@ function isTicketCounts(value: unknown): value is Readonly<Record<TicketColor, n
   )
 }
 
+/** Проверяет структуру запасов билетов кассы и сброса. */
 function isTicketSupplies(value: unknown): value is TicketSupplies {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
     return false
@@ -40,6 +43,7 @@ function isTicketSupplies(value: unknown): value is TicketSupplies {
   return isTicketCounts(supplies.office) && isTicketCounts(supplies.discard)
 }
 
+/** Возвращает число билетов указанного цвета или ноль при отсутствии записи. */
 function ticketCount(
   counts: Readonly<Record<TicketColor, number>>,
   color: TicketColor,
@@ -47,6 +51,7 @@ function ticketCount(
   return counts[color] ?? 0
 }
 
+/** Копирует и замораживает оба запаса билетов. */
 function freezeSupplies(
   office: Readonly<Record<TicketColor, number>>,
   discard: Readonly<Record<TicketColor, number>>,
@@ -57,6 +62,7 @@ function freezeSupplies(
   })
 }
 
+/** Собирает замороженный результат выдачи или обмена билета. */
 function createResult(
   office: Readonly<Record<TicketColor, number>>,
   discard: Readonly<Record<TicketColor, number>>,
@@ -70,6 +76,7 @@ function createResult(
   })
 }
 
+/** Выдаёт недоступный в кассе билет из сброса, при необходимости обменивая билет кассы. */
 export function replaceUnavailableTicket(
   input: ReplaceUnavailableTicketInput,
 ): Readonly<TicketReplacementResult> {

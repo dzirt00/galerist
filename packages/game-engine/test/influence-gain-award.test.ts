@@ -6,6 +6,7 @@ import {
   type PlayerState,
 } from '../src/index.js'
 
+/** Создаёт игрока с заданным влиянием для проверки награды. */
 function createPlayer(
   id: string,
   coins: number,
@@ -20,7 +21,7 @@ function createPlayer(
   }
 }
 
-describe('applyInfluenceGainToPlayer', () => {
+describe('Начисление влияния игроку через applyInfluenceGainToPlayer', () => {
   it('применяет прирост, сохраняет остальные поля и возвращает нового замороженного игрока', () => {
     const player = createPlayer('first', 8, 32)
     const snapshot = structuredClone(player)
@@ -45,7 +46,7 @@ describe('applyInfluenceGainToPlayer', () => {
   })
 })
 
-describe('applyInfluenceGainToPlayers', () => {
+describe('Начисление влияния игрокам через applyInfluenceGainToPlayers', () => {
   it('применяет награды в исходном порядке, не изменяет входы и создаёт независимые замороженные результаты', () => {
     const sharedPlayer = createPlayer('shared', 5, 10)
     const secondPlayer = createPlayer('second', 9, 34)

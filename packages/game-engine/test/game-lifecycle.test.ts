@@ -22,14 +22,14 @@ import {
 } from './fixtures.js'
 import { advanceAndExpectTurns, expectEndingTurns } from './helpers.js'
 
-  it( 'stores the initial game data', () => {
+  it( 'хранит исходные данные игры', () => {
     const state = structuredClone(setupGameStateFixture)
     expect( state.status ).toBe( 'setup' )
     expect( state.players ).toHaveLength( 2 )
   } )
 
 
-it('createGame is frozen', () =>{
+it('не позволяет повторно начать игру и сохраняет исходное состояние', () =>{
   const state = createGame( twoPlayerGameConfig, twoPlayerConfigs )
   let sg = startGame(state)
   const sgClone = structuredClone(sg)
@@ -43,7 +43,7 @@ it('createGame is frozen', () =>{
 
 })
 
-it('finish game', () => {
+it('отклоняет запуск завершённой игры без изменения состояния', () => {
   const state: FinishedGameState = {
     id: 'game-1',
     config: twoPlayerGameConfig,
@@ -64,7 +64,7 @@ it('finish game', () => {
   expect(state).toEqual(stateClone)
 })
 
-it( 'creates a deterministic initial game', () => {
+it( 'создаёт детерминированное начальное состояние игры', () => {
   const state = createGame( twoPlayerGameConfig, twoPlayerConfigs )
 
   expect( state ).toMatchObject( {
@@ -77,7 +77,7 @@ it( 'creates a deterministic initial game', () => {
   expect( state.players ).toHaveLength( 2 )
 } )
 
-it( 'rejects a player count that differs from the configuration', () => {
+it( 'отклоняет число игроков, не совпадающее с конфигурацией', () => {
   expect( () =>
     createGame(
       twoPlayerGameConfig,
@@ -86,7 +86,7 @@ it( 'rejects a player count that differs from the configuration', () => {
   ).toThrow( 'Player count must match config.playerCount' )
 } )
 
-it('keeps its own player list', () => {
+it('хранит собственную копию списка игроков', () => {
   const playersLocal: PlayerConfig[] = [
     { id: 'player-1', name: 'Алина', kind: 'human' },
     { id: 'player-2', name: 'Алина', kind: 'human' }
@@ -99,7 +99,7 @@ it('keeps its own player list', () => {
   expect(state.players.some(val => val.id === 'player-3')).toBe(false)
 })
 
-it( 'prevents changes to the state-owned player list', () => {
+it( 'запрещает изменение списка игроков в состоянии', () => {
   const player: PlayerState = {
     id: 'player-3',
     name: 'Алина',
@@ -113,14 +113,14 @@ it( 'prevents changes to the state-owned player list', () => {
   expect( state.players ).toHaveLength( 2 )
 })
 
-it( 'keeps its own game configuration', () => {
+it( 'хранит собственную копию конфигурации игры', () => {
   const conf: GameConfig = { playerCount: 2, seed: 42 }
   const state = createGame( conf, twoPlayerConfigs )
   Object.assign(conf, { playerCount: 4, seed: 421 })
   expect(state.config).toEqual({ playerCount: 2, seed: 42 })
 })
 
-it( 'prevents changes to the state-config', () => {
+it( 'запрещает изменение конфигурации в состоянии', () => {
 
   const conf: GameConfig = { playerCount: 2, seed: 42 }
   const confEdit: GameConfig = { playerCount: 3, seed: 55 }
@@ -131,7 +131,7 @@ it( 'prevents changes to the state-config', () => {
   expect(state.config).toEqual({ playerCount: 2, seed: 42 })
 })
 
-it( 'name no change', () => {
+it( 'сохраняет имена игроков после изменения исходных данных', () => {
   type Mutable<T> = { -readonly [K in keyof T]: T[K] }
   const conf: GameConfig = { playerCount: 2, seed: 42 }
   const players: Mutable<PlayerConfig>[] = [
@@ -144,7 +144,7 @@ it( 'name no change', () => {
   expect(state.players[0]!.name).toBe('Алина1')
 })
 
-it( 'should throw an error when players have duplicate IDs', () => {
+it( 'отклоняет игроков с повторяющимися ID', () => {
   const players: PlayerConfig[] = [
     { id: 'player-1', name: 'Алина1', kind: 'human' },
     { id: 'player-1', name: 'Алина2', kind: 'human' },
@@ -155,7 +155,7 @@ it( 'should throw an error when players have duplicate IDs', () => {
 })
 
 
-it('prohibition on modifying the player object.', () => {
+it('запрещает изменение объектов игроков в состоянии', () => {
   const players: PlayerConfig[] = [
     { id: 'player-1', name: 'Алина1', kind: 'human' },
     { id: 'player-2', name: 'Алина2', kind: 'human' },
@@ -171,7 +171,7 @@ it('prohibition on modifying the player object.', () => {
   expect(game.players[0]!.name).toBe('Алина1')
 })
 
-it('you can\'t change the round from outside', () => {
+it('запрещает изменение номера раунда извне', () => {
   const conf: GameConfig = { playerCount: 2, seed: 42 }
 
   const game = createGame( conf, twoPlayerConfigs )
@@ -182,7 +182,7 @@ it('you can\'t change the round from outside', () => {
   expect(game.round).toBe(0)
 })
 
-it('startGame is const? no mutation', () => {
+it('начинает игру без изменения исходного состояния', () => {
 
   const conf: GameConfig = { playerCount: 2, seed: 42 }
   const game = createGame( conf, twoPlayerConfigs )
@@ -205,7 +205,7 @@ it('startGame is const? no mutation', () => {
   expect(sg.round).toBe(1)
 })
 
-it('activePlayerId next active player, round is const', () => {
+it('передаёт ход следующему игроку без изменения номера раунда', () => {
 
   const conf: GameConfig = { playerCount: 2, seed: 42 }
   const game = createGame( conf, twoPlayerConfigs )
@@ -220,7 +220,7 @@ it('activePlayerId next active player, round is const', () => {
   expect(sg.round).toBe(1)
 })
 
-it('next round, activePlayerId first player', () => {
+it('начинает новый раунд с первого игрока', () => {
 
   const conf: GameConfig = { playerCount: 2, seed: 42 }
   const game = createGame( conf, twoPlayerConfigs )
@@ -241,7 +241,7 @@ it('next round, activePlayerId first player', () => {
   expect(nextStep2.round).toBe(2);
 })
 
-it('3 players ,next round, activePlayerId first player', () => {
+it('начинает новый раунд с первого игрока при трёх участниках', () => {
 
   const conf: GameConfig = { playerCount: 3, seed: 42 }
   const game = createGame( conf, threePlayerConfigs )
@@ -257,7 +257,7 @@ it('3 players ,next round, activePlayerId first player', () => {
   ])
 })
 
-it('4 players ,next round, activePlayerId first player', () => {
+it('начинает новый раунд с первого игрока при четырёх участниках', () => {
 
   const conf: GameConfig = { playerCount: 4, seed: 4 }
   const game = createGame( conf, fourPlayerConfigs )
@@ -275,7 +275,7 @@ it('4 players ,next round, activePlayerId first player', () => {
   ])
 })
 
-it('advanceTurn status only progress, now setup', () => {
+it('запрещает передавать ход на этапе подготовки', () => {
   const state = createGame(
     { playerCount: 2, seed: 42 },
     twoPlayerConfigs,
@@ -285,7 +285,7 @@ it('advanceTurn status only progress, now setup', () => {
   expect(state).toEqual(stateCLone)
 })
 
-it('advanceTurn status only progress, now finished', () => {
+it('запрещает передавать ход после завершения игры', () => {
 
   const state: GameState = {
     id: 'game-1',
@@ -306,7 +306,7 @@ it('advanceTurn status only progress, now finished', () => {
   expect(state).toEqual(stateCLone)
 })
 
-it('triggerGameEnd creates a frozen new state without mutating input', () => {
+it('запускает завершение с новым замороженным состоянием без изменения входа', () => {
   const state: GameState = {
     id: 'game-1',
     status: 'in_progress',
@@ -336,7 +336,7 @@ it('triggerGameEnd creates a frozen new state without mutating input', () => {
   expect(trigger.players).toBe(state.players)
 })
 
-it('advanceTurn rejects a null activePlayerId', () => {
+it('отклоняет передачу хода при пустом ID активного игрока', () => {
   const state = {
     id: 'game-1',
     status: 'in_progress',
@@ -356,7 +356,7 @@ it('advanceTurn rejects a null activePlayerId', () => {
 })
 
 
-it(' should return a new frozen state and preserve the original state', () => {
+it('возвращает новое замороженное состояние и сохраняет исходное', () => {
   const initialState: GameState = {
     id: 'game-1',
     status: 'in_progress',
@@ -378,7 +378,7 @@ it(' should return a new frozen state and preserve the original state', () => {
 });
 
 
-it('advanceTurn activePlayerId random name', () => {
+it('отклоняет передачу хода неизвестного игрока', () => {
   const state: GameState = {
     id: 'game-1',
     status: 'in_progress',
@@ -398,7 +398,7 @@ it('advanceTurn activePlayerId random name', () => {
   expect(state).toEqual(stateCLone)
 })
 
-it('advanceTurn phase:setup error', () => {
+it('отклоняет передачу хода в фазе подготовки', () => {
   const state = {
     id: 'game-1',
     status: 'in_progress',
@@ -418,7 +418,7 @@ it('advanceTurn phase:setup error', () => {
   expect(state).toEqual(stateCLone)
 })
 
-it('advanceTurn phase:regular_play', () => {
+it('передаёт ход в фазе обычной игры', () => {
   const state: GameState = {
     id: 'game-1',
     status: 'in_progress',
@@ -441,7 +441,7 @@ it('advanceTurn phase:regular_play', () => {
   expect(state).toEqual(stateCLone)
 })
 
-it('startGame phase:regular_play', () => {
+it('переводит игру в фазу обычной игры при запуске', () => {
   const state = createGame( twoPlayerGameConfig, twoPlayerConfigs )
   const sg = startGame(state)
 
@@ -452,7 +452,7 @@ it('startGame phase:regular_play', () => {
 
 })
 
-it(' EndingCurrentRoundGameState ending_current_round', () => {
+it('переводит игру в фазу завершения текущего раунда', () => {
   const state: GameState = {
     id: 'game-1',
     status: 'in_progress',
@@ -475,7 +475,7 @@ it(' EndingCurrentRoundGameState ending_current_round', () => {
 
 })
 
-it('phase: final_scoring error', () => {
+it('отклоняет передачу хода в фазе итогового подсчёта', () => {
   const state: GameState = {
     id: 'game-1',
     status: 'in_progress',
@@ -495,7 +495,7 @@ it('phase: final_scoring error', () => {
 
 })
 
-it('activePlayerId and firstPlayerId', () => {
+it('сохраняет активного и первого игроков при переходах', () => {
   const state: GameState = {
     id: 'game-1',
     status: 'in_progress',
@@ -523,7 +523,7 @@ it('activePlayerId and firstPlayerId', () => {
 
 })
 
-it('final_round advanceTurn', () => {
+it('передаёт ход в финальном раунде', () => {
   const state: GameState = {
     id: 'game-1',
     status: 'in_progress',
@@ -545,7 +545,7 @@ it('final_round advanceTurn', () => {
   expect(at.endTriggeredRound).toBe(2)
 })
 
-it('triggerGameEnd, is regular_play', () => {
+it('запускает завершение только из фазы обычной игры', () => {
   const state: GameState = {
     id: 'game-1',
     status: 'in_progress',
@@ -574,7 +574,7 @@ it('triggerGameEnd, is regular_play', () => {
   expect(trigger).toEqual(triggerClone)
 })
 
-it('triggerGameEnd rejects a repeated call', () => {
+it('отклоняет повторный запуск завершения', () => {
   const regularState = startGame( createGame( twoPlayerGameConfig, twoPlayerConfigs ) )
   const endingState = triggerGameEnd(regularState)
   const endingStateBefore = structuredClone(endingState)
@@ -583,7 +583,7 @@ it('triggerGameEnd rejects a repeated call', () => {
   expect(endingState).toEqual(endingStateBefore)
 })
 
-it('final_scoring, all round', () => {
+it('переходит к итоговому подсчёту после всех завершающих раундов', () => {
   const state: GameState = {
     id: 'game-1',
     status: 'in_progress',
@@ -617,7 +617,7 @@ it('final_scoring, all round', () => {
   ])
 })
 
-it('final_scoring, all round firstPlayerId: player-2 activePlayerId: player-1', () => {
+it('завершает раунды при втором первом игроке и первом активном', () => {
   const state: GameState = {
     id: 'game-1',
     status: 'in_progress',
@@ -647,7 +647,7 @@ it('final_scoring, all round firstPlayerId: player-2 activePlayerId: player-1', 
 
 })
 
-it('final_scoring, all round firstPlayerId: player-2 activePlayerId: player-3', () => {
+it('завершает раунды при втором первом игроке и третьем активном', () => {
   const state: GameState = {
     id: 'game-1',
     status: 'in_progress',
@@ -679,7 +679,7 @@ it('final_scoring, all round firstPlayerId: player-2 activePlayerId: player-3', 
 
 })
 
-it('final_scoring, all round firstPlayerId: player-2 activePlayerId: player-3', () => {
+it('переходит к итоговому подсчёту после хода третьего игрока', () => {
   const state: SetupGameState = createGame( twoPlayerGameConfig, twoPlayerConfigs )
   expect(() => triggerGameEnd(state)).toThrow('Only regular_play')
 })

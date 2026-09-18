@@ -66,6 +66,7 @@ export interface SetupComponentCatalog {
   readonly visitorInstancesByPlayerCount: Readonly<Record<2 | 3 | 4, readonly VisitorInstance[]>>
 }
 
+/** Рекурсивно замораживает объект и все вложенные значения. */
 export function deepFreeze<T>(value: T): Readonly<T> {
   if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
     Object.values(value).forEach(deepFreeze)
@@ -94,6 +95,7 @@ const orderRows: readonly [ArtworkGenre, RewardId][] = [
   ['D','INFLUENCE'],['P','ORDER-ACTION'],['P','COINS'],['A','ORDER-ACTION'],['A','VISITOR-BR'],['P','VISITOR-BAG'],['D','ORDER-ACTION'],['S','ORDER-ACTION'],['A','HIRE-FREE'],['A','COINS'],['D','HIRE-FREE'],['A','VISITOR-BAG'],['P','VISITOR-BR'],['S','VISITOR-BAG'],['S','VISITOR-BR'],['D','VISITOR-BAG'],['D','VISITOR-BR'],['P','HIRE-FREE'],['S','INFLUENCE'],['S','HIRE-FREE'],
 ]
 
+/** Создаёт экземпляры посетителей с устойчивыми ID для заданного числа игроков. */
 function createVisitorInstances(playerCount: 2 | 3 | 4): VisitorInstance[] {
   const counts: Readonly<Record<2 | 3 | 4, Readonly<Record<VisitorType, number>>>> = {
     2: { B: 10, R: 10, W: 8 },

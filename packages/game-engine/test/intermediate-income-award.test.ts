@@ -2,7 +2,7 @@ import { expect, it } from "vitest";
 import { applyIntermediateIncomeToPlayer, type IntermediateVisitorCounts, type PlayerState } from "../src/index.js";
 
 it.each([
-  // [id, name, kind, coins, influence, investors, celebrities, collectors, coinsRes, influenceRes]
+  // [ID, имя, тип, монеты, влияние, инвесторы, знаменитости, коллекционеры, итоговые монеты, итоговое влияние]
   ['player-1','Alex','human', 8, 1,0,0,0,8,1],
   ['player-1','Alex','human', 8, 1,2,3,1,13,8],
   ['player-1','Alex','human', 8, 1,4,0,0,16,1],
@@ -47,7 +47,7 @@ it.each([
 )
 
 it.each([
-  // [id, name, kind, coins, influence, investors, celebrities, collectors, coinsRes, influenceRes]
+  // [ID, имя, тип, монеты, влияние, инвесторы, знаменитости, коллекционеры, итоговые монеты, итоговое влияние]
   ['player-1', 'Alex', 'human', 8, 1, 0, 0, 0, 8, 1],
 ] as const)(
   'возвращает правильные ресурсы при расчете дохода',

@@ -14,10 +14,11 @@ const config: SetupRngConfig = {
   playerIds: ['player-1', 'player-2', 'player-3'],
 }
 
+/** Сравнивает ASCII-идентификаторы посетителей для проверки порядка. */
 const compareAsciiIds = (left: VisitorInstance, right: VisitorInstance): number =>
   left.id < right.id ? -1 : left.id > right.id ? 1 : 0
 
-describe('prepareVisitorBag', () => {
+describe('Подготовка мешка посетителей через prepareVisitorBag', () => {
   it.each([2, 3, 4] as const)(
     'детерминированно готовит полный уникальный мешочек для %i игроков с точными ID и типами',
     playerCount => {

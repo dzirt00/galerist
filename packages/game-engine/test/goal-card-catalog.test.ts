@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { curator, dealer } from '../src/index.js'
 
-describe('catalogues of curator and dealer goal cards', () => {
+describe('Каталоги карт целей куратора и дилера', () => {
   it('содержит четыре карты каждого типа с согласованными строками целей', () => {
     expect(curator).toHaveLength(4)
     expect(dealer).toHaveLength(4)

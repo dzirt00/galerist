@@ -8,8 +8,8 @@ const config: SetupRngConfig = {
   playerIds: ['p1', 'p2', 'p3'],
 }
 
-describe('setup-rng-v1', () => {
-  it('produces the fixed SHA-256 vectors and keeps stage counters independent', () => {
+describe('Генератор подготовки setup-rng-v1', () => {
+  it('выдаёт фиксированные значения SHA-256 и ведёт независимые счётчики этапов', () => {
     const rng = createSetupRng(config)
     const independentRng = createSetupRng(config)
 
@@ -22,7 +22,7 @@ describe('setup-rng-v1', () => {
     expect(rng.nextUint32('artists')).toBe(1628201228)
   })
 
-  it('normalizes negative zero and snapshots mutable caller configuration', () => {
+  it('нормализует отрицательный ноль и копирует изменяемую конфигурацию', () => {
     const mutableConfig = {
       ...config,
       playerIds: [...config.playerIds],
@@ -40,13 +40,13 @@ describe('setup-rng-v1', () => {
   })
 
   it.each([NaN, Infinity, -Infinity, 1.5, 9007199254740992])(
-    'rejects invalid seed %s',
+    'отклоняет недопустимое зерно генератора %s',
     seed => {
       expect(() => createSetupRng({ ...config, seed })).toThrow('Seed must be a safe integer')
     },
   )
 
-  it('rejects empty stages and invalid selection sizes', () => {
+  it('отклоняет пустые этапы и недопустимые размеры выбора', () => {
     const rng = createSetupRng(config)
 
     expect(() => rng.nextUint32('')).toThrow('Stage ID must be a non-empty string')
@@ -59,7 +59,7 @@ describe('setup-rng-v1', () => {
     }
   })
 
-  it('accepts the inclusive selection-size boundaries', () => {
+  it('принимает граничные значения размера выбора', () => {
     const rng = createSetupRng(config)
     const maxSizeRng = createSetupRng(config)
     const directRng = createSetupRng(config)
@@ -70,14 +70,14 @@ describe('setup-rng-v1', () => {
     )
   })
 
-  it('uses rejection sampling and consumes rejected values from the stage counter', () => {
+  it('отбрасывает лишние значения при выборе и учитывает их в счётчике этапа', () => {
     const rng = createSetupRng(config)
 
     expect(rng.chooseIndex('rejection-4', 2 ** 31 + 1)).toBe(508397661)
     expect(rng.nextUint32('rejection-4')).toBe(1755801826)
   })
 
-  it('shuffles without mutating or freezing the input and freezes a new result', () => {
+  it('перемешивает без изменения и заморозки входа и замораживает результат', () => {
     const input = [{ id: 'A' }, { id: 'B' }, { id: 'C' }, { id: 'D' }]
     const inputSnapshot = structuredClone(input)
     const result = createSetupRng(config).shuffle('orders', input)
@@ -91,7 +91,7 @@ describe('setup-rng-v1', () => {
     expect(result.every(item => input.includes(item))).toBe(true)
   })
 
-  it('does not consume RNG for empty or singleton shuffles', () => {
+  it('не расходует случайные значения для пустого массива и одного элемента', () => {
     const emptyRng = createSetupRng(config)
     const singletonRng = createSetupRng(config)
     const emptyReferenceRng = createSetupRng(config)
@@ -114,7 +114,7 @@ describe('setup-rng-v1', () => {
     expect(singletonRng.nextUint32('orders')).toBe(singletonReferenceRng.nextUint32('orders'))
   })
 
-  it('returns equal but independent shuffled results from independent RNG instances', () => {
+  it('возвращает равные независимые результаты для независимых генераторов', () => {
     const input = ['A', 'B', 'C', 'D']
     const firstResult = createSetupRng(config).shuffle('orders', input)
     const secondResult = createSetupRng(config).shuffle('orders', input)

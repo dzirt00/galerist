@@ -5,6 +5,7 @@ export interface PreparedMasterpieceAuction {
   readonly artworks: readonly ArtworkDefinition[]
 }
 
+/** Проверяет отложенные работы и выбирает для аукциона число работ по составу игроков. */
 export function prepareMasterpieceAuction(
   artworks: readonly ArtworkDefinition[],
   playerCount: 2 | 3 | 4,

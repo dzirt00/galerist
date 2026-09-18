@@ -4,6 +4,7 @@ import {
   type ReplaceUnavailableTicketInput,
 } from '../src/index.js'
 
+/** Собирает входные запасы и цвета билетов для проверки замены. */
 function input(
   office: Record<string, number>,
   discard: Record<string, number>,
@@ -17,7 +18,7 @@ function input(
   }
 }
 
-describe('replaceUnavailableTicket', () => {
+describe('Замена недоступного билета через replaceUnavailableTicket', () => {
   it('обменивает выбранный билет кассы на требуемый билет из сброса', () => {
     const result = replaceUnavailableTicket(input(
       { red: 0, blue: 2, yellow: 1 },

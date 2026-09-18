@@ -6,6 +6,7 @@ import {
   type TurnDraft,
 } from '../src/index.js'
 
+/** Проверяет последовательность ходов и неизменность исходного состояния. */
 export function advanceAndExpectTurns(
   initialState: GameState,
   expectedTurns: readonly { activePlayerId: string; round: number }[],
@@ -43,12 +44,14 @@ type EndingTurnExpectation = readonly [
   activePlayerId: string | null,
 ]
 
+/** Определяет, относится ли состояние к фазам завершения игры. */
 function isEndingSequenceGameState(state: GameState): state is EndingSequenceGameState {
   return state.phase === 'ending_current_round'
     || state.phase === 'final_round'
     || state.phase === 'final_scoring'
 }
 
+/** Сверяет состояния завершения с ожидаемыми фазами, раундами и игроками. */
 export function expectEndingTurns(
   states: readonly GameState[],
   initialState: GameState,
@@ -72,6 +75,7 @@ export function expectEndingTurns(
   })
 }
 
+/** Проверяет заморозку черновика и всех вложенных действий. */
 export function expectDraftFrozen(draft: TurnDraft, frozen: boolean) {
   const objects = [
     draft,
@@ -87,6 +91,7 @@ export function expectDraftFrozen(draft: TurnDraft, frozen: boolean) {
   }
 }
 
+/** Проверяет заморозку плана хода, списка шагов и каждого шага. */
 export function expectPreparedTurnFrozen(
   prepared: { readonly steps: readonly object[] },
 ) {

@@ -5,6 +5,7 @@ import {
   type PlayerState,
 } from '../src/index.js'
 
+/** Создаёт игрока с заданными ресурсами для проверки выплат. */
 function createPlayer(
   id: string,
   coins: number,
@@ -19,7 +20,7 @@ function createPlayer(
   }
 }
 
-describe('applyIntermediateIncomeToPlayers', () => {
+describe('Промежуточный доход игроков через applyIntermediateIncomeToPlayers', () => {
   it('применяет каждому игроку доход от его посетителей и сохраняет порядок', () => {
     const entries: IntermediateIncomeAwardInput[] = [
       {

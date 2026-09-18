@@ -1,5 +1,6 @@
 import type { PlayerId, WinnerCandidate } from './types.js'
 
+/** Находит победителей по монетам и последовательным показателям равенства. */
 export function determineWinners(
   candidates: readonly WinnerCandidate[],
 ): readonly PlayerId[] {

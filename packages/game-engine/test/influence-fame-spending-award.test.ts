@@ -6,6 +6,7 @@ import {
   type PlayerState,
 } from '../src/index.js'
 
+/** Создаёт игрока с заданным влиянием для теста. */
 function createPlayer(influence: number): PlayerState {
   return {
     id: 'player-1',
@@ -16,10 +17,12 @@ function createPlayer(influence: number): PlayerState {
   }
 }
 
+/** Создаёт художника с заданной славой для теста. */
 function createArtist(fame: number): ArtistFameState {
   return { artistId: 'artist-1', fame }
 }
 
+/** Собирает допустимые входные данные для траты влияния на славу. */
 function createEligibleInput(
   influence: number,
   targetInfluence: number,
@@ -38,7 +41,7 @@ function createEligibleInput(
   }
 }
 
-describe('applyAdditionalFameSpend', () => {
+describe('Начисление славы за влияние через applyAdditionalFameSpend', () => {
   it.each([
     [10, 5, 7, 8],
     [10, 0, 7, 9],

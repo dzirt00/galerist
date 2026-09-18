@@ -1,5 +1,6 @@
 const MAX_INFLUENCE = 35;
 
+/** Проверяет прирост и возвращает значение влияния, ограниченное максимумом шкалы. */
 export function calculateInfluenceAfterGain(
   currentInfluence: number,
   gainedInfluence: number,

@@ -14,6 +14,7 @@ const config: SetupRngConfig = {
   playerIds: ['player-1', 'player-2', 'player-3'],
 }
 
+/** Выбирает ожидаемых художников из входного каталога для проверки рынка. */
 function selectArtists(artists: readonly ArtistDefinition[]): readonly ArtistDefinition[] {
   const selectedByPair = new Map<string, ArtistDefinition>()
 
@@ -27,7 +28,7 @@ function selectArtists(artists: readonly ArtistDefinition[]): readonly ArtistDef
   return [...selectedByPair.values()]
 }
 
-describe('prepareArtistMarket', () => {
+describe('Подготовка рынка художников через prepareArtistMarket', () => {
   it('детерминированно заполняет восемь пар и открывает первого выбранного синего художника', () => {
     const input = setupComponentCatalog.artists.map(artist => ({ ...artist }))
     const shuffled = createSetupRng(config).shuffle(

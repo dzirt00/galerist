@@ -4,6 +4,7 @@ import {
   type PlayerState,
 } from '../src/index.js'
 
+/** Создаёт игрока с заданными монетами и влиянием для проверки оплаты. */
 function createPlayer(coins: number, influence: number): Readonly<PlayerState> {
   return Object.freeze({
     id: 'player-1',
@@ -14,7 +15,7 @@ function createPlayer(coins: number, influence: number): Readonly<PlayerState> {
   })
 }
 
-describe('spendInfluenceForImmediatePayment', () => {
+describe('Оплата влиянием через spendInfluenceForImmediatePayment', () => {
   it('оплачивает стоимость собственными монетами и доходом от влияния', () => {
     const player = createPlayer(2, 10)
 

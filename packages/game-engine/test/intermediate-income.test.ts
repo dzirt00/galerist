@@ -7,7 +7,7 @@ import {
 
 const INVALID_VISITOR_COUNT_MESSAGE = 'Invalid visitor count'
 
-describe('calculateIntermediateIncome', () => {
+describe('Расчёт промежуточного дохода через calculateIntermediateIncome', () => {
   it.each([
     [0, 0, 0, 0, 0],
     [2, 3, 1, 5, 7],
