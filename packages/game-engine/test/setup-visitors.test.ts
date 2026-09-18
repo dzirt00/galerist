@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   createSetupRng,
+  placeInitialVisitors,
   prepareVisitorBag,
   setupComponentCatalog,
   type SetupRngConfig,
@@ -75,5 +76,55 @@ describe('Подготовка мешка посетителей через prep
     expect(first).not.toBe(second)
     expect(first.visitors).not.toBe(second.visitors)
     expect(first.visitors[0]).not.toBe(second.visitors[0])
+  })
+})
+
+describe('Начальное размещение посетителей через placeInitialVisitors', () => {
+  const playerIds = ['player-1', 'player-2', 'player-3']
+
+  it('берёт первых четырёх на площадь, затем по одному игрокам в порядке мест', () => {
+    const visitors = setupComponentCatalog.visitorInstancesByPlayerCount[3]
+      .slice(0, 10).map(visitor => ({ ...visitor }))
+    const result = placeInitialVisitors({ visitors }, playerIds)
+
+    expect(result.plazaVisitors.map(visitor => visitor.id)).toEqual(visitors.slice(0, 4).map(visitor => visitor.id))
+    expect(result.visitorPlayers.map(({ playerId, vestibuleVisitor }) => [playerId, vestibuleVisitor.id])).toEqual(
+      playerIds.map((id, index) => [id, visitors[index + 4]!.id]),
+    )
+    expect(result.remainingVisitors.map(visitor => visitor.id)).toEqual(visitors.slice(7).map(visitor => visitor.id))
+    expect([
+      ...result.plazaVisitors,
+      ...result.visitorPlayers.map(({ vestibuleVisitor }) => vestibuleVisitor),
+      ...result.remainingVisitors,
+    ].map(visitor => visitor.id)).toEqual(visitors.map(visitor => visitor.id))
+  })
+
+  it('отклоняет недостаточный остаток мешочка и недопустимый состав игроков', () => {
+    const visitors = setupComponentCatalog.visitorInstancesByPlayerCount[2]
+      .slice(0, 5).map(visitor => ({ ...visitor }))
+    const enoughVisitors = setupComponentCatalog.visitorInstancesByPlayerCount[2]
+      .slice(0, 8).map(visitor => ({ ...visitor }))
+
+    expect(() => placeInitialVisitors({ visitors }, ['player-1', 'player-2'])).toThrow()
+    expect(() => placeInitialVisitors({ visitors: enoughVisitors }, ['player-1'])).toThrow('invalid playerIds')
+    expect(() => placeInitialVisitors({ visitors: enoughVisitors }, ['player-1', 'player-1'])).toThrow('invalid playerIds')
+    expect(visitors).toHaveLength(5)
+  })
+
+  it('возвращает замороженные независимые данные, не изменяя и не замораживая вход', () => {
+    const visitors = setupComponentCatalog.visitorInstancesByPlayerCount[2]
+      .slice(0, 8).map(visitor => ({ ...visitor }))
+    const snapshot = structuredClone(visitors)
+    const result = placeInitialVisitors({ visitors }, ['player-1', 'player-2'])
+
+    expect(visitors).toEqual(snapshot)
+    expect(Object.isFrozen(visitors)).toBe(false)
+    expect(visitors.every(visitor => !Object.isFrozen(visitor))).toBe(true)
+    expect(Object.isFrozen(result)).toBe(true)
+    expect(Object.isFrozen(result.plazaVisitors)).toBe(true)
+    expect(Object.isFrozen(result.visitorPlayers)).toBe(true)
+    expect(Object.isFrozen(result.remainingVisitors)).toBe(true)
+    expect(result.visitorPlayers.every(Object.isFrozen)).toBe(true)
+    expect(result.plazaVisitors[0]).not.toBe(visitors[0])
   })
 })

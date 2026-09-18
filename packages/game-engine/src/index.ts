@@ -29,7 +29,7 @@ export {spendInfluenceForImmediatePayment} from './influence-spending-award.js'
 export {applyAdditionalFameSpend} from './influence-fame-spending-award.js'
 export { dealer, curator, type CuratorDealer, type TargetCuratorDealer } from './setupComponentCatalog.js'
 export { type PreparedPromotionSupply, preparePromotionSupply} from './setup-promotion.js'
-export { type PreparedVisitorBag, prepareVisitorBag} from './setup-visitors.js'
+export { type PreparedVisitorBag, prepareVisitorBag, type InitialVisitorPlacement, type PlayerVestibuleVisitor, placeInitialVisitors} from './setup-visitors.js'
 export {prepareMasterpieceAuction, type PreparedMasterpieceAuction} from './setup-masterpieces.js'
 export {
   setupComponentCatalog,
