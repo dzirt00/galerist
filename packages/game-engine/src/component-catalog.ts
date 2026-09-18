@@ -10,6 +10,13 @@ export type StartingLocationId =
   | 'LOC-INTERNATIONAL_MARKET'
   | 'LOC-SALES_OFFICE'
 
+export interface ArtworkDefinition {
+  readonly id: string;
+  readonly genre: ArtworkGenre;
+  readonly fameGain: number | 'X';
+  readonly ticketReward: string;
+  readonly visitorCount: number
+}
 export interface VisitorInstance {
   readonly id: string
   readonly type: VisitorType
@@ -36,7 +43,7 @@ export interface SetupComponentCatalog {
   readonly categoryOrder: readonly ArtistCategory[]
   readonly ticketColors: readonly SetupTicketColor[]
   readonly artists: readonly Readonly<ArtistDefinition>[]
-  readonly artworks: readonly { readonly id: string; readonly genre: ArtworkGenre; readonly fameGain: number | 'X'; readonly ticketReward: string; readonly visitorCount: number }[]
+  readonly artworks: readonly Readonly<ArtworkDefinition>[]
   readonly artistBonuses: readonly { readonly id: string; readonly reward: RewardId }[]
   readonly orders: readonly { readonly id: string; readonly genre: ArtworkGenre; readonly reward: RewardId }[]
   readonly curatorGoals: readonly string[]

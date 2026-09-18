@@ -30,6 +30,7 @@ export {applyAdditionalFameSpend} from './influence-fame-spending-award.js'
 export { dealer, curator, type CuratorDealer, type TargetCuratorDealer } from './setupComponentCatalog.js'
 export { type PreparedPromotionSupply, preparePromotionSupply} from './setup-promotion.js'
 export { type PreparedVisitorBag, prepareVisitorBag} from './setup-visitors.js'
+export {prepareMasterpieceAuction, type PreparedMasterpieceAuction} from './setup-masterpieces.js'
 export {
   setupComponentCatalog,
   type ArtistCategory,
@@ -42,6 +43,7 @@ export {
   type StartingLocationId,
   type VisitorInstance,
   type ArtistDefinition,
+  type ArtworkDefinition,
   type PromotionTokenDefinition
 } from './component-catalog.js'
 export {
