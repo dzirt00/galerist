@@ -48,6 +48,7 @@ export {
   type StartingLocationId,
   type VisitorInstance,
   type ArtistDefinition,
+  type ArtistBonusDefinition,
   type ArtworkDefinition,
   type PromotionTokenDefinition
 } from './component-catalog.js'
@@ -59,5 +60,12 @@ export {
   type TicketSupplies,
 } from './ticket-replacement.js'
 export {prepareOrderMarket, type PreparedOrderMarket} from './setup-orders.js'
-export { type PreparedArtistSlot, type PreparedArtistMarket, prepareArtistMarket } from './setup-artists.js'
+export {
+  prepareArtistMarket,
+  prepareArtistSetup,
+  type PreparedArtistMarket,
+  type PreparedArtistSetup,
+  type PreparedArtistSetupSlot,
+  type PreparedArtistSlot,
+} from './setup-artists.js'
 export {type SetupInternationalMarket, prepareInternationalMarket} from './setup-international-market.js'

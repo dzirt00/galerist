@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   createSetupRng,
   prepareArtistMarket,
+  prepareArtistSetup,
   setupComponentCatalog,
   type ArtistDefinition,
   type SetupRngConfig,
@@ -100,5 +101,110 @@ describe('Подготовка рынка художников через prepar
     expect(first.slots).not.toBe(second.slots)
     expect(first.unselectedArtistIds).not.toBe(second.unselectedArtistIds)
     expect(first.slots[0]).not.toBe(second.slots[0])
+  })
+})
+
+describe('Подготовка бонусов, коллекционеров и подписей художников', () => {
+  const inputMarket = () => prepareArtistMarket(
+    setupComponentCatalog.artists.map(artist => ({ ...artist })),
+    createSetupRng(config),
+  )
+  const inputVisitors = () =>
+    setupComponentCatalog.visitorInstancesByPlayerCount[2].map(visitor => ({ ...visitor }))
+  const inputBonuses = () => setupComponentCatalog.artistBonuses.map(bonus => ({ ...bonus }))
+
+  it('раздаёт бонусы закрытым художникам, коллекционеров красным и по две подписи каждому', () => {
+    const result = prepareArtistSetup(
+      inputMarket(),
+      inputVisitors(),
+      inputBonuses(),
+      createSetupRng(config),
+    )
+    const slots = result.slots
+    const closedSlots = slots.filter(slot => !slot.isOpen)
+    const redSlots = slots.filter(slot => slot.category === 'red')
+    const signatureIds = slots.flatMap(slot => slot.signatureIds)
+
+    expect(slots).toHaveLength(8)
+    expect(slots.filter(slot => slot.isOpen).map(slot => slot.bonus)).toEqual([null])
+    expect(closedSlots.every(slot => slot.bonus !== null)).toBe(true)
+    expect(new Set(closedSlots.map(slot => slot.bonus!.id)).size).toBe(7)
+    expect(result.unusedBonuses).toHaveLength(3)
+    expect(redSlots).toHaveLength(4)
+    expect(redSlots.every(slot => slot.collector?.type === 'W')).toBe(true)
+    expect(new Set(redSlots.map(slot => slot.collector!.id)).size).toBe(4)
+    expect(signatureIds).toHaveLength(16)
+    expect(new Set(signatureIds).size).toBe(16)
+    expect(result.remainingVisitors).toHaveLength(inputVisitors().length - 4)
+    expect(Object.isFrozen(result)).toBe(true)
+    expect(Object.isFrozen(slots)).toBe(true)
+    expect(slots.every(Object.isFrozen)).toBe(true)
+  })
+
+  it('не зависит от порядка бонусов и посетителей и не изменяет либо не замораживает входы', () => {
+    const market = inputMarket()
+    const visitors = inputVisitors()
+    const bonuses = inputBonuses()
+    const marketSnapshot = structuredClone(market)
+    const visitorsSnapshot = structuredClone(visitors)
+    const bonusesSnapshot = structuredClone(bonuses)
+
+    const forward = prepareArtistSetup(
+      market,
+      visitors,
+      bonuses,
+      createSetupRng(config),
+    )
+    const reversed = prepareArtistSetup(
+      inputMarket(),
+      [...inputVisitors()].reverse(),
+      [...inputBonuses()].reverse(),
+      createSetupRng(config),
+    )
+
+    expect(forward).toEqual(reversed)
+    expect(market).toEqual(marketSnapshot)
+    expect(visitors).toEqual(visitorsSnapshot)
+    expect(bonuses).toEqual(bonusesSnapshot)
+    expect(visitors.every(visitor => !Object.isFrozen(visitor))).toBe(true)
+    expect(bonuses.every(bonus => !Object.isFrozen(bonus))).toBe(true)
+  })
+
+  it('отклоняет рынок без восьми уникальных пар жанра и категории', () => {
+    const market = inputMarket()
+    const malformedMarket = {
+      ...market,
+      slots: market.slots.map((slot, index) => index === 1
+        ? { ...slot, genre: market.slots[0]!.genre, category: market.slots[0]!.category }
+        : { ...slot }),
+    }
+
+    expect(() => prepareArtistSetup(
+      malformedMarket,
+      inputVisitors(),
+      inputBonuses(),
+      createSetupRng(config),
+    )).toThrow()
+  })
+
+  it('отклоняет повторяющиеся компоненты и нехватку коллекционеров', () => {
+    const bonuses = inputBonuses()
+    const duplicateBonuses = [...bonuses.slice(0, -1), { ...bonuses[0]! }]
+    const visitors = inputVisitors()
+    const duplicateVisitors = visitors.map((visitor, index) => index === 1
+      ? { ...visitor, id: visitors[0]!.id }
+      : visitor)
+    const insufficientCollectors = visitors.filter(visitor => visitor.type !== 'W')
+      .concat(visitors.filter(visitor => visitor.type === 'W').slice(0, 3))
+
+    expect(() => prepareArtistSetup(
+      inputMarket(), duplicateVisitors, inputBonuses(), createSetupRng(config),
+    )).toThrow()
+    expect(() => prepareArtistSetup(
+      inputMarket(), inputVisitors(), duplicateBonuses, createSetupRng(config),
+    )).toThrow()
+    expect(() => prepareArtistSetup(
+      inputMarket(), insufficientCollectors, inputBonuses(), createSetupRng(config),
+    )).toThrow()
   })
 })

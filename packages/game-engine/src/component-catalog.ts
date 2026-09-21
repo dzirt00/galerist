@@ -36,6 +36,11 @@ export interface ArtistDefinition {
   readonly initialFame: number
   readonly initialPromotion: number
 }
+/** Статическое определение бонуса, размещаемого у закрытого художника. */
+export interface ArtistBonusDefinition {
+  readonly id: string
+  readonly reward: RewardId
+}
 
 export interface SetupComponentCatalog {
   readonly version: string
@@ -44,7 +49,7 @@ export interface SetupComponentCatalog {
   readonly ticketColors: readonly SetupTicketColor[]
   readonly artists: readonly Readonly<ArtistDefinition>[]
   readonly artworks: readonly Readonly<ArtworkDefinition>[]
-  readonly artistBonuses: readonly { readonly id: string; readonly reward: RewardId }[]
+  readonly artistBonuses: readonly ArtistBonusDefinition[]
   readonly orders: readonly { readonly id: string; readonly genre: ArtworkGenre; readonly reward: RewardId }[]
   readonly curatorGoals: readonly string[]
   readonly dealerGoals: readonly string[]
