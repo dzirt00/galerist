@@ -8,12 +8,22 @@ export interface PreparedPromotionSupply {
 export function preparePromotionSupply(
   tokens: readonly PromotionTokenDefinition[],
 ): PreparedPromotionSupply {
+
+ const tokensSet = new Set(tokens.map((token) => token.id))
+
+  if ( tokensSet.size !== 20 ) {
+    throw new Error('Invalid tokens')
+  }
+
   const res: Record<1 | 2 | 3 | 4 | 5, string[]> = { 1: [], 2: [],3: [],4: [],5: []}
 
   tokens.forEach(token => {
     res[token.level].push(token.id)
   })
 
+  for(let val of Object.values(res)) {
+    if(val.length !== 4) throw new Error('Invalid tokens')
+  }
   for (const array of Object.values(res)) {
     Object.freeze(array);
   }

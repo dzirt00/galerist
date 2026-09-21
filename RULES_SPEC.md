@@ -212,7 +212,8 @@
 - **Исключения:** количество жетонов ограничено.
 - **События:** `PromotionSupplyPrepared`.
 - **Проверки:** каждый жетон находится в стопке своего уровня; общий запас сохраняется.
-- **Статус:** `spec: approved` · `implementation: no` · `tests: no`.
+- **Статус:** `spec: approved` · `implementation: partial` · `tests: yes` — чистая функция группирует ровно 20 уникальных жетонов по четыре на каждом уровне 1–5; интеграция с `GameState` и событие `PromotionSupplyPrepared` отсутствуют.
+- **Трассировка:** `preparePromotionSupply` в [подготовке запаса рекламы](packages/game-engine/src/setup-promotion.ts); [тесты](packages/game-engine/test/setup-promotion.test.ts): точный состав и порядок, недостающий и лишний жетоны, неверное распределение по уровням, повтор ID, неизменяемость входа, глубокая заморозка и независимость результатов.
 
 ### SETUP-008 — Международный рынок
 
