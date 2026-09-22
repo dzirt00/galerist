@@ -17,6 +17,7 @@ export {
   type SetupRngConfig,
 } from './setup-rng.js'
 export { determineWinners } from './winner-determination.js'
+export { refillArtworkMarket, type ArtworkMarketRefillResult } from './artwork-market-refill.js'
 export { applyInfluenceGainToGameState } from './influence-gain-state.js'
 export { calculateFinalInfluenceCoins } from './influence-scoring.js'
 export { calculateInfluenceAfterGain } from './influence-gain.js'
