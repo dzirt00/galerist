@@ -130,6 +130,9 @@ export function startGame(state: GameState): RegularPlayGameState {
   if (state.phase !== 'setup') {
     throw new Error('Game can only be started from setup')
   }
+  if (state.setupStage !== 'complete') {
+    throw new Error('Game can only be started after setup is complete')
+  }
 
   const firstPlayerIndex = getFirstPlayerIndex(
     state.config.seed,

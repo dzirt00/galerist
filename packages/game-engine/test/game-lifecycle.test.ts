@@ -3,7 +3,7 @@ import {
   advanceTurn,
   createGame,
   setupComponentCatalog,
-  startGame,
+  startGame as startGameFromSetup,
   triggerGameEnd,
   type FinishedGameState,
   type GameConfig,
@@ -21,7 +21,19 @@ import {
   twoPlayerGameConfig,
   twoPlayerStates,
 } from './fixtures.js'
-import { advanceAndExpectTurns, expectEndingTurns } from './helpers.js'
+import {
+  advanceAndExpectTurns,
+  completeStartingLocationSelection,
+  expectEndingTurns,
+} from './helpers.js'
+
+function startGame(state: GameState) {
+  return startGameFromSetup(
+    state.phase === 'setup' && state.setupStage === 'choosing_starting_locations'
+      ? completeStartingLocationSelection(state)
+      : state,
+  )
+}
 
   it( 'хранит исходные данные игры', () => {
     const state = structuredClone(setupGameStateFixture)
@@ -465,16 +477,17 @@ it.each([
 
 it('глубоко замораживает и сохраняет планшеты при переходах lifecycle', () => {
   const setup = createGame(twoPlayerGameConfig, twoPlayerConfigs)
-  const regularPlay = startGame(setup)
+  const completedSetup = completeStartingLocationSelection(setup)
+  const regularPlay = startGameFromSetup(completedSetup)
   const nextTurn = advanceTurn(regularPlay)
   const endingCurrentRound = triggerGameEnd(nextTurn)
 
   expect(Object.isFrozen(setup.playerBoards)).toBe(true)
   expect(setup.playerBoards.every(Object.isFrozen)).toBe(true)
   expect(setup.playerBoards.every(board => Object.isFrozen(board.assistants))).toBe(true)
-  expect(regularPlay.playerBoards).toBe(setup.playerBoards)
-  expect(nextTurn.playerBoards).toBe(setup.playerBoards)
-  expect(endingCurrentRound.playerBoards).toBe(setup.playerBoards)
+  expect(regularPlay.playerBoards).toBe(completedSetup.playerBoards)
+  expect(nextTurn.playerBoards).toBe(completedSetup.playerBoards)
+  expect(endingCurrentRound.playerBoards).toBe(completedSetup.playerBoards)
 })
 
 it.each([
@@ -565,7 +578,8 @@ it('детерминированно готовит, замораживает и
   const config: GameConfig = { playerCount: 2, seed: -42 }
   const first = createGame(config, twoPlayerConfigs)
   const second = createGame({ ...config }, twoPlayerConfigs.map(player => ({ ...player })))
-  const regularPlay = startGame(first)
+  const completedSetup = completeStartingLocationSelection(first)
+  const regularPlay = startGameFromSetup(completedSetup)
   const endingCurrentRound = triggerGameEnd(advanceTurn(regularPlay))
 
   expect(first.internationalMarket).toEqual(second.internationalMarket)
@@ -575,8 +589,8 @@ it('детерминированно готовит, замораживает и
   expect(Object.isFrozen(first.internationalMarket.remainingTokenIds)).toBe(true)
   expect(first.internationalMarket.tableIds.every(Object.isFrozen)).toBe(true)
   expect(first.internationalMarket.locationTokens.every(Object.isFrozen)).toBe(true)
-  expect(regularPlay.internationalMarket).toBe(first.internationalMarket)
-  expect(endingCurrentRound.internationalMarket).toBe(first.internationalMarket)
+  expect(regularPlay.internationalMarket).toBe(completedSetup.internationalMarket)
+  expect(endingCurrentRound.internationalMarket).toBe(completedSetup.internationalMarket)
 })
 
 it( 'отклоняет число игроков, не совпадающее с конфигурацией', () => {
@@ -1330,12 +1344,12 @@ it.each(initialResourceInitializationCases)(
 )
 
 it('влияние и монеты не изменяются с раундами', () => {
-  const cgCustom: SetupGameState = {
-    id: `game-1`,
-    status: 'setup',
-    round: 0,
-    activePlayerId: null,
-    config: Object.freeze({ playerCount: 4, seed: 2543 }),
+  const initialSetup = createGame(
+    { playerCount: 4, seed: 2543 },
+    fourPlayerConfigs,
+  )
+  const cgCustom: SetupGameState = Object.freeze({
+    ...initialSetup,
     players: Object.freeze([
       {
         id: 'player-1',
@@ -1366,8 +1380,7 @@ it('влияние и монеты не изменяются с раундами
         influence: 22
       },
     ]),
-    phase: 'setup'
-  }
+  })
   const snapshot = structuredClone(cgCustom)
   const sg = startGame(cgCustom)
   const at1 = advanceTurn(sg)

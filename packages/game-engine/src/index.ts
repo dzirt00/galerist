@@ -5,6 +5,7 @@ export {
   startGame,
   triggerGameEnd,
 } from './game-lifecycle.js'
+export { chooseStartingLocation } from './choose-starting-location.js'
 export {
   confirmTurnDraft,
   createTurnDraft,

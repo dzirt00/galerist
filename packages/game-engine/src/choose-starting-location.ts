@@ -1,0 +1,70 @@
+import { deepFreeze, type StartingLocationId } from './component-catalog.js'
+import type { PlayerId, SetupGameState } from './types.js'
+
+/** Записывает выбор стартовой локации текущего игрока и продолжает setup. */
+export function chooseStartingLocation(
+  state: SetupGameState,
+  playerId: PlayerId,
+  locationId: StartingLocationId,
+): SetupGameState {
+  if (state.setupStage !== 'choosing_starting_locations') {
+    throw new Error('Starting locations can only be chosen during setup')
+  }
+  if (state.currentStartingLocationPlayerId !== playerId) {
+    throw new Error('Only the current player can choose a starting location')
+  }
+  if (!state.availableStartingLocationIds.includes(locationId)) {
+    throw new Error('Starting location must be available')
+  }
+
+  const selectedLocationToken = state.internationalMarket.locationTokens.find(
+    locationToken => locationToken.locationId === locationId,
+  )
+  if (selectedLocationToken === undefined) {
+    throw new Error('Starting location must have a reputation token')
+  }
+
+  const playerBoardIndex = state.playerBoards.findIndex(
+    playerBoard => playerBoard.playerId === playerId,
+  )
+  if (playerBoardIndex === -1) {
+    throw new Error('Current player must have a player board')
+  }
+
+  const selectionIndex = state.startingLocationSelectionOrder.indexOf(playerId)
+  if (selectionIndex === -1) {
+    throw new Error('Current player must belong to the selection order')
+  }
+
+  const nextPlayerId = state.startingLocationSelectionOrder[selectionIndex + 1] ?? null
+  const setupComplete = nextPlayerId === null
+  const availableStartingLocationIds = state.availableStartingLocationIds.filter(
+    availableLocationId => availableLocationId !== locationId,
+  )
+  const remainingLocationTokens = setupComplete
+    ? []
+    : state.internationalMarket.locationTokens.filter(
+      locationToken => locationToken.locationId !== locationId,
+    )
+  const playerBoards = state.playerBoards.map((playerBoard, index) => (
+    index === playerBoardIndex
+      ? {
+          ...playerBoard,
+          startingLocationId: locationId,
+          thirdPartitionReputationTokenId: selectedLocationToken.tokenId,
+        }
+      : playerBoard
+  ))
+
+  return deepFreeze({
+    ...state,
+    playerBoards,
+    internationalMarket: {
+      ...state.internationalMarket,
+      locationTokens: remainingLocationTokens,
+    },
+    setupStage: setupComplete ? 'complete' : 'choosing_starting_locations',
+    currentStartingLocationPlayerId: nextPlayerId,
+    availableStartingLocationIds,
+  })
+}

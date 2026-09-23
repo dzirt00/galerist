@@ -1,10 +1,38 @@
 import { expect } from 'vitest'
 import {
   advanceTurn,
+  chooseStartingLocation,
+  startGame,
   type EndingSequenceGameState,
   type GameState,
+  type RegularPlayGameState,
+  type SetupGameState,
   type TurnDraft,
 } from '../src/index.js'
+
+/** Завершает выбор стартовых локаций первым доступным вариантом для каждого игрока. */
+export function completeStartingLocationSelection(
+  initialState: SetupGameState,
+): SetupGameState {
+  let state = initialState
+
+  while (state.setupStage === 'choosing_starting_locations') {
+    state = chooseStartingLocation(
+      state,
+      state.currentStartingLocationPlayerId!,
+      state.availableStartingLocationIds[0]!,
+    )
+  }
+
+  return state
+}
+
+/** Завершает setup с детерминированным тестовым выбором и начинает игру. */
+export function startGameAfterSetup(
+  initialState: SetupGameState,
+): RegularPlayGameState {
+  return startGame(completeStartingLocationSelection(initialState))
+}
 
 /** Проверяет последовательность ходов и неизменность исходного состояния. */
 export function advanceAndExpectTurns(

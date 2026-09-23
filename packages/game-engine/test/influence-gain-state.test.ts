@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest'
 import {
   applyInfluenceGainToGameState,
   createGame,
-  startGame,
   type SetupGameState,
 } from '../src/index.js'
+import { startGameAfterSetup } from './helpers.js'
 
 function createMutableSetupState(): SetupGameState {
   return {
@@ -64,7 +64,7 @@ describe('applyInfluenceGainToGameState', () => {
   })
 
   it('сохраняет поля конкретной фазы игры', () => {
-    const state = startGame(createGame(
+    const state = startGameAfterSetup(createGame(
       { playerCount: 2, seed: 0 },
       [
         { id: 'first', name: 'Алина', kind: 'human' },

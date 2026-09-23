@@ -5,7 +5,6 @@ import {
   createGame,
   createTurnDraft,
   prepareTurn,
-  startGame,
   triggerGameEnd,
   updateTurnDraft,
   type ConfirmedTurnCommand,
@@ -13,11 +12,11 @@ import {
   type ManagementTiming,
 } from '../src/index.js'
 import { twoPlayerConfigs, twoPlayerGameConfig } from './fixtures.js'
-import { expectPreparedTurnFrozen } from './helpers.js'
+import { startGameAfterSetup } from './helpers.js'
 
 /** Создаёт состояние обычного хода для тестов. */
 function createRegularTurnState(): GameState {
-  return startGame(createGame(twoPlayerGameConfig, twoPlayerConfigs))
+  return startGameAfterSetup(createGame(twoPlayerGameConfig, twoPlayerConfigs))
 }
 
 /** Доводит тестовую игру до финального раунда. */

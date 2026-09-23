@@ -1,4 +1,4 @@
-import { deepFreeze } from "./component-catalog.js";
+import { deepFreeze, type StartingLocationId } from "./component-catalog.js";
 
 export interface PlayerBoard {
  readonly playerId: string,
@@ -6,8 +6,8 @@ export interface PlayerBoard {
     readonly office: number,
     readonly hireQueue: number
   },
-  readonly startingLocationId: null,
-  readonly thirdPartitionReputationTokenId: null
+  readonly startingLocationId: StartingLocationId | null,
+  readonly thirdPartitionReputationTokenId: string | null
 }
 
 export function preparePlayerBoards(
