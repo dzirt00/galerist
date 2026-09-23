@@ -1,7 +1,7 @@
 import { deepFreeze, setupComponentCatalog } from './component-catalog.js'
 import type { GameState, PlayerId } from './types.js'
 
-/** Создаёт публичную проекцию состояния без seed и скрытых порядков компонентов. */
+/** Создаёт проекцию для viewer без seed и скрытых порядков по ADR-001. */
 export function projectGameForViewer(
   state: GameState,
   viewerId: PlayerId | null,

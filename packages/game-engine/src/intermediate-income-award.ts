@@ -7,7 +7,7 @@ export interface IntermediateIncomeAwardInput {
   readonly visitors: IntermediateVisitorCounts
 }
 
-/** Начисляет игроку промежуточный доход от посетителей в монетах и влиянии. */
+/** Начисляет игроку промежуточный доход от посетителей по MID-001. */
 export function applyIntermediateIncomeToPlayer(
   player: Readonly<PlayerState>,
   visitors: IntermediateVisitorCounts,
@@ -22,7 +22,7 @@ export function applyIntermediateIncomeToPlayer(
   })
 }
 
-/** Начисляет промежуточный доход каждому игроку по его числу посетителей. */
+/** Начисляет промежуточный доход по MID-001 каждому игроку. */
 export function applyIntermediateIncomeToPlayers(
   entries: readonly IntermediateIncomeAwardInput[],
 ): readonly Readonly<PlayerState>[] {

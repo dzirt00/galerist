@@ -12,7 +12,7 @@ import {
 } from './game-events.js'
 import { getFirstPlayerIndex } from './turn-order.js'
 
-/** Начинает игру и детерминированно выбирает первого игрока по seed. */
+/** Начинает обычную игру по TURN-001 и выбирает первого игрока по ADR-001. */
 export function startGame(state: GameState): GameTransition<RegularPlayGameState> {
   if (state.phase !== 'setup') {
     throw new Error('Game can only be started from setup')
@@ -34,6 +34,10 @@ export function startGame(state: GameState): GameTransition<RegularPlayGameState
     availableStartingLocationIds: _availableLocations,
     ...stateWithoutSetupSelection
   } = state
+  void _setupStage
+  void _selectionOrder
+  void _currentChooser
+  void _availableLocations
 
   const regularPlayState: RegularPlayGameState = Object.freeze({
     ...stateWithoutSetupSelection,
@@ -51,7 +55,7 @@ export function startGame(state: GameState): GameTransition<RegularPlayGameState
   ])
 }
 
-/** Передаёт ход следующему игроку и переключает раунд или фазу завершения при необходимости. */
+/** Передаёт ход по TURN-005 и меняет раунд или фазу по TURN-006 и END-003–END-005. */
 export function advanceTurn(state: RegularPlayGameState): RegularPlayGameState
 export function advanceTurn(
   state: EndingCurrentRoundGameState,
@@ -127,7 +131,7 @@ export function advanceTurn(state: GameState): GameState {
   })
 }
 
-/** Запускает последовательность завершения после текущего раунда обычной игры. */
+/** Запускает доигрывание текущего раунда по END-002. */
 export function triggerGameEnd(state: GameState): EndingCurrentRoundGameState {
   if (state.phase !== 'regular_play') {
     throw new Error('Only regular_play')

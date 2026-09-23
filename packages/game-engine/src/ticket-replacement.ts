@@ -76,7 +76,7 @@ function createResult(
   })
 }
 
-/** Выдаёт недоступный в кассе билет из сброса, при необходимости обменивая билет кассы. */
+/** Замещает отсутствующий в кассе цвет билета по TICKET-002. */
 export function replaceUnavailableTicket(
   input: ReplaceUnavailableTicketInput,
 ): Readonly<TicketReplacementResult> {
@@ -100,6 +100,7 @@ export function replaceUnavailableTicket(
   const officeHasTickets = Object.values(office).some(count => count > 0)
 
   if (!officeHasTickets) {
+    // При пустой кассе билет из сброса выдаётся без обязательного обмена.
     if (requiredInDiscard === 0) {
       return createResult(office, discard, null, false)
     }

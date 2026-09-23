@@ -1,7 +1,7 @@
 import type { PlayerState } from "./types.js";
 import { calculateCoinsFromInfluenceSpend } from "./influence-spending.js";
 
-/** Оплачивает стоимость монетами игрока и доходом от расхода влияния. */
+/** Оплачивает стоимость монетами и доходом от расхода влияния по INFLUENCE-002. */
 export function spendInfluenceForImmediatePayment(
   player: Readonly<PlayerState>,
   cost: number,

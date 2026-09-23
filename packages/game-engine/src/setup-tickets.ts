@@ -4,7 +4,7 @@ export interface PreparedTicketOffice {
   readonly ticketsByColor: Readonly<Record<'B' | 'R' | 'W', number>>
 }
 
-/** Подготавливает глубоко замороженную билетную кассу для партии указанного размера. */
+/** Подготавливает билетную кассу для состава игроков по SETUP-001. */
 export function prepareTicketOffice( playerCount: 2 | 3 | 4 ): PreparedTicketOffice {
 
   if ( playerCount !== 2 && playerCount !== 3 && playerCount !== 4 ) {

@@ -32,7 +32,7 @@ function assertItemCount(itemCount: number): void {
   }
 }
 
-/** Создаёт детерминированный генератор подготовки с отдельным счётчиком для каждого этапа. */
+/** Создаёт детерминированный setup RNG с независимыми потоками по ADR-001. */
 export function createSetupRng(config: SetupRngConfig): SetupRng {
   if (!Number.isSafeInteger(config.seed)) {
     throw new Error('Seed must be a safe integer')
@@ -56,6 +56,8 @@ export function createSetupRng(config: SetupRngConfig): SetupRng {
       stageId,
       counter.toString(),
     ])
+    // Версии и порядок мест входят в хеш, чтобы снимок нельзя было воспроизвести
+    // с другим каталогом, правилом или составом игроков незаметно для вызывающей стороны.
     const digest = createHash('sha256').update(payload, 'utf8').digest()
 
     stageCounters.set(stageId, counter + 1n)
@@ -81,7 +83,7 @@ export function createSetupRng(config: SetupRngConfig): SetupRng {
     return value % itemCount
   }
 
-  /** Перемешивает копию набора и возвращает замороженный массив. */
+  /** Перемешивает копию по Фишеру—Йетсу; наборы короче двух элементов RNG не расходуют. */
   function shuffle<T>(stageId: string, items: readonly T[]): readonly T[] {
     assertStageId(stageId)
 

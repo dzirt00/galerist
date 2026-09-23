@@ -30,12 +30,12 @@ function copyFrozenTurnDraft(draft: TurnDraft): TurnDraft {
   })
 }
 
-/** Создаёт пустой замороженный черновик хода выбранного игрока. */
+/** Создаёт пустой замороженный черновик составного хода по ADR-003. */
 export function createTurnDraft(playerId: PlayerId): TurnDraft {
   return Object.freeze({ playerId })
 }
 
-/** Применяет правку к копии черновика, сохраняя исходный черновик неизменным. */
+/** Применяет правку к копии черновика по ADR-003, не меняя исходный черновик. */
 export function updateTurnDraft(draft: TurnDraft, edit: TurnDraftEdit): TurnDraft {
   switch (edit.type) {
     case 'set_movement':
@@ -51,13 +51,14 @@ export function updateTurnDraft(draft: TurnDraft, edit: TurnDraftEdit): TurnDraf
         },
       })
     case 'clear_management_action': {
-      const { management: _management, ...updated } = draft
+      const updated = { ...draft }
+      delete updated.management
       return copyFrozenTurnDraft(updated)
     }
   }
 }
 
-/** Проверяет обязательные действия и создаёт замороженную команду подтверждённого хода. */
+/** Подтверждает обязательные части составного хода по TURN-002. */
 export function confirmTurnDraft(draft: TurnDraft): ConfirmedTurnCommand {
   if (!draft.movement) {
     throw new Error('Turn draft requires movement')

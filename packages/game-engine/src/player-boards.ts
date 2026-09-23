@@ -10,6 +10,7 @@ export interface PlayerBoard {
   readonly thirdPartitionReputationTokenId: string | null
 }
 
+/** Подготавливает личные планшеты игроков по SETUP-012 в порядке мест. */
 export function preparePlayerBoards(
   playerIds: readonly string[],
   assistantsPerPlayer: { readonly office: 2; readonly hireQueue: 8 }

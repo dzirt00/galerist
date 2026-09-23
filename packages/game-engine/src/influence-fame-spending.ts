@@ -7,7 +7,7 @@ const FAME_CHECKPOINTS: readonly number[] = Object.freeze([
 const FAME_CHECKPOINTS_SET = new Set(FAME_CHECKPOINTS)
 const INVALID_INFLUENCE_SPEND_MESSAGE = 'Invalid influence spend'
 
-/** Считает дополнительную славу за отметки шкалы, достигнутые при расходе влияния. */
+/** Считает дополнительную известность за пройденные отметки по INFLUENCE-003. */
 export function calculateAdditionalFameFromInfluenceSpend(
   currentInfluence: number,
   targetInfluence: number,
@@ -26,6 +26,7 @@ export function calculateAdditionalFameFromInfluenceSpend(
   ) {
     throw new RangeError(INVALID_INFLUENCE_SPEND_MESSAGE)
   }
+  // Текущая позиция не считается пройденной, а целевая отметка считается достигнутой.
   return FAME_CHECKPOINTS.filter(
     (checkpoint) => checkpoint < currentInfluence && checkpoint >= targetInfluence,
   ).length

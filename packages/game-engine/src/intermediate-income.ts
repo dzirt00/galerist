@@ -24,7 +24,7 @@ function isIntermediateVisitorCounts(
     && isNonNegativeInteger(visitors.collectors)
 }
 
-/** Рассчитывает монеты и влияние от состава посетителей галереи. */
+/** Рассчитывает доход от посетителей галереи по MID-001 без изменения входа. */
 export function calculateIntermediateIncome(
   visitors: IntermediateVisitorCounts,
 ): Readonly<IntermediateIncome> {

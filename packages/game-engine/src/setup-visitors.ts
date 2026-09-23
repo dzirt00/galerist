@@ -17,7 +17,7 @@ export interface InitialVisitorPlacement{
 }
 const INITIAL_PLAZA_VISITOR_COUNT = 4
 
-/** Сортирует и перемешивает копии посетителей для стартового мешка. */
+/** Подготавливает детерминированный мешочек посетителей по SETUP-001 и ADR-001. */
 export function prepareVisitorBag(
   visitors: readonly VisitorInstance[],
   rng: SetupRng,
@@ -32,7 +32,7 @@ export function prepareVisitorBag(
 
   return Object.freeze( { visitors: shuffleVisitors } );
 }
-/** Выкладывает начальные миплы на поле, к игроку по одному, и в центр 4шт */
+/** Размещает четырёх посетителей на площади и по одному в вестибюле по SETUP-010. */
 export function placeInitialVisitors(
   visitorsBag: PreparedVisitorBag,
   playerIds: readonly string[]
@@ -50,6 +50,7 @@ export function placeInitialVisitors(
 
   const vestibuleVisitors: PlayerVestibuleVisitor[] = []
   const remainingVisitors = [ ...visitorsBag.visitors ];
+  // Площадь получает начало уже перемешанного мешочка до раздачи по местам игроков.
   const center = remainingVisitors.splice( 0, 4 )
 
   playerIds.forEach( id => {

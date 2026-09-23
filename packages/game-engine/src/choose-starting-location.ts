@@ -2,7 +2,7 @@ import { deepFreeze, type StartingLocationId } from './component-catalog.js'
 import { freezeTransition, type GameTransition } from './game-events.js'
 import type { PlayerId, SetupGameState } from './types.js'
 
-/** Записывает выбор стартовой локации текущего игрока и продолжает setup. */
+/** Записывает выбор стартовой локации по SETUP-012 и продолжает setup. */
 export function chooseStartingLocation(
   state: SetupGameState,
   playerId: PlayerId,
@@ -43,6 +43,7 @@ export function chooseStartingLocation(
     availableLocationId => availableLocationId !== locationId,
   )
   const remainingLocationReputationTokens = setupComplete
+    // После последнего выбора неиспользованный жетон удаляется из партии по SETUP-012.
     ? []
     : state.internationalMarket.locationReputationTokens.filter(
       locationToken => locationToken.locationId !== locationId,

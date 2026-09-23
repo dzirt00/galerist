@@ -14,6 +14,7 @@ export interface PreparedPrivateGoals {
   readonly remainingDealerGoals: readonly GoalCardDefinition[]
 }
 
+/** Копирует карту личной цели, чтобы заморозка результата не затронула каталог. */
 function copyGoalCard(card: GoalCardDefinition): GoalCardDefinition {
   return {
     id: card.id,
@@ -26,6 +27,7 @@ function copyGoalCard(card: GoalCardDefinition): GoalCardDefinition {
   }
 }
 
+/** Детерминированно раздаёт личные цели по ADR-001 и сохраняет остатки колод. */
 export function preparePrivateGoals(
   playerIds: readonly string[],
   curatorGoals: readonly GoalCardDefinition[],
@@ -47,6 +49,7 @@ export function preparePrivateGoals(
   const remainingDealerGoals = rng.shuffle('dealer-goals', sortedDealerGoals).map((item) => ({...item}))
   const goalsByPlayer: Record<string, PlayerPrivateGoals> = {}
 
+  // Обе колоды раздаются синхронно в фиксированном порядке мест игроков.
   for (const playerId of playerIds) {
     goalsByPlayer[playerId] = {
       curatorGoal: remainingCuratorGoals.shift()!,

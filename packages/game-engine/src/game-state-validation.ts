@@ -3,14 +3,17 @@ import type { GamePhase, GameState, PlayerId } from './types.js'
 
 type UnknownRecord = Record<string, unknown>
 
+/** Отличает объект снимка от null, массива и примитивных значений. */
 function isRecord(value: unknown): value is UnknownRecord {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
 
+/** Завершает восстановление единообразной ошибкой невалидного снимка. */
 function fail(message: string): never {
   throw new Error(`Invalid game state: ${message}`)
 }
 
+/** Требует объектное поле внешнего снимка. */
 function requireRecord(value: unknown, name: string): UnknownRecord {
   if (!isRecord(value)) {
     return fail(`${name} must be an object`)
@@ -18,6 +21,7 @@ function requireRecord(value: unknown, name: string): UnknownRecord {
   return value
 }
 
+/** Требует непустую строку во внешнем снимке. */
 function requireNonEmptyString(value: unknown, name: string): string {
   if (typeof value !== 'string' || value.trim().length === 0) {
     return fail(`${name} must be a non-empty string`)
@@ -25,6 +29,7 @@ function requireNonEmptyString(value: unknown, name: string): string {
   return value
 }
 
+/** Требует безопасное целое число во внешнем снимке. */
 function requireSafeInteger(value: unknown, name: string): number {
   if (!Number.isSafeInteger(value)) {
     return fail(`${name} must be a safe integer`)
@@ -32,6 +37,7 @@ function requireSafeInteger(value: unknown, name: string): number {
   return value as number
 }
 
+/** Проверяет, что ссылка ведёт на участника восстанавливаемой партии. */
 function requirePlayerReference(
   value: unknown,
   playerIds: ReadonlySet<PlayerId>,
@@ -44,6 +50,7 @@ function requirePlayerReference(
   return playerId
 }
 
+/** Проверяет наличие общих коллекций полного серверного снимка. */
 function validateCommonCollections(state: UnknownRecord): void {
   const objectFields = [
     'orderMarket',
@@ -76,6 +83,7 @@ function validateCommonCollections(state: UnknownRecord): void {
   )
 }
 
+/** Проверяет игроков и возвращает множество допустимых ссылок на них. */
 function validatePlayers(state: UnknownRecord): ReadonlySet<PlayerId> {
   if (!Array.isArray(state.players)) {
     return fail('players must be an array')
@@ -106,6 +114,7 @@ function validatePlayers(state: UnknownRecord): ReadonlySet<PlayerId> {
   return playerIds
 }
 
+/** Проверяет согласованность phase, status, round и активного игрока по ADR-002. */
 function validatePhase(
   state: UnknownRecord,
   playerIds: ReadonlySet<PlayerId>,
@@ -196,7 +205,7 @@ function validatePhase(
   }
 }
 
-/** Проверяет восстановленный JSON-снимок, копирует его и возвращает замороженный GameState. */
+/** Проверяет JSON-снимок по ADR-001/ADR-002 и возвращает независимый замороженный GameState. */
 export function restoreGameState(input: unknown): GameState {
   const state = requireRecord(input, 'state')
   if (state.stateSchemaVersion !== 2) {

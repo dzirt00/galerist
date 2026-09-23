@@ -23,6 +23,7 @@ import type {
   SetupGameState,
 } from './types.js'
 
+/** Проверяет внешние параметры партии до расходования потоков setup RNG. */
 function assertCreateGameInput(input: CreateGameInput): void {
   const { config, gameId, players } = input
 
@@ -46,7 +47,7 @@ function assertCreateGameInput(input: CreateGameInput): void {
   }
 }
 
-/** Собирает полное детерминированное setup-состояние и события подготовки. */
+/** Собирает полное детерминированное setup-состояние по ADR-001 и SETUP-001–SETUP-012. */
 export function createGame(
   input: CreateGameInput,
 ): GameTransition<SetupGameState> {
@@ -110,6 +111,7 @@ export function createGame(
     ...playerIds.slice(firstPlayerIndex),
     ...playerIds.slice(0, firstPlayerIndex),
   ]
+  // Стартовые локации выбираются против обычного порядка хода по SETUP-012.
   const startingLocationSelectionOrder = Object.freeze([...regularTurnOrder].reverse())
 
   const state: SetupGameState = {

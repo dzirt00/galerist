@@ -5,7 +5,7 @@ export interface PlayerGainedInfluence {
   readonly player:  Readonly<PlayerState>,
   readonly gainedInfluence: number
 }
-/** Добавляет влияние одному игроку с учётом максимума шкалы. */
+/** Добавляет влияние одному игроку с верхней границей по INFLUENCE-001. */
 export function applyInfluenceGainToPlayer(
   player:  Readonly<PlayerState>,
   gainedInfluence: number
@@ -18,7 +18,7 @@ export function applyInfluenceGainToPlayer(
   })
 }
 
-/** Применяет прирост влияния ко всем записям в исходном порядке. */
+/** Применяет INFLUENCE-001 ко всем игрокам в исходном порядке. */
 export function applyInfluenceGainToPlayers(
   entries: readonly PlayerGainedInfluence[]
 ): readonly Readonly<PlayerState>[] {

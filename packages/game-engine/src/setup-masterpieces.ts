@@ -9,7 +9,14 @@ export interface PreparedMasterpieceAuction {
   }[]
 }
 
-/** Проверяет отложенные работы и выбирает для аукциона число работ по составу игроков. */
+/** Проверяет непустой устойчивый идентификатор в диапазоне ASCII. */
+function isNonEmptyAsciiId(value: unknown): value is string {
+  return typeof value === 'string'
+    && value.length > 0
+    && Array.from(value).every(character => character.charCodeAt(0) <= 0x7f)
+}
+
+/** Выбирает выдающиеся произведения для аукциона по SETUP-009. */
 export function prepareMasterpieceAuction(
   artworks: readonly ArtworkDefinition[],
   playerCount: 2 | 3 | 4,
@@ -26,7 +33,7 @@ export function prepareMasterpieceAuction(
   for (const artwork of artworks) {
     if (
       artwork === null || typeof artwork !== 'object'
-      || typeof artwork.id !== 'string' || !/^[\x00-\x7F]+$/.test(artwork.id)
+      || !isNonEmptyAsciiId(artwork.id)
       || !setupComponentCatalog.genreOrder.includes(artwork.genre)
       || !(artwork.fameGain === 'X'
         || (Number.isInteger(artwork.fameGain) && artwork.fameGain >= 0))
@@ -47,6 +54,7 @@ export function prepareMasterpieceAuction(
   const sortedArtworks = [...artworks].sort((left, right) =>
     left.id < right.id ? -1 : left.id > right.id ? 1 : 0,
   )
+  // Сортировка до RNG устраняет зависимость раскладки от порядка входного каталога.
   const shuffled = rng.shuffle('auction-artworks', sortedArtworks)
   const selected = shuffled.slice(0, playerCount - 1).map(artwork => Object.freeze({
     id: artwork.id,

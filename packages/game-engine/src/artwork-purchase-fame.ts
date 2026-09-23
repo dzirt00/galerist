@@ -1,5 +1,6 @@
 import type { ArtworkDefinition } from "./component-catalog.js";
 
+/** Рассчитывает прирост известности при покупке произведения по ARTWORK-004. */
 export function calculateArtworkPurchaseFameGain(
   fameGain: ArtworkDefinition['fameGain'],
   collectorCount: number,

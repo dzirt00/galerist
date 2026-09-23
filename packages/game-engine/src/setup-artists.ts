@@ -39,7 +39,7 @@ export interface PreparedArtistSetup {
 }
 const TYPE_VISITOR: VisitorType = 'W'
 
-/** Выбирает художников для восьми пар жанра и категории и открывает первого синего. */
+/** Выбирает художников и открывает первого синего по SETUP-004. */
 export function prepareArtistMarket(
   artists: readonly ArtistDefinition[],
   rng: SetupRng,
@@ -97,7 +97,7 @@ export function prepareArtistMarket(
 }
 
 /**
- * Размещает бонусы, подписи и коллекционеров у выбранных художников.
+ * Размещает бонусы, подписи и коллекционеров по SETUP-005.
  * Входные данные не изменяются, а возвращаемое дерево глубоко заморожено.
  */
 export function prepareArtistSetup(

@@ -5,7 +5,7 @@ export interface PreparedOrderMarket {
   readonly remainingOrderIds: readonly string[]
 }
 
-/** Перемешивает заказы, открывает первые четыре и сохраняет остальные в колоде. */
+/** Подготавливает четыре открытых заказа и скрытую колоду по SETUP-003. */
 export function prepareOrderMarket(
   orderIds: readonly string[],
   rng: SetupRng,

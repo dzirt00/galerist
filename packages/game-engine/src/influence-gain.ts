@@ -1,11 +1,10 @@
 const MAX_INFLUENCE = 35;
 
-/** Проверяет прирост и возвращает значение влияния, ограниченное максимумом шкалы. */
+/** Рассчитывает получение влияния с верхней границей по INFLUENCE-001. */
 export function calculateInfluenceAfterGain(
   currentInfluence: number,
   gainedInfluence: number,
 ): number {
-  // 1. Проверяем валидность типов и ограничений для currentInfluence
   if (
     typeof currentInfluence !== 'number' ||
     !Number.isInteger(currentInfluence) ||
@@ -15,7 +14,6 @@ export function calculateInfluenceAfterGain(
     throw new Error(`currentInfluence must be an integer from 0 to ${MAX_INFLUENCE}`);
   }
 
-  // 2. Проверяем валидность типов и ограничений для gainedInfluence (включая safe integer)
   if (
     typeof gainedInfluence !== 'number' ||
     !Number.isSafeInteger(gainedInfluence) ||
@@ -24,8 +22,8 @@ export function calculateInfluenceAfterGain(
     throw new Error('gainedInfluence must be a non-negative safe integer');
   }
 
-  // 3. Считаем сумму и ограничиваем её максимальным значением
   const totalInfluence = currentInfluence + gainedInfluence;
 
+  // Избыток сгорает: шкала влияния не хранит отложенное превышение.
   return totalInfluence > MAX_INFLUENCE ? MAX_INFLUENCE : totalInfluence;
 }

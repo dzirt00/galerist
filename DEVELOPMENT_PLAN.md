@@ -129,7 +129,7 @@ supabase/
 
 ### 5.2. API движка
 
-```ts
+```
 createGame({ gameId, config, players }): GameTransition<SetupGameState>
 restoreGameState(input): GameState
 projectGameForViewer(state, viewerId): ProjectedGameState

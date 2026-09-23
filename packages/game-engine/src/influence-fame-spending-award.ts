@@ -1,7 +1,7 @@
 import type { ApplyAdditionalFameSpendInput, ApplyAdditionalFameSpendResult, ArtistFameState, PlayerState } from "./types.js";
 import { calculateAdditionalFameFromInfluenceSpend } from "./influence-fame-spending.js";
 
-/** Тратит влияние игрока и начисляет художнику дополнительную славу за пройденные отметки. */
+/** Тратит влияние и начисляет художнику дополнительную известность по INFLUENCE-003. */
 export function applyAdditionalFameSpend(
   input: ApplyAdditionalFameSpendInput
 ): ApplyAdditionalFameSpendResult {

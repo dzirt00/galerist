@@ -5,7 +5,7 @@ import type {
   TurnExecutionSteps,
 } from './types.js'
 
-/** Проверяет команду активного игрока и упорядочивает действия подтверждённого хода. */
+/** Готовит действия подтверждённого составного хода по TURN-002. */
 export function prepareTurn(
   state: GameState,
   command: ConfirmedTurnCommand,
@@ -43,6 +43,7 @@ export function prepareTurn(
   let steps: TurnExecutionSteps
 
   switch (command.management?.timing) {
+    // Единственное действие управления сохраняет выбранный timing относительно локации.
     case 'before_location':
       steps = [movement, Object.freeze({ ...command.management.command }), locationAction]
       break

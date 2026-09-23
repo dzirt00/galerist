@@ -2,6 +2,7 @@ import { deepFreeze } from './component-catalog.js'
 import type { GameEvent } from './game-events.js'
 import type { GameState, PlayerId } from './types.js'
 
+/** Определяет видимость события, не раскрывая скрытые данные подготовки и целей. */
 function canViewEvent(
   event: GameEvent,
   state: GameState,
@@ -18,7 +19,7 @@ function canViewEvent(
   return true
 }
 
-/** Возвращает безопасный для зрителя список доменных событий. */
+/** Возвращает безопасный для viewer список доменных событий по ADR-001. */
 export function projectEventsForViewer(
   events: readonly GameEvent[],
   state: GameState,

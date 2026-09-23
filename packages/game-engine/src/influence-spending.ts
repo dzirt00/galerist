@@ -26,7 +26,7 @@ const MONEY_CHECKPOINTS: readonly number[] = Object.freeze([
 const MONEY_CHECKPOINT_SET = new Set(MONEY_CHECKPOINTS)
 const INVALID_INFLUENCE_SPEND_MESSAGE = 'Invalid influence spend'
 
-/** Считает монеты за денежные отметки, пройденные при расходе влияния. */
+/** Считает монеты за пройденные денежные отметки по INFLUENCE-002. */
 export function calculateCoinsFromInfluenceSpend(
   currentInfluence: number,
   targetInfluence: number,
@@ -46,6 +46,7 @@ export function calculateCoinsFromInfluenceSpend(
     throw new RangeError(INVALID_INFLUENCE_SPEND_MESSAGE)
   }
 
+  // Текущая позиция не оплачивается, а целевая отметка, включая 0, оплачивается.
   return MONEY_CHECKPOINTS.filter(
     (checkpoint) => checkpoint < currentInfluence && checkpoint >= targetInfluence,
   ).length

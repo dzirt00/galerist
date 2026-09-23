@@ -23,7 +23,7 @@ const FINAL_INFLUENCE_COINS: readonly number[] = Object.freeze([
 
 const INVALID_INFLUENCE_MESSAGE = 'Influence must be an integer from 0 to 35'
 
-/** Определяет итоговую выплату монет по позиции на шкале влияния. */
+/** Определяет итоговую выплату монет за влияние по SCORE-006. */
 export function calculateFinalInfluenceCoins(influence: number): number {
   if (
     typeof influence !== 'number'

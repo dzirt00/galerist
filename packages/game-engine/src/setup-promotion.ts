@@ -4,7 +4,7 @@ export interface PreparedPromotionSupply {
   readonly tokenIdsByLevel: Readonly<Record<1 | 2 | 3 | 4 | 5, readonly string[]>>
 }
 
-/** Группирует рекламные жетоны по уровню в замороженном запасе. */
+/** Подготавливает запас рекламных жетонов по SETUP-007. */
 export function preparePromotionSupply(
   tokens: readonly PromotionTokenDefinition[],
 ): PreparedPromotionSupply {

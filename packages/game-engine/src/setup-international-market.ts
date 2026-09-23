@@ -28,6 +28,7 @@ export interface SetupInternationalMarket {
   readonly remainingReputationTokenIds: ReputationTokenIds
 }
 
+/** Размещает жетоны репутации международного рынка по SETUP-008. */
 export function prepareInternationalMarket(
   reputationTokenIds: readonly string[],
   playerCount: 2 | 3 | 4,
@@ -49,6 +50,7 @@ export function prepareInternationalMarket(
 
   const sortedReputationTokenIds = [...reputationTokenIds].sort((a, b) => a < b ? -1 : a > b ? 1 : 0)
   const shuffledReputationTokenIds = [...rng.shuffle('reputation', sortedReputationTokenIds)]
+  // Порядок жанров и колонок фиксирован, чтобы один seed давал одну раскладку.
   const marketReputationCells = setupComponentCatalog.genreOrder
     .flatMap(genre => (playerCount === 2 ? [1, 3] : [1, 2, 3])
       .map(column => {
