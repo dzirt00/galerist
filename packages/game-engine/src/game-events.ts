@@ -25,6 +25,11 @@ export type GameEvent =
   | { readonly type: 'GameStarted'; readonly gameId: string }
   | { readonly type: 'RoundStarted'; readonly round: number }
   | { readonly type: 'TurnStarted'; readonly playerId: PlayerId }
+  | {
+      readonly type: 'InfluenceReceived'
+      readonly playerId: PlayerId
+      readonly gainedInfluence: number
+    }
 
 export interface GameTransition<TState> {
   readonly state: TState
