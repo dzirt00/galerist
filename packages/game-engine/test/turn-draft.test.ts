@@ -10,8 +10,6 @@ import {
   type TurnDraft,
   type TurnDraftEdit,
 } from '../src/index.js'
-import { expectDraftFrozen } from './helpers.js'
-
 it('создаёт пустой замороженный черновик хода для игрока', () => {
   const draft = createTurnDraft('player-1')
 

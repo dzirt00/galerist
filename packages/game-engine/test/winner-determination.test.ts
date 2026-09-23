@@ -1,7 +1,10 @@
 import { expect, it, describe } from 'vitest'
-import { determineWinners } from "../src";
-import { acquiredArtworkCountWin, allWin, assistantsInPlayCountWin, galleryVisitorCountWin, nextWin, onePlayer, player10, player7, player8, player9, soleLeaderCoins } from "./fixtures";
-import { PlayerId, WinnerCandidate } from "../src";
+import {
+  determineWinners,
+  type PlayerId,
+  type WinnerCandidate,
+} from '../src/index.js'
+import { acquiredArtworkCountWin, allWin, assistantsInPlayCountWin, galleryVisitorCountWin, nextWin, onePlayer, player10, player7, player8, player9, soleLeaderCoins } from './fixtures.js'
 it('выбирает единственного лидера по монетам',() => {
   const dw = determineWinners(soleLeaderCoins)
   expect(dw).toStrictEqual(['player-4'])
@@ -192,7 +195,7 @@ describe('determineWinners — иммутабельность входных д�
     it('не должен мутировать и не должен замораживать массив candidates, если валидация провалена', () => {
       // Создаем массив, где у второго игрока невалидные монеты (-10), что вызовет ошибку
       const candidates = createFreshCandidates();
-      candidates[1]!.coins = -10;
+      (candidates[1]! as { coins: number }).coins = -10;
 
       const snapshotBefore = JSON.stringify(candidates);
 

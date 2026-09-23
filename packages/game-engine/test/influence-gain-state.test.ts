@@ -7,17 +7,20 @@ import {
 import { createGameState, startGameAfterSetup } from './helpers.js'
 
 function createMutableSetupState(): SetupGameState {
-  return {
-    id: 'game-test',
-    config: { playerCount: 2, seed: 7 },
-    players: [
-      { id: 'first', name: 'Алина', kind: 'human', coins: 10, influence: 12 },
-      { id: 'second', name: 'Борис', kind: 'bot', coins: 10, influence: 34 },
+  const state = structuredClone(createGameState(
+    { playerCount: 2, seed: 7 },
+    [
+      { id: 'first', name: 'Алина', kind: 'human' },
+      { id: 'second', name: 'Борис', kind: 'bot' },
     ],
-    phase: 'setup',
-    status: 'setup',
-    round: 0,
-    activePlayerId: null,
+  ))
+
+  return {
+    ...state,
+    players: state.players.map(player => ({
+      ...player,
+      influence: player.id === 'first' ? 12 : 34,
+    })),
   }
 }
 

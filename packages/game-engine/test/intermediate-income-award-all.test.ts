@@ -151,8 +151,9 @@ describe('Промежуточный доход игроков через applyI
     const result = applyIntermediateIncomeToPlayers(entries)
     const snapshot = structuredClone(result)
 
-    player.coins = 100
-    player.influence = 35
+    const mutablePlayer = player as { coins: number; influence: number }
+    mutablePlayer.coins = 100
+    mutablePlayer.influence = 35
     visitors.investors = 100
     visitors.celebrities = 100
     visitors.collectors = 100

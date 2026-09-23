@@ -64,7 +64,7 @@ describe('Каталог компонентов setupComponentCatalog', () => {
     const fourPlayers = setupComponentCatalog.visitorInstancesByPlayerCount[4]
     for (const playerCount of [2, 3] as const) {
       const visitors = setupComponentCatalog.visitorInstancesByPlayerCount[playerCount]
-      expect(fourPlayers).toEqual(expect.arrayContaining(visitors))
+      expect(fourPlayers).toEqual(expect.arrayContaining([...visitors]))
       for (const type of ['B', 'R', 'W'] as const) {
         const smallerTypeIds = visitors.filter(visitor => visitor.type === type).map(visitor => visitor.id)
         const largerTypeIds = fourPlayers.filter(visitor => visitor.type === type).map(visitor => visitor.id)

@@ -84,8 +84,14 @@ export interface PlayerConfig {
 }
 
 export interface GameConfig {
-  playerCount: 2 | 3 | 4
-  seed: number
+  readonly playerCount: 2 | 3 | 4
+  readonly seed: number
+}
+
+export interface CreateGameInput {
+  readonly gameId: GameId
+  readonly config: GameConfig
+  readonly players: readonly PlayerConfig[]
 }
 
 export interface PlayerState {
@@ -97,6 +103,7 @@ export interface PlayerState {
 }
 
 export interface GameStateBase {
+  readonly stateSchemaVersion: 1
   readonly id: GameId
   readonly config: Readonly<GameConfig>
   readonly players: readonly PlayerState[]

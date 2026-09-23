@@ -5,15 +5,17 @@ export {
 } from './game-events.js'
 export {
   advanceTurn,
-  createGame,
   startGame,
   triggerGameEnd,
 } from './game-lifecycle.js'
+export { createGame } from './game-setup.js'
 export { chooseStartingLocation } from './choose-starting-location.js'
 export {
   projectGameForViewer,
   type ProjectedGameState,
 } from './game-projection.js'
+export { projectEventsForViewer } from './game-event-projection.js'
+export { restoreGameState } from './game-state-validation.js'
 export {
   confirmTurnDraft,
   createTurnDraft,

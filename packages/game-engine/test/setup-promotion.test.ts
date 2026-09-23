@@ -65,7 +65,7 @@ describe('Подготовка запаса рекламы через preparePro
     ['недостающий жетон', (tokens: PromotionTokenDefinition[]) => tokens.slice(1)],
     ['лишний жетон', (tokens: PromotionTokenDefinition[]) => [
       ...tokens,
-      { ...tokens[0], id: 'PROMOTION-1-EXTRA' },
+      { ...tokens[0]!, id: 'PROMOTION-1-EXTRA' },
     ]],
     ['неверное распределение по уровням', (tokens: PromotionTokenDefinition[]) => tokens.map((token, index) =>
       index === 0 ? { ...token, level: 2 as const } : token,
@@ -80,7 +80,7 @@ describe('Подготовка запаса рекламы через preparePro
 
   it('отклоняет повторяющийся ID при двадцати жетонах', () => {
     const input = inputTokens()
-    input[1] = { ...input[1], id: input[0].id }
+    input[1] = { ...input[1]!, id: input[0]!.id }
     const snapshot = structuredClone(input)
 
     expect(() => preparePromotionSupply(input)).toThrow('Invalid tokens')

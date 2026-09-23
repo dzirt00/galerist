@@ -130,7 +130,10 @@ supabase/
 ### 5.2. API движка
 
 ```ts
-createGame(config, seed): GameState
+createGame({ gameId, config, players }): GameTransition<SetupGameState>
+restoreGameState(input): GameState
+projectGameForViewer(state, viewerId): ProjectedGameState
+projectEventsForViewer(events, state, viewerId): GameEvent[]
 getAvailableActions(state, playerId): GameAction[]
 validateAction(state, playerId, action): ValidationResult
 applyAction(state, playerId, action): { nextState, events }

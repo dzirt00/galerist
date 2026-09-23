@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   chooseStartingLocation,
-  createGame,
+  createGame as createGameTransition,
+  restoreGameState,
   startGame,
   type GameEvent,
   type PlayerConfig,
@@ -12,6 +13,17 @@ import {
   threePlayerConfigs,
   twoPlayerConfigs,
 } from './fixtures.js'
+
+function createGame(
+  config: { readonly playerCount: 2 | 3 | 4; readonly seed: number },
+  players: readonly PlayerConfig[],
+) {
+  return createGameTransition({
+    gameId: 'game-test',
+    config,
+    players,
+  })
+}
 
 function completeSetup(state: SetupGameState): SetupGameState {
   let current = state
@@ -164,7 +176,10 @@ describe('полный setup-пайплайн', () => {
       { playerCount: 3, seed: -42 },
       threePlayerConfigs,
     ).state
-    const restored = JSON.parse(JSON.stringify(original)) as SetupGameState
+    const restored = restoreGameState(JSON.parse(JSON.stringify(original)))
+    if (restored.phase !== 'setup') {
+      throw new Error('Expected restored setup state')
+    }
 
     const originalResult = completeSetup(original)
     const restoredResult = completeSetup(restored)

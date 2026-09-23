@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { calculateInfluenceAfterGain } from "../src/index";
+import { calculateInfluenceAfterGain } from '../src/index.js'
 
 
 it('обычный прирост: 10 + 5 → 15',() =>{

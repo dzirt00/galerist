@@ -1,6 +1,5 @@
 import type {
   GameConfig,
-  GameState,
   PlayerConfig,
   PlayerState, WinnerCandidate,
 } from '../src/index.js'
@@ -16,7 +15,7 @@ export const threePlayerStates: PlayerState[] = [
   { id: 'player-3', name: 'Алина3', kind: 'human', coins: 10, influence: 10 },
 ]
 
-export const setupGameStateFixture: GameState = {
+export const setupGameStateFixture = {
   id: 'game-1',
   status: 'setup',
   phase: 'setup',

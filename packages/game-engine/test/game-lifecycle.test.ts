@@ -28,7 +28,11 @@ import {
 } from './helpers.js'
 
 function createGame(config: GameConfig, players: readonly PlayerConfig[]) {
-  return createGameTransition(config, players).state
+  return createGameTransition({
+    gameId: `game-${config.seed}`,
+    config,
+    players,
+  }).state
 }
 
 function startGameFromSetup(state: SetupGameState) {
@@ -66,6 +70,7 @@ it('не позволяет повторно начать игру и сохра
 
 it('отклоняет запуск завершённой игры без изменения состояния', () => {
   const state: FinishedGameState = {
+    ...startGame(createGame(twoPlayerGameConfig, twoPlayerConfigs)),
     id: 'game-1',
     config: twoPlayerGameConfig,
     players: [
@@ -812,6 +817,7 @@ it('запрещает передавать ход на этапе подгот�
 it('запрещает передавать ход после завершения игры', () => {
 
   const state: GameState = {
+    ...startGame(createGame(twoPlayerGameConfig, twoPlayerConfigs)),
     id: 'game-1',
     phase: 'finished',
     status: 'finished',
@@ -832,6 +838,7 @@ it('запрещает передавать ход после завершени
 
 it('запускает завершение с новым замороженным состоянием без изменения входа', () => {
   const state: GameState = {
+    ...startGame(createGame(twoPlayerGameConfig, twoPlayerConfigs)),
     id: 'game-1',
     status: 'in_progress',
     phase: 'regular_play',
@@ -882,6 +889,7 @@ it('отклоняет передачу хода при пустом ID акти
 
 it('возвращает новое замороженное состояние и сохраняет исходное', () => {
   const initialState: GameState = {
+    ...startGame(createGame(twoPlayerGameConfig, twoPlayerConfigs)),
     id: 'game-1',
     status: 'in_progress',
     phase: 'regular_play',
@@ -904,6 +912,7 @@ it('возвращает новое замороженное состояние 
 
 it('отклоняет передачу хода неизвестного игрока', () => {
   const state: GameState = {
+    ...startGame(createGame(twoPlayerGameConfig, twoPlayerConfigs)),
     id: 'game-1',
     status: 'in_progress',
     phase: 'regular_play',
@@ -944,6 +953,7 @@ it('отклоняет передачу хода в фазе подготовк�
 
 it('передаёт ход в фазе обычной игры', () => {
   const state: GameState = {
+    ...startGame(createGame(twoPlayerGameConfig, twoPlayerConfigs)),
     id: 'game-1',
     status: 'in_progress',
     phase: 'regular_play',
@@ -978,6 +988,7 @@ it('переводит игру в фазу обычной игры при за�
 
 it('переводит игру в фазу завершения текущего раунда', () => {
   const state: GameState = {
+    ...triggerGameEnd(startGame(createGame(twoPlayerGameConfig, twoPlayerConfigs))),
     id: 'game-1',
     status: 'in_progress',
     phase: 'ending_current_round',
@@ -1001,6 +1012,7 @@ it('переводит игру в фазу завершения текущег�
 
 it('отклоняет передачу хода в фазе итогового подсчёта', () => {
   const state: GameState = {
+    ...triggerGameEnd(startGame(createGame(twoPlayerGameConfig, twoPlayerConfigs))),
     id: 'game-1',
     status: 'in_progress',
     phase: 'final_scoring',
@@ -1021,6 +1033,7 @@ it('отклоняет передачу хода в фазе итогового 
 
 it('сохраняет активного и первого игроков при переходах', () => {
   const state: GameState = {
+    ...startGame(createGame(twoPlayerGameConfig, twoPlayerConfigs)),
     id: 'game-1',
     status: 'in_progress',
     phase: 'regular_play',
@@ -1049,6 +1062,7 @@ it('сохраняет активного и первого игроков пр�
 
 it('передаёт ход в финальном раунде', () => {
   const state: GameState = {
+    ...triggerGameEnd(startGame(createGame(twoPlayerGameConfig, twoPlayerConfigs))),
     id: 'game-1',
     status: 'in_progress',
     phase: 'final_round',
@@ -1071,6 +1085,7 @@ it('передаёт ход в финальном раунде', () => {
 
 it('запускает завершение только из фазы обычной игры', () => {
   const state: GameState = {
+    ...startGame(createGame(twoPlayerGameConfig, twoPlayerConfigs)),
     id: 'game-1',
     status: 'in_progress',
     phase: 'regular_play',
@@ -1109,6 +1124,7 @@ it('отклоняет повторный запуск завершения', ()
 
 it('переходит к итоговому подсчёту после всех завершающих раундов', () => {
   const state: GameState = {
+    ...startGame(createGame({ playerCount: 3, seed: 42 }, threePlayerConfigs)),
     id: 'game-1',
     status: 'in_progress',
     phase: 'regular_play',
@@ -1143,6 +1159,7 @@ it('переходит к итоговому подсчёту после все�
 
 it('завершает раунды при втором первом игроке и первом активном', () => {
   const state: GameState = {
+    ...startGame(createGame({ playerCount: 3, seed: 42 }, threePlayerConfigs)),
     id: 'game-1',
     status: 'in_progress',
     phase: 'regular_play',
@@ -1173,6 +1190,7 @@ it('завершает раунды при втором первом игрок�
 
 it('завершает раунды при втором первом игроке и третьем активном', () => {
   const state: GameState = {
+    ...startGame(createGame({ playerCount: 3, seed: 42 }, threePlayerConfigs)),
     id: 'game-1',
     status: 'in_progress',
     phase: 'regular_play',
@@ -1362,28 +1380,28 @@ it('влияние и монеты не изменяются с раундами
       {
         id: 'player-1',
         name: 'Алина1',
-        kind: 'human',
+        kind: 'human' as const,
         coins: 18,
         influence: 15
       },
       {
         id: 'player-2',
         name: 'Алина2',
-        kind: 'human',
+        kind: 'human' as const,
         coins: 51,
         influence: 9
       },
       {
         id: 'player-3',
         name: 'Алина1',
-        kind: 'human',
+        kind: 'human' as const,
         coins: 61,
         influence: 23
       },
       {
         id: 'player-4',
         name: 'Алина',
-        kind: 'human',
+        kind: 'human' as const,
         coins: 31,
         influence: 22
       },

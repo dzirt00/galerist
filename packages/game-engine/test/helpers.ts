@@ -42,7 +42,11 @@ export function createGameState(
   config: GameConfig,
   players: readonly PlayerConfig[],
 ): SetupGameState {
-  return createGame(config, players).state
+  return createGame({
+    gameId: 'game-test',
+    config,
+    players,
+  }).state
 }
 
 /** Проверяет последовательность ходов и неизменность исходного состояния. */

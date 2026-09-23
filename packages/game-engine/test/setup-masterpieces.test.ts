@@ -62,7 +62,11 @@ describe('Подготовка аукциона работ через prepareMas
         .slice(0, playerCount - 1)
       const rng = createSetupRng(config)
       const shuffle = vi.fn(rng.shuffle)
-      const result = prepareMasterpieceAuction(input, playerCount, { ...rng, shuffle })
+      const result = prepareMasterpieceAuction(
+        input,
+        playerCount,
+        { ...rng, shuffle } as unknown as SetupRng,
+      )
 
       expect(shuffle).toHaveBeenCalledTimes(1)
       expect(shuffle).toHaveBeenCalledWith('auction-artworks', sorted)
