@@ -7,6 +7,9 @@ export interface PreparedArtistSlot {
   readonly genre: ArtworkGenre
   readonly category: ArtistCategory
   readonly isOpen: boolean
+  readonly initialFame: number
+  readonly initialPromotion: number
+  readonly fame: number | null
 }
 
 /** Результат выбора восьми художников для текущей партии. */
@@ -21,6 +24,9 @@ export interface PreparedArtistSetupSlot {
   readonly genre: ArtworkGenre
   readonly category: ArtistCategory
   readonly isOpen: boolean
+  readonly initialFame: number
+  readonly initialPromotion: number
+  readonly fame: number | null
   readonly signatureIds: readonly [string, string]
   readonly bonus: ArtistBonusDefinition | null
   readonly collector: VisitorInstance | null
@@ -65,6 +71,9 @@ export function prepareArtistMarket(
         genre: artist.genre,
         category: artist.category,
         isOpen: artist === firstBlueArtist,
+        initialFame: artist.initialFame,
+        initialPromotion: artist.initialPromotion,
+        fame: artist === firstBlueArtist ? artist.initialFame : null,
       };
 
       Object.freeze(slot);
@@ -156,6 +165,9 @@ export function prepareArtistSetup(
       genre: artistSlot.genre,
       category: artistSlot.category,
       isOpen: artistSlot.isOpen,
+      initialFame: artistSlot.initialFame,
+      initialPromotion: artistSlot.initialPromotion,
+      fame: artistSlot.fame,
       signatureIds: [`${artistSlot.artistId}-SIG-1`, `${artistSlot.artistId}-SIG-2`],
       bonus: bonusElement,
       collector: collector ?? null,

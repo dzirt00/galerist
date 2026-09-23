@@ -2,10 +2,9 @@ import { describe, expect, it } from 'vitest'
 
 import {
   applyInfluenceGainToGameState,
-  createGame,
   type SetupGameState,
 } from '../src/index.js'
-import { startGameAfterSetup } from './helpers.js'
+import { createGameState, startGameAfterSetup } from './helpers.js'
 
 function createMutableSetupState(): SetupGameState {
   return {
@@ -24,7 +23,7 @@ function createMutableSetupState(): SetupGameState {
 
 describe('applyInfluenceGainToGameState', () => {
   it('начисляет влияние выбранному игроку, ограничивая шкалу значением 35', () => {
-    const state = createGame(
+    const state = createGameState(
       { playerCount: 2, seed: 5 },
       [
         { id: 'first', name: 'Алина', kind: 'human' },
@@ -64,7 +63,7 @@ describe('applyInfluenceGainToGameState', () => {
   })
 
   it('сохраняет поля конкретной фазы игры', () => {
-    const state = startGameAfterSetup(createGame(
+    const state = startGameAfterSetup(createGameState(
       { playerCount: 2, seed: 0 },
       [
         { id: 'first', name: 'Алина', kind: 'human' },

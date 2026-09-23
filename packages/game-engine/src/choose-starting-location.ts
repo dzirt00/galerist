@@ -1,4 +1,5 @@
 import { deepFreeze, type StartingLocationId } from './component-catalog.js'
+import { freezeTransition, type GameTransition } from './game-events.js'
 import type { PlayerId, SetupGameState } from './types.js'
 
 /** Записывает выбор стартовой локации текущего игрока и продолжает setup. */
@@ -6,7 +7,7 @@ export function chooseStartingLocation(
   state: SetupGameState,
   playerId: PlayerId,
   locationId: StartingLocationId,
-): SetupGameState {
+): GameTransition<SetupGameState> {
   if (state.setupStage !== 'choosing_starting_locations') {
     throw new Error('Starting locations can only be chosen during setup')
   }
@@ -56,7 +57,7 @@ export function chooseStartingLocation(
       : playerBoard
   ))
 
-  return deepFreeze({
+  const nextState: SetupGameState = deepFreeze({
     ...state,
     playerBoards,
     internationalMarket: {
@@ -67,4 +68,10 @@ export function chooseStartingLocation(
     currentStartingLocationPlayerId: nextPlayerId,
     availableStartingLocationIds,
   })
+
+  return freezeTransition(nextState, [{
+    type: 'StartingLocationChosen',
+    playerId,
+    locationId,
+  }])
 }

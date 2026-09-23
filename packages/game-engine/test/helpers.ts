@@ -2,9 +2,12 @@ import { expect } from 'vitest'
 import {
   advanceTurn,
   chooseStartingLocation,
+  createGame,
   startGame,
   type EndingSequenceGameState,
+  type GameConfig,
   type GameState,
+  type PlayerConfig,
   type RegularPlayGameState,
   type SetupGameState,
   type TurnDraft,
@@ -21,7 +24,7 @@ export function completeStartingLocationSelection(
       state,
       state.currentStartingLocationPlayerId!,
       state.availableStartingLocationIds[0]!,
-    )
+    ).state
   }
 
   return state
@@ -31,7 +34,15 @@ export function completeStartingLocationSelection(
 export function startGameAfterSetup(
   initialState: SetupGameState,
 ): RegularPlayGameState {
-  return startGame(completeStartingLocationSelection(initialState))
+  return startGame(completeStartingLocationSelection(initialState)).state
+}
+
+/** Создаёт setup-состояние для тестов, не проверяющих события команды. */
+export function createGameState(
+  config: GameConfig,
+  players: readonly PlayerConfig[],
+): SetupGameState {
+  return createGame(config, players).state
 }
 
 /** Проверяет последовательность ходов и неизменность исходного состояния. */

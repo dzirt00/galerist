@@ -1,8 +1,12 @@
-import { type ArtworkDefinition, setupComponentCatalog } from './component-catalog.js'
+import { deepFreeze, type ArtworkDefinition, setupComponentCatalog } from './component-catalog.js'
 import type { SetupRng } from './setup-rng.js'
 
 export interface PreparedMasterpieceAuction {
   readonly artworks: readonly ArtworkDefinition[]
+  readonly easels: readonly {
+    readonly easelId: string
+    readonly artwork: ArtworkDefinition
+  }[]
 }
 
 /** Проверяет отложенные работы и выбирает для аукциона число работ по составу игроков. */
@@ -52,7 +56,11 @@ export function prepareMasterpieceAuction(
     visitorCount: artwork.visitorCount,
   }))
 
-  return Object.freeze({
-    artworks: Object.freeze(selected),
+  return deepFreeze({
+    artworks: selected,
+    easels: selected.map((artwork, index) => ({
+      easelId: `AUCTION-EASEL-${index + 1}`,
+      artwork,
+    })),
   })
 }

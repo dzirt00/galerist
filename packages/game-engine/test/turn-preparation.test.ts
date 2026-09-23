@@ -2,7 +2,6 @@ import { expect, it } from 'vitest'
 import {
   advanceTurn,
   confirmTurnDraft,
-  createGame,
   createTurnDraft,
   prepareTurn,
   triggerGameEnd,
@@ -12,11 +11,11 @@ import {
   type ManagementTiming,
 } from '../src/index.js'
 import { twoPlayerConfigs, twoPlayerGameConfig } from './fixtures.js'
-import { startGameAfterSetup } from './helpers.js'
+import { createGameState, startGameAfterSetup } from './helpers.js'
 
 /** Создаёт состояние обычного хода для тестов. */
 function createRegularTurnState(): GameState {
-  return startGameAfterSetup(createGame(twoPlayerGameConfig, twoPlayerConfigs))
+  return startGameAfterSetup(createGameState(twoPlayerGameConfig, twoPlayerConfigs))
 }
 
 /** Доводит тестовую игру до финального раунда. */
@@ -141,7 +140,7 @@ it.each([
 })
 
 it.each([
-  ['setup', () => createGame(twoPlayerGameConfig, twoPlayerConfigs), 'Game status must be in_progress'],
+  ['setup', () => createGameState(twoPlayerGameConfig, twoPlayerConfigs), 'Game status must be in_progress'],
   [
     'final_scoring',
     createFinalScoringTurnState,

@@ -1,11 +1,19 @@
 export * from './types.js'
 export {
+  type GameEvent,
+  type GameTransition,
+} from './game-events.js'
+export {
   advanceTurn,
   createGame,
   startGame,
   triggerGameEnd,
 } from './game-lifecycle.js'
 export { chooseStartingLocation } from './choose-starting-location.js'
+export {
+  projectGameForViewer,
+  type ProjectedGameState,
+} from './game-projection.js'
 export {
   confirmTurnDraft,
   createTurnDraft,

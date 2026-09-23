@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
   chooseStartingLocation,
-  createGame,
   setupComponentCatalog,
   startGame,
   type PlayerConfig,
@@ -13,6 +12,7 @@ import {
   threePlayerConfigs,
   twoPlayerConfigs,
 } from './fixtures.js'
+import { createGameState } from './helpers.js'
 
 const cases: readonly [
   playerCount: 2 | 3 | 4,
@@ -31,7 +31,7 @@ function chooseAllStartingLocations(initialState: SetupGameState): SetupGameStat
       state,
       state.currentStartingLocationPlayerId!,
       state.availableStartingLocationIds[0]!,
-    )
+    ).state
   }
 
   return state
@@ -41,7 +41,7 @@ describe('chooseStartingLocation', () => {
   it.each(cases)(
     'выбирает локации в обратном порядке и завершает setup для %i игроков',
     (playerCount, players) => {
-      const initialState = createGame({ playerCount, seed: 42 }, players)
+      const initialState = createGameState({ playerCount, seed: 42 }, players)
       const initialSnapshot = structuredClone(initialState)
       const initialTokens = new Map(
         initialState.internationalMarket.locationTokens.map(token => [
@@ -55,7 +55,7 @@ describe('chooseStartingLocation', () => {
         const previousState = state
         const previousSnapshot = structuredClone(previousState)
         const locationId = previousState.availableStartingLocationIds[0]!
-        state = chooseStartingLocation(previousState, playerId, locationId)
+        state = chooseStartingLocation(previousState, playerId, locationId).state
 
         const playerBoard = state.playerBoards.find(board => board.playerId === playerId)
         expect(playerBoard).toMatchObject({
@@ -90,7 +90,7 @@ describe('chooseStartingLocation', () => {
   )
 
   it('отклоняет не текущего игрока и занятую локацию без изменения состояния', () => {
-    const initialState = createGame({ playerCount: 2, seed: 42 }, twoPlayerConfigs)
+    const initialState = createGameState({ playerCount: 2, seed: 42 }, twoPlayerConfigs)
     const initialSnapshot = structuredClone(initialState)
     const currentPlayerId = initialState.currentStartingLocationPlayerId!
     const otherPlayerId = initialState.players.find(player => player.id !== currentPlayerId)!.id
@@ -101,7 +101,7 @@ describe('chooseStartingLocation', () => {
     )
     expect(initialState).toEqual(initialSnapshot)
 
-    const afterFirstChoice = chooseStartingLocation(initialState, currentPlayerId, locationId)
+    const afterFirstChoice = chooseStartingLocation(initialState, currentPlayerId, locationId).state
     expect(() => chooseStartingLocation(
       afterFirstChoice,
       afterFirstChoice.currentStartingLocationPlayerId!,
@@ -112,7 +112,7 @@ describe('chooseStartingLocation', () => {
 
   it('отклоняет выбор после завершения setup', () => {
     const completeState = chooseAllStartingLocations(
-      createGame({ playerCount: 2, seed: 42 }, twoPlayerConfigs),
+      createGameState({ playerCount: 2, seed: 42 }, twoPlayerConfigs),
     )
     const snapshot = structuredClone(completeState)
 
@@ -125,14 +125,14 @@ describe('chooseStartingLocation', () => {
   })
 
   it('разрешает startGame только после завершения выбора', () => {
-    const initialState = createGame({ playerCount: 2, seed: 42 }, twoPlayerConfigs)
+    const initialState = createGameState({ playerCount: 2, seed: 42 }, twoPlayerConfigs)
 
     expect(() => startGame(initialState)).toThrow(
       'Game can only be started after setup is complete',
     )
 
     const completeState = chooseAllStartingLocations(initialState)
-    const regularPlay = startGame(completeState)
+    const regularPlay = startGame(completeState).state
 
     expect(regularPlay.phase).toBe('regular_play')
     expect(regularPlay).not.toHaveProperty('setupStage')

@@ -23,6 +23,11 @@ import { type PreparedMasterpieceAuction, prepareMasterpieceAuction } from "./se
 import { curator, dealer } from './setupComponentCatalog.js'
 import { preparePrivateGoals } from './setup-goals.js'
 import { preparePlayerBoards } from "./player-boards.js";
+import {
+  freezeTransition,
+  type GameEvent,
+  type GameTransition,
+} from './game-events.js'
 
 function getFirstPlayerIndex(seed: number, playerCount: number): number {
   return ((seed % playerCount) + playerCount) % playerCount
@@ -32,7 +37,7 @@ function getFirstPlayerIndex(seed: number, playerCount: number): number {
 export function createGame(
   config: GameConfig,
   players: readonly PlayerConfig[],
-): SetupGameState {
+): GameTransition<SetupGameState> {
   if (config.playerCount !== 2 && config.playerCount !== 3 && config.playerCount !== 4) {
     throw new Error('Player count must be 2, 3, or 4')
   }
@@ -72,6 +77,7 @@ export function createGame(
   const artworkMarket: PreparedArtworkMarket = prepareArtworkMarket( setupComponentCatalog.artworks, visitorBag, setupRng)
   const masterpieceAuction: PreparedMasterpieceAuction = prepareMasterpieceAuction(Object.values(artworkMarket.deferredArtworksByGenre),config.playerCount,setupRng)
   const initialVisitors = placeInitialVisitors( artworkMarket.remainingVisitorBag, playerIds)
+  const firstPlayerIndex = getFirstPlayerIndex(config.seed, players.length)
   const privateGoals = preparePrivateGoals(playerIds,curator,dealer,setupRng)
   const playerBoards = preparePlayerBoards( playerIds, setupComponentCatalog.assistantsPerPlayer, )
   const newPlayers: PlayerState[] = players.map(player => Object.freeze({
@@ -81,8 +87,6 @@ export function createGame(
     coins: 10,
     influence: 10,
   }))
-
-  const firstPlayerIndex = getFirstPlayerIndex(config.seed, players.length)
 
   const regularTurnOrder = [
     ...playerIds.slice(firstPlayerIndex),
@@ -94,7 +98,7 @@ export function createGame(
 
 
 
-  return Object.freeze({
+  const state: SetupGameState = Object.freeze({
     id: `game-${config.seed}`,
     status: 'setup',
     round: 0,
@@ -123,10 +127,37 @@ export function createGame(
     availableStartingLocationIds:
       Object.freeze([...setupComponentCatalog.startingLocationOrder]),
   })
+
+  const openedArtistId = artistMarket.slots.find(slot => slot.isOpen)!.artistId
+  const events: readonly GameEvent[] = [
+    { type: 'OrderMarketPrepared' },
+    { type: 'TicketOfficePrepared' },
+    { type: 'PromotionSupplyPrepared' },
+    { type: 'ArtistsPrepared' },
+    { type: 'ArtistOpened', artistId: openedArtistId },
+    { type: 'VisitorBagPrepared' },
+    { type: 'ArtworkMarketPrepared' },
+    { type: 'InternationalMarketPrepared' },
+    { type: 'LocationReputationPrepared' },
+    { type: 'MasterpieceAuctionPrepared' },
+    { type: 'InitialVisitorsPlaced' },
+    { type: 'FirstPlayerSelected', playerId: playerIds[firstPlayerIndex]! },
+    ...playerIds.map(playerId => ({
+      type: 'PrivateGoalsDealt' as const,
+      playerId,
+    })),
+    ...playerIds.map(playerId => ({
+      type: 'PlayerBoardPrepared' as const,
+      playerId,
+    })),
+    { type: 'GameCreated', gameId: state.id },
+  ]
+
+  return freezeTransition(state, events)
 }
 
 /** Начинает игру и детерминированно выбирает первого игрока по seed. */
-export function startGame(state: GameState): RegularPlayGameState {
+export function startGame(state: GameState): GameTransition<RegularPlayGameState> {
   if (state.phase !== 'setup') {
     throw new Error('Game can only be started from setup')
   }
@@ -148,7 +179,7 @@ export function startGame(state: GameState): RegularPlayGameState {
     ...stateWithoutSetupSelection
   } = state
 
-  return Object.freeze({
+  const regularPlayState: RegularPlayGameState = Object.freeze({
     ...stateWithoutSetupSelection,
     status: 'in_progress',
     phase: 'regular_play',
@@ -156,6 +187,12 @@ export function startGame(state: GameState): RegularPlayGameState {
     activePlayerId: firstPlayerId,
     firstPlayerId,
   })
+
+  return freezeTransition(regularPlayState, [
+    { type: 'GameStarted', gameId: regularPlayState.id },
+    { type: 'RoundStarted', round: 1 },
+    { type: 'TurnStarted', playerId: firstPlayerId },
+  ])
 }
 
 /** Передаёт ход следующему игроку и переключает раунд или фазу завершения при необходимости. */

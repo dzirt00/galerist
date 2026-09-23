@@ -1,9 +1,9 @@
 import { expect, it } from 'vitest'
 import {
   advanceTurn,
-  createGame,
+  createGame as createGameTransition,
   setupComponentCatalog,
-  startGame as startGameFromSetup,
+  startGame as startGameTransition,
   triggerGameEnd,
   type FinishedGameState,
   type GameConfig,
@@ -27,12 +27,20 @@ import {
   expectEndingTurns,
 } from './helpers.js'
 
+function createGame(config: GameConfig, players: readonly PlayerConfig[]) {
+  return createGameTransition(config, players).state
+}
+
+function startGameFromSetup(state: SetupGameState) {
+  return startGameTransition(state).state
+}
+
 function startGame(state: GameState) {
-  return startGameFromSetup(
+  return startGameTransition(
     state.phase === 'setup' && state.setupStage === 'choosing_starting_locations'
       ? completeStartingLocationSelection(state)
       : state,
-  )
+  ).state
 }
 
   it( 'хранит исходные данные игры', () => {
