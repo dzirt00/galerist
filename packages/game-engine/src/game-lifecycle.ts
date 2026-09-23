@@ -10,6 +10,23 @@ import type {
   RegularPlayGameState,
   SetupGameState,
 } from './types.js'
+import { createSetupRng, type SetupRng, type SetupRngConfig } from "./setup-rng.js";
+import { setupComponentCatalog } from "./component-catalog.js";
+import { prepareOrderMarket } from "./setup-orders.js";
+import { type PreparedTicketOffice, prepareTicketOffice } from "./setup-tickets.js";
+import { type PreparedPromotionSupply, preparePromotionSupply } from "./setup-promotion.js";
+import { prepareArtistMarket, prepareArtistSetup } from "./setup-artists.js";
+import { placeInitialVisitors, type PreparedVisitorBag, prepareVisitorBag } from "./setup-visitors.js";
+import { prepareInternationalMarket } from "./setup-international-market.js";
+import { prepareArtworkMarket, type PreparedArtworkMarket } from "./setup-artworks.js";
+import { type PreparedMasterpieceAuction, prepareMasterpieceAuction } from "./setup-masterpieces.js";
+import { curator, dealer } from './setupComponentCatalog.js'
+import { preparePrivateGoals } from './setup-goals.js'
+import { preparePlayerBoards } from "./player-boards.js";
+
+function getFirstPlayerIndex(seed: number, playerCount: number): number {
+  return ((seed % playerCount) + playerCount) % playerCount
+}
 
 /** Создаёт замороженное начальное состояние игры после проверки конфигурации и игроков. */
 export function createGame(
@@ -29,6 +46,34 @@ export function createGame(
     throw new Error('Players must have unique IDs')
   }
 
+  const playerIds = players.map(player => player.id)
+  const setupVersions = Object.freeze({
+    rulesVersion: 'galerist-rules-2026-09-15-v1' as const,
+    componentsVersion: setupComponentCatalog.componentsVersion,
+    setupAlgorithmVersion: 'setup-rng-v1' as const,
+  })
+
+  const setupRngConfig: SetupRngConfig = {
+    rulesVersion: setupVersions.rulesVersion,
+    componentsVersion: setupVersions.componentsVersion,
+    seed: config.seed,
+    playerIds,
+  }
+  const setupRng: SetupRng = createSetupRng(setupRngConfig)
+  const orderRowsId = setupComponentCatalog.orders.map(order => order.id)
+  const orderMarket = Object.freeze(prepareOrderMarket(orderRowsId,setupRng))
+
+  const ticketOffice: PreparedTicketOffice = prepareTicketOffice(config.playerCount)
+  const promotionSupply: PreparedPromotionSupply = preparePromotionSupply(setupComponentCatalog.promotionTokens)
+  const artistMarket = prepareArtistMarket(setupComponentCatalog.artists, setupRng)
+  const artistSetup = prepareArtistSetup(artistMarket, setupComponentCatalog.visitorInstancesByPlayerCount[config.playerCount], setupComponentCatalog.artistBonuses, setupRng)
+  const visitorBag: PreparedVisitorBag =  prepareVisitorBag(artistSetup.remainingVisitors, setupRng)
+  const internationalMarket = prepareInternationalMarket(setupComponentCatalog.reputationTokenIds, config.playerCount, setupRng)
+  const artworkMarket: PreparedArtworkMarket = prepareArtworkMarket( setupComponentCatalog.artworks, visitorBag, setupRng)
+  const masterpieceAuction: PreparedMasterpieceAuction = prepareMasterpieceAuction(Object.values(artworkMarket.deferredArtworksByGenre),config.playerCount,setupRng)
+  const initialVisitors = placeInitialVisitors( artworkMarket.remainingVisitorBag, playerIds)
+  const privateGoals = preparePrivateGoals(playerIds,curator,dealer,setupRng)
+  const playerBoards = preparePlayerBoards( playerIds, setupComponentCatalog.assistantsPerPlayer, )
   const newPlayers: PlayerState[] = players.map(player => Object.freeze({
     id: player.id,
     name: player.name,
@@ -36,6 +81,18 @@ export function createGame(
     coins: 10,
     influence: 10,
   }))
+
+  const firstPlayerIndex = getFirstPlayerIndex(config.seed, players.length)
+
+  const regularTurnOrder = [
+    ...playerIds.slice(firstPlayerIndex),
+    ...playerIds.slice(0, firstPlayerIndex),
+  ]
+
+  const startingLocationSelectionOrder =
+    Object.freeze([...regularTurnOrder].reverse())
+
+
 
   return Object.freeze({
     id: `game-${config.seed}`,
@@ -45,6 +102,26 @@ export function createGame(
     config: Object.freeze({ ...config }),
     players: Object.freeze([...newPlayers]),
     phase: 'setup',
+    orderMarket: orderMarket,
+    ticketOffice: ticketOffice,
+    promotionSupply: promotionSupply,
+    artistMarket: artistMarket,
+    artistSetup: artistSetup,
+    internationalMarket: internationalMarket,
+    artworkMarket: artworkMarket,
+    setupVersions,
+    masterpieceAuction: masterpieceAuction,
+    plazaVisitors: initialVisitors.plazaVisitors,
+    vestibuleVisitors: initialVisitors.visitorPlayers,
+    visitorBag: Object.freeze({ visitors: initialVisitors.remainingVisitors }),
+    privateGoals,
+    playerBoards: playerBoards,
+    setupStage: 'choosing_starting_locations',
+    startingLocationSelectionOrder,
+    currentStartingLocationPlayerId:
+      startingLocationSelectionOrder[0]!,
+    availableStartingLocationIds:
+      Object.freeze([...setupComponentCatalog.startingLocationOrder]),
   })
 }
 
@@ -54,12 +131,22 @@ export function startGame(state: GameState): RegularPlayGameState {
     throw new Error('Game can only be started from setup')
   }
 
-  const playerIndex = ((state.config.seed % state.players.length) + state.players.length)
-    % state.players.length
-  const firstPlayerId = state.players[playerIndex]!.id
+  const firstPlayerIndex = getFirstPlayerIndex(
+    state.config.seed,
+    state.players.length,
+  )
+  const firstPlayerId = state.players[firstPlayerIndex]!.id
+
+  const {
+    setupStage: _setupStage,
+    startingLocationSelectionOrder: _selectionOrder,
+    currentStartingLocationPlayerId: _currentChooser,
+    availableStartingLocationIds: _availableLocations,
+    ...stateWithoutSetupSelection
+  } = state
 
   return Object.freeze({
-    ...state,
+    ...stateWithoutSetupSelection,
     status: 'in_progress',
     phase: 'regular_play',
     round: 1,

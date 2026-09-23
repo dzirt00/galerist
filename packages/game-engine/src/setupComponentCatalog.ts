@@ -1,6 +1,6 @@
 import { type ArtworkGenre, deepFreeze } from "./component-catalog.js";
 
-export type typeGoal = 'curator' | 'dealer'
+export type GoalType = 'curator' | 'dealer'
 export interface TargetCuratorDealer {
   readonly goal: readonly Readonly<ArtworkGenre>[],
   readonly coins: number
@@ -9,22 +9,22 @@ export interface TargetCuratorDealer {
 export interface CuratorDealer {
   readonly id: string,
   readonly targets: readonly Readonly<TargetCuratorDealer>[]
-  readonly type: typeGoal
+  readonly type: GoalType
   readonly artworkReuse: 'forbidden_across_targets'
 }
 
-
-export const curator: readonly CuratorDealer[] = deepFreeze([
-  { id: 'CURATOR-01',
+export const curator: readonly CuratorDealer[] = deepFreeze( [
+  {
+    id: 'CURATOR-01',
     artworkReuse: 'forbidden_across_targets',
     type: 'curator',
     targets: [ {
-        goal: ['S','D','A'],
-        coins: 10
+      goal: [ 'S', 'D', 'A' ],
+      coins: 10
 
-      },
+    },
       {
-        goal: ['P','P','D','A'],
+        goal: [ 'P', 'P', 'D', 'A' ],
         coins: 15
       },
     ]
@@ -35,11 +35,11 @@ export const curator: readonly CuratorDealer[] = deepFreeze([
     type: 'curator',
     targets: [
       {
-        goal: ['P','D','A'],
+        goal: [ 'P', 'D', 'A' ],
         coins: 10
       },
       {
-        goal: ['S','S','A','P'],
+        goal: [ 'S', 'S', 'A', 'P' ],
         coins: 15
       },
     ]
@@ -50,11 +50,11 @@ export const curator: readonly CuratorDealer[] = deepFreeze([
     type: 'curator',
     targets: [
       {
-        goal: ['S','D','P'],
+        goal: [ 'S', 'D', 'P' ],
         coins: 10
       },
       {
-        goal: ['A','A','S','D'],
+        goal: [ 'A', 'A', 'S', 'D' ],
         coins: 15
       },
     ]
@@ -65,32 +65,32 @@ export const curator: readonly CuratorDealer[] = deepFreeze([
     type: 'curator',
     targets: [
       {
-        goal: ['P','S','A'],
+        goal: [ 'P', 'S', 'A' ],
         coins: 10
       },
       {
-        goal: ['D','D','P','S'],
+        goal: [ 'D', 'D', 'P', 'S' ],
         coins: 15
       },
     ]
   }
-])
-
-export const dealer: readonly CuratorDealer[] = deepFreeze([
-  { id: 'DEALER-01',
+] )
+export const dealer: readonly CuratorDealer[] = deepFreeze( [
+  {
+    id: 'DEALER-01',
     type: 'dealer',
     artworkReuse: 'forbidden_across_targets',
     targets: [
       {
-        goal: ['P'],
+        goal: [ 'P' ],
         coins: 5
       },
       {
-        goal: ['D','A'],
+        goal: [ 'D', 'A' ],
         coins: 10
       },
       {
-        goal: ['S','S'],
+        goal: [ 'S', 'S' ],
         coins: 10
       },
     ]
@@ -101,15 +101,15 @@ export const dealer: readonly CuratorDealer[] = deepFreeze([
     artworkReuse: 'forbidden_across_targets',
     targets: [
       {
-        goal: ['S'],
+        goal: [ 'S' ],
         coins: 5
       },
       {
-        goal: ['D','P'],
+        goal: [ 'D', 'P' ],
         coins: 10
       },
       {
-        goal: ['A','A'],
+        goal: [ 'A', 'A' ],
         coins: 10
       },
     ]
@@ -120,15 +120,15 @@ export const dealer: readonly CuratorDealer[] = deepFreeze([
     artworkReuse: 'forbidden_across_targets',
     targets: [
       {
-        goal: ['A'],
+        goal: [ 'A' ],
         coins: 5
       },
       {
-        goal: ['S','P'],
+        goal: [ 'S', 'P' ],
         coins: 10
       },
       {
-        goal: ['D','D'],
+        goal: [ 'D', 'D' ],
         coins: 10
       },
     ]
@@ -139,17 +139,19 @@ export const dealer: readonly CuratorDealer[] = deepFreeze([
     artworkReuse: 'forbidden_across_targets',
     targets: [
       {
-        goal: ['D'],
+        goal: [ 'D' ],
         coins: 5
       },
       {
-        goal: ['S','A'],
+        goal: [ 'S', 'A' ],
         coins: 10
       },
       {
-        goal: ['P','P'],
+        goal: [ 'P', 'P' ],
         coins: 10
       },
     ]
   }
-])
+] )
+
+

@@ -1,3 +1,15 @@
+import type { PreparedOrderMarket } from "./setup-orders.js";
+import type { PreparedTicketOffice } from "./setup-tickets.js";
+import type { PreparedPromotionSupply } from "./setup-promotion.js";
+import type { PreparedArtistMarket, PreparedArtistSetup } from "./setup-artists.js";
+import type {  PreparedVisitorBag, InitialVisitorPlacement } from "./setup-visitors.js";
+import type { SetupInternationalMarket } from "./setup-international-market.js";
+import type { PreparedArtworkMarket } from "./setup-artworks.js";
+import type { PreparedMasterpieceAuction } from "./setup-masterpieces.js";
+import type { PreparedPrivateGoals } from './setup-goals.js'
+import type { PlayerBoard } from "./player-boards.js";
+import type { StartingLocationId } from "./component-catalog.js";
+
 export type GameId = string
 export type PlayerId = string
 
@@ -88,6 +100,24 @@ export interface GameStateBase {
   readonly id: GameId
   readonly config: Readonly<GameConfig>
   readonly players: readonly PlayerState[]
+  readonly orderMarket: Readonly<PreparedOrderMarket>
+  readonly ticketOffice: PreparedTicketOffice
+  readonly promotionSupply: PreparedPromotionSupply
+  readonly artistMarket: PreparedArtistMarket
+  readonly artistSetup: PreparedArtistSetup
+  readonly visitorBag: PreparedVisitorBag
+  readonly internationalMarket:  SetupInternationalMarket
+  readonly artworkMarket:  PreparedArtworkMarket
+  readonly masterpieceAuction:  PreparedMasterpieceAuction
+  readonly privateGoals: PreparedPrivateGoals
+  readonly playerBoards: readonly PlayerBoard[]
+  readonly plazaVisitors: InitialVisitorPlacement['plazaVisitors']
+  readonly vestibuleVisitors: InitialVisitorPlacement['visitorPlayers']
+  readonly setupVersions: {
+    readonly rulesVersion: 'galerist-rules-2026-09-15-v1'
+    readonly componentsVersion: string
+    readonly setupAlgorithmVersion: 'setup-rng-v1'
+  }
 }
 
 export interface RegularPlayGameState extends GameStateBase {
@@ -139,6 +169,10 @@ export interface SetupGameState extends GameStateBase {
   readonly status: 'setup'
   readonly round: 0
   readonly activePlayerId: null
+  readonly setupStage: 'choosing_starting_locations' | 'complete'
+  readonly startingLocationSelectionOrder: readonly PlayerId[]
+  readonly currentStartingLocationPlayerId: PlayerId | null
+  readonly availableStartingLocationIds: readonly StartingLocationId[]
 }
 
 export type EndingSequenceGameState =

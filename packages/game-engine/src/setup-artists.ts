@@ -156,7 +156,7 @@ export function prepareArtistSetup(
       genre: artistSlot.genre,
       category: artistSlot.category,
       isOpen: artistSlot.isOpen,
-      signatureIds: [`${artistSlot.artistId}-sign1`, `${artistSlot.artistId}-sign2`],
+      signatureIds: [`${artistSlot.artistId}-SIG-1`, `${artistSlot.artistId}-SIG-2`],
       bonus: bonusElement,
       collector: collector ?? null,
     }

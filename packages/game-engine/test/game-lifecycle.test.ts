@@ -2,6 +2,7 @@ import { expect, it } from 'vitest'
 import {
   advanceTurn,
   createGame,
+  setupComponentCatalog,
   startGame,
   triggerGameEnd,
   type FinishedGameState,
@@ -76,6 +77,507 @@ it( 'создаёт детерминированное начальное сос
   } )
   expect( state.players ).toHaveLength( 2 )
 } )
+
+it('включает в GameState все карты заказов без потерь и дубликатов', () => {
+  const catalogOrderIds = setupComponentCatalog.orders.map(order => order.id)
+  const state = createGame(twoPlayerGameConfig, twoPlayerConfigs)
+  const allPreparedOrderIds = [
+    ...state.orderMarket.visibleOrders,
+    ...state.orderMarket.remainingOrderIds,
+  ]
+
+  expect(state.orderMarket.visibleOrders).toHaveLength(4)
+  expect(state.orderMarket.remainingOrderIds).toHaveLength(16)
+  expect(new Set(allPreparedOrderIds).size).toBe(20)
+  expect([...allPreparedOrderIds].sort()).toEqual([...catalogOrderIds].sort())
+  expect(setupComponentCatalog.orders.map(order => order.id)).toEqual(catalogOrderIds)
+})
+
+it('детерминированно готовит и глубоко замораживает рынок заказов', () => {
+  const config: GameConfig = { playerCount: 2, seed: -42 }
+  const first = createGame(config, twoPlayerConfigs)
+  const second = createGame({ ...config }, twoPlayerConfigs.map(player => ({ ...player })))
+
+  expect(first.orderMarket).toEqual(second.orderMarket)
+  expect(Object.isFrozen(first.orderMarket)).toBe(true)
+  expect(Object.isFrozen(first.orderMarket.visibleOrders)).toBe(true)
+  expect(Object.isFrozen(first.orderMarket.remainingOrderIds)).toBe(true)
+  expect(() => {
+    (first.orderMarket.visibleOrders as string[]).push('ORDER-UNKNOWN')
+  }).toThrow()
+})
+
+it('сохраняет подготовленный рынок заказов при переходах lifecycle', () => {
+  const setup = createGame(twoPlayerGameConfig, twoPlayerConfigs)
+  const regularPlay = startGame(setup)
+  const nextTurn = advanceTurn(regularPlay)
+  const endingCurrentRound = triggerGameEnd(nextTurn)
+
+  expect(regularPlay.orderMarket).toBe(setup.orderMarket)
+  expect(nextTurn.orderMarket).toBe(setup.orderMarket)
+  expect(endingCurrentRound.orderMarket).toBe(setup.orderMarket)
+})
+
+it.each([
+  [2, twoPlayerConfigs, 10],
+  [3, threePlayerConfigs, 15],
+  [4, fourPlayerConfigs, 20],
+] as const)('сохраняет в GameState точный запас билетов для %i игроков', (playerCount, players, expected) => {
+  const state = createGame({ playerCount, seed: 42 }, players)
+
+  expect(state.ticketOffice.ticketsByColor).toEqual({
+    B: expected,
+    R: expected,
+    W: expected,
+  })
+  expect(Object.isFrozen(state.ticketOffice)).toBe(true)
+  expect(Object.isFrozen(state.ticketOffice.ticketsByColor)).toBe(true)
+})
+
+it('сохраняет подготовленную кассу билетов при переходах lifecycle', () => {
+  const setup = createGame(twoPlayerGameConfig, twoPlayerConfigs)
+  const regularPlay = startGame(setup)
+  const nextTurn = advanceTurn(regularPlay)
+  const endingCurrentRound = triggerGameEnd(nextTurn)
+
+  expect(regularPlay.ticketOffice).toBe(setup.ticketOffice)
+  expect(nextTurn.ticketOffice).toBe(setup.ticketOffice)
+  expect(endingCurrentRound.ticketOffice).toBe(setup.ticketOffice)
+})
+
+it('сохраняет в GameState все 20 жетонов рекламы по четыре на каждом уровне', () => {
+  const state = createGame(twoPlayerGameConfig, twoPlayerConfigs)
+  const tokenIdsByLevel = state.promotionSupply.tokenIdsByLevel
+  const preparedIds = Object.values(tokenIdsByLevel).flat()
+  const catalogIds = setupComponentCatalog.promotionTokens.map(token => token.id)
+
+  expect(Object.keys(tokenIdsByLevel)).toEqual(['1', '2', '3', '4', '5'])
+  expect(Object.values(tokenIdsByLevel).every(tokenIds => tokenIds.length === 4)).toBe(true)
+  expect(new Set(preparedIds).size).toBe(20)
+  expect([...preparedIds].sort()).toEqual([...catalogIds].sort())
+})
+
+it('глубоко замораживает и сохраняет запас рекламы при переходах lifecycle', () => {
+  const setup = createGame(twoPlayerGameConfig, twoPlayerConfigs)
+  const regularPlay = startGame(setup)
+  const nextTurn = advanceTurn(regularPlay)
+  const endingCurrentRound = triggerGameEnd(nextTurn)
+
+  expect(Object.isFrozen(setup.promotionSupply)).toBe(true)
+  expect(Object.isFrozen(setup.promotionSupply.tokenIdsByLevel)).toBe(true)
+  expect(Object.values(setup.promotionSupply.tokenIdsByLevel).every(Object.isFrozen)).toBe(true)
+  expect(regularPlay.promotionSupply).toBe(setup.promotionSupply)
+  expect(nextTurn.promotionSupply).toBe(setup.promotionSupply)
+  expect(endingCurrentRound.promotionSupply).toBe(setup.promotionSupply)
+})
+
+it('сохраняет в GameState восемь уникальных пар художников и открывает одного синего', () => {
+  const state = createGame(twoPlayerGameConfig, twoPlayerConfigs)
+  const pairIds = state.artistMarket.slots.map(slot => `${slot.genre}-${slot.category}`)
+  const expectedPairIds = setupComponentCatalog.genreOrder.flatMap(genre =>
+    setupComponentCatalog.categoryOrder.map(category => `${genre}-${category}`),
+  )
+  const openSlots = state.artistMarket.slots.filter(slot => slot.isOpen)
+
+  expect(state.artistMarket.slots).toHaveLength(8)
+  expect(state.artistMarket.unselectedArtistIds).toHaveLength(8)
+  expect(new Set(state.artistMarket.slots.map(slot => slot.artistId)).size).toBe(8)
+  expect(new Set(pairIds)).toEqual(new Set(expectedPairIds))
+  expect(openSlots).toHaveLength(1)
+  expect(openSlots[0]!.category).toBe('blue')
+})
+
+it('детерминированно готовит, замораживает и сохраняет рынок художников', () => {
+  const config: GameConfig = { playerCount: 2, seed: -42 }
+  const first = createGame(config, twoPlayerConfigs)
+  const second = createGame({ ...config }, twoPlayerConfigs.map(player => ({ ...player })))
+  const regularPlay = startGame(first)
+  const endingCurrentRound = triggerGameEnd(advanceTurn(regularPlay))
+
+  expect(first.artistMarket).toEqual(second.artistMarket)
+  expect(Object.isFrozen(first.artistMarket)).toBe(true)
+  expect(Object.isFrozen(first.artistMarket.slots)).toBe(true)
+  expect(Object.isFrozen(first.artistMarket.unselectedArtistIds)).toBe(true)
+  expect(first.artistMarket.slots.every(Object.isFrozen)).toBe(true)
+  expect(regularPlay.artistMarket).toBe(first.artistMarket)
+  expect(endingCurrentRound.artistMarket).toBe(first.artistMarket)
+})
+
+it('сохраняет в GameState бонусы, коллекционеров и подписи подготовленных художников', () => {
+  const state = createGame(twoPlayerGameConfig, twoPlayerConfigs)
+  const openSlots = state.artistSetup.slots.filter(slot => slot.isOpen)
+  const closedSlots = state.artistSetup.slots.filter(slot => !slot.isOpen)
+  const redSlots = state.artistSetup.slots.filter(slot => slot.category === 'red')
+  const blueSlots = state.artistSetup.slots.filter(slot => slot.category === 'blue')
+
+  expect(openSlots).toHaveLength(1)
+  expect(openSlots[0]!.bonus).toBeNull()
+  expect(closedSlots).toHaveLength(7)
+  expect(closedSlots.every(slot => slot.bonus !== null)).toBe(true)
+  expect(new Set(closedSlots.map(slot => slot.bonus!.id)).size).toBe(7)
+  expect(state.artistSetup.unusedBonuses).toHaveLength(3)
+  expect(redSlots).toHaveLength(4)
+  expect(redSlots.every(slot => slot.collector?.type === 'W')).toBe(true)
+  expect(blueSlots.every(slot => slot.collector === null)).toBe(true)
+  expect(state.artistSetup.remainingVisitors).toHaveLength(
+    setupComponentCatalog.visitorInstancesByPlayerCount[2].length - 4,
+  )
+
+  for (const slot of state.artistSetup.slots) {
+    expect(slot.signatureIds).toEqual([
+      `${slot.artistId}-SIG-1`,
+      `${slot.artistId}-SIG-2`,
+    ])
+  }
+})
+
+it('детерминированно готовит, замораживает и сохраняет полную раскладку художников', () => {
+  const config: GameConfig = { playerCount: 2, seed: -42 }
+  const first = createGame(config, twoPlayerConfigs)
+  const second = createGame({ ...config }, twoPlayerConfigs.map(player => ({ ...player })))
+  const regularPlay = startGame(first)
+  const endingCurrentRound = triggerGameEnd(advanceTurn(regularPlay))
+
+  expect(first.artistSetup).toEqual(second.artistSetup)
+  expect(Object.isFrozen(first.artistSetup)).toBe(true)
+  expect(Object.isFrozen(first.artistSetup.slots)).toBe(true)
+  expect(Object.isFrozen(first.artistSetup.remainingVisitors)).toBe(true)
+  expect(Object.isFrozen(first.artistSetup.unusedBonuses)).toBe(true)
+  expect(first.artistSetup.slots.every(Object.isFrozen)).toBe(true)
+  expect(regularPlay.artistSetup).toBe(first.artistSetup)
+  expect(endingCurrentRound.artistSetup).toBe(first.artistSetup)
+})
+
+it.each([
+  [2, twoPlayerConfigs],
+  [3, threePlayerConfigs],
+  [4, fourPlayerConfigs],
+] as const)('сохраняет всех посетителей между художниками, работами и мешочком для %i игроков', (playerCount, players) => {
+  const state = createGame({ playerCount, seed: 42 }, players)
+  const collectorIds = state.artistSetup.slots.flatMap(slot =>
+    slot.collector === null ? [] : [slot.collector.id],
+  )
+  const artworkVisitorIds = Object.values(state.artworkMarket.openArtworksByGenre)
+    .flatMap(slot => slot.visitors.map(visitor => visitor.id))
+  const plazaVisitorIds = state.plazaVisitors.map(visitor => visitor.id)
+  const vestibuleVisitorIds = state.vestibuleVisitors
+    .map(placement => placement.vestibuleVisitor.id)
+  const bagIds = state.visitorBag.visitors.map(visitor => visitor.id)
+  const catalogIds = setupComponentCatalog.visitorInstancesByPlayerCount[playerCount]
+    .map(visitor => visitor.id)
+  const allPlacedIds = [
+    ...collectorIds,
+    ...artworkVisitorIds,
+    ...plazaVisitorIds,
+    ...vestibuleVisitorIds,
+    ...bagIds,
+  ]
+
+  expect(collectorIds).toHaveLength(4)
+  expect(new Set(allPlacedIds).size).toBe(catalogIds.length)
+  expect(allPlacedIds.sort()).toEqual([...catalogIds].sort())
+  expect(
+    state.artworkMarket.remainingVisitorBag.visitors.length - state.visitorBag.visitors.length,
+  ).toBe(4 + playerCount)
+})
+
+it('детерминированно готовит, замораживает и сохраняет мешочек посетителей', () => {
+  const config: GameConfig = { playerCount: 2, seed: -42 }
+  const first = createGame(config, twoPlayerConfigs)
+  const second = createGame({ ...config }, twoPlayerConfigs.map(player => ({ ...player })))
+  const regularPlay = startGame(first)
+  const endingCurrentRound = triggerGameEnd(advanceTurn(regularPlay))
+
+  expect(first.visitorBag).toEqual(second.visitorBag)
+  expect(Object.isFrozen(first.visitorBag)).toBe(true)
+  expect(Object.isFrozen(first.visitorBag.visitors)).toBe(true)
+  expect(first.visitorBag.visitors.every(Object.isFrozen)).toBe(true)
+  expect(regularPlay.visitorBag).toBe(first.visitorBag)
+  expect(endingCurrentRound.visitorBag).toBe(first.visitorBag)
+})
+
+it.each([
+  [2, twoPlayerConfigs],
+  [3, threePlayerConfigs],
+  [4, fourPlayerConfigs],
+] as const)('для %i игроков размещает четырёх посетителей на площади и по одному в вестибюлях', (playerCount, players) => {
+  const state = createGame({ playerCount, seed: 42 }, players)
+
+  expect(state.plazaVisitors).toHaveLength(4)
+  expect(state.vestibuleVisitors).toHaveLength(playerCount)
+  expect(state.vestibuleVisitors.map(placement => placement.playerId)).toEqual(
+    players.map(player => player.id),
+  )
+})
+
+it('детерминированно размещает, замораживает и сохраняет начальных посетителей', () => {
+  const config: GameConfig = { playerCount: 2, seed: -42 }
+  const first = createGame(config, twoPlayerConfigs)
+  const second = createGame({ ...config }, twoPlayerConfigs.map(player => ({ ...player })))
+  const regularPlay = startGame(first)
+  const endingCurrentRound = triggerGameEnd(advanceTurn(regularPlay))
+
+  expect(first.plazaVisitors).toEqual(second.plazaVisitors)
+  expect(first.vestibuleVisitors).toEqual(second.vestibuleVisitors)
+  expect(Object.isFrozen(first.plazaVisitors)).toBe(true)
+  expect(Object.isFrozen(first.vestibuleVisitors)).toBe(true)
+  expect(first.plazaVisitors.every(Object.isFrozen)).toBe(true)
+  expect(first.vestibuleVisitors.every(Object.isFrozen)).toBe(true)
+  expect(regularPlay.plazaVisitors).toBe(first.plazaVisitors)
+  expect(regularPlay.vestibuleVisitors).toBe(first.vestibuleVisitors)
+  expect(endingCurrentRound.plazaVisitors).toBe(first.plazaVisitors)
+  expect(endingCurrentRound.vestibuleVisitors).toBe(first.vestibuleVisitors)
+})
+
+it('сохраняет в GameState четыре стопки работ без потерь и дубликатов', () => {
+  const state = createGame(twoPlayerGameConfig, twoPlayerConfigs)
+  const market = state.artworkMarket
+  const deferred = Object.values(market.deferredArtworksByGenre)
+  const open = Object.values(market.openArtworksByGenre)
+  const remaining = Object.values(market.remainingArtworksByGenre).flat()
+  const allArtworkIds = [
+    ...deferred.map(artwork => artwork.id),
+    ...open.map(slot => slot.artwork.id),
+    ...remaining.map(artwork => artwork.id),
+  ]
+
+  expect(Object.keys(market.deferredArtworksByGenre)).toEqual(setupComponentCatalog.genreOrder)
+  expect(Object.keys(market.openArtworksByGenre)).toEqual(setupComponentCatalog.genreOrder)
+  expect(Object.keys(market.remainingArtworksByGenre)).toEqual(setupComponentCatalog.genreOrder)
+  expect(new Set(allArtworkIds).size).toBe(setupComponentCatalog.artworks.length)
+  expect([...allArtworkIds].sort()).toEqual(
+    setupComponentCatalog.artworks.map(artwork => artwork.id).sort(),
+  )
+  for (const slot of open) {
+    expect(slot.visitors).toHaveLength(slot.artwork.visitorCount)
+  }
+})
+
+it('детерминированно готовит, замораживает и сохраняет рынок работ', () => {
+  const config: GameConfig = { playerCount: 2, seed: -42 }
+  const first = createGame(config, twoPlayerConfigs)
+  const second = createGame({ ...config }, twoPlayerConfigs.map(player => ({ ...player })))
+  const regularPlay = startGame(first)
+  const endingCurrentRound = triggerGameEnd(advanceTurn(regularPlay))
+
+  expect(first.artworkMarket).toEqual(second.artworkMarket)
+  expect(Object.isFrozen(first.artworkMarket)).toBe(true)
+  expect(Object.isFrozen(first.artworkMarket.deferredArtworksByGenre)).toBe(true)
+  expect(Object.isFrozen(first.artworkMarket.openArtworksByGenre)).toBe(true)
+  expect(Object.isFrozen(first.artworkMarket.remainingArtworksByGenre)).toBe(true)
+  expect(regularPlay.artworkMarket).toBe(first.artworkMarket)
+  expect(endingCurrentRound.artworkMarket).toBe(first.artworkMarket)
+})
+
+it('сохраняет в GameState точные версии правил, компонентов и алгоритма подготовки', () => {
+  const state = createGame(twoPlayerGameConfig, twoPlayerConfigs)
+
+  expect(state.setupVersions).toEqual({
+    rulesVersion: 'galerist-rules-2026-09-15-v1',
+    componentsVersion: setupComponentCatalog.componentsVersion,
+    setupAlgorithmVersion: 'setup-rng-v1',
+  })
+  expect(Object.keys(state.setupVersions).sort()).toEqual([
+    'componentsVersion',
+    'rulesVersion',
+    'setupAlgorithmVersion',
+  ])
+  expect(state.setupVersions).not.toHaveProperty('seed')
+  expect(state.setupVersions).not.toHaveProperty('playerIds')
+  expect(Object.isFrozen(state.setupVersions)).toBe(true)
+})
+
+it('сохраняет тот же замороженный объект версий при переходах lifecycle', () => {
+  const setup = createGame(twoPlayerGameConfig, twoPlayerConfigs)
+  const regularPlay = startGame(setup)
+  const nextTurn = advanceTurn(regularPlay)
+  const endingCurrentRound = triggerGameEnd(nextTurn)
+
+  expect(regularPlay.setupVersions).toBe(setup.setupVersions)
+  expect(nextTurn.setupVersions).toBe(setup.setupVersions)
+  expect(endingCurrentRound.setupVersions).toBe(setup.setupVersions)
+})
+
+it.each([
+  [2, twoPlayerConfigs, 2],
+  [3, threePlayerConfigs, 1],
+  [4, fourPlayerConfigs, 0],
+] as const)('для %i игроков раздаёт по одной приватной цели каждого типа', (playerCount, players, expectedRemainingCount) => {
+  const state = createGame({ playerCount, seed: 42 }, players)
+  const goalsByPlayer = state.privateGoals.goalsByPlayer
+  const dealt = Object.values(goalsByPlayer)
+  const allCuratorIds = [
+    ...dealt.map(goals => goals.curatorGoal.id),
+    ...state.privateGoals.remainingCuratorGoals.map(goal => goal.id),
+  ]
+  const allDealerIds = [
+    ...dealt.map(goals => goals.dealerGoal.id),
+    ...state.privateGoals.remainingDealerGoals.map(goal => goal.id),
+  ]
+
+  expect(Object.keys(goalsByPlayer)).toEqual(players.map(player => player.id))
+  expect(dealt).toHaveLength(playerCount)
+  expect(dealt.every(goals => goals.curatorGoal.type === 'curator')).toBe(true)
+  expect(dealt.every(goals => goals.dealerGoal.type === 'dealer')).toBe(true)
+  expect(state.privateGoals.remainingCuratorGoals).toHaveLength(expectedRemainingCount)
+  expect(state.privateGoals.remainingDealerGoals).toHaveLength(expectedRemainingCount)
+  expect(new Set(allCuratorIds).size).toBe(4)
+  expect(new Set(allDealerIds).size).toBe(4)
+  expect([...allCuratorIds].sort()).toEqual([...setupComponentCatalog.curatorGoals].sort())
+  expect([...allDealerIds].sort()).toEqual([...setupComponentCatalog.dealerGoals].sort())
+})
+
+it('детерминированно раздаёт, глубоко замораживает и сохраняет приватные цели', () => {
+  const config: GameConfig = { playerCount: 2, seed: -42 }
+  const first = createGame(config, twoPlayerConfigs)
+  const second = createGame({ ...config }, twoPlayerConfigs.map(player => ({ ...player })))
+  const regularPlay = startGame(first)
+  const endingCurrentRound = triggerGameEnd(advanceTurn(regularPlay))
+
+  expect(first.privateGoals).toEqual(second.privateGoals)
+  expect(Object.isFrozen(first.privateGoals)).toBe(true)
+  expect(Object.isFrozen(first.privateGoals.goalsByPlayer)).toBe(true)
+  expect(Object.isFrozen(first.privateGoals.remainingCuratorGoals)).toBe(true)
+  expect(Object.isFrozen(first.privateGoals.remainingDealerGoals)).toBe(true)
+  expect(Object.values(first.privateGoals.goalsByPlayer).every(Object.isFrozen)).toBe(true)
+  expect(regularPlay.privateGoals).toBe(first.privateGoals)
+  expect(endingCurrentRound.privateGoals).toBe(first.privateGoals)
+})
+
+it.each([
+  [2, twoPlayerConfigs],
+  [3, threePlayerConfigs],
+  [4, fourPlayerConfigs],
+] as const)('для %i игроков сохраняет подготовленные планшеты в порядке мест', (playerCount, players) => {
+  const state = createGame({ playerCount, seed: 42 }, players)
+
+  expect(state.playerBoards).toHaveLength(playerCount)
+  expect(state.playerBoards.map(board => board.playerId)).toEqual(
+    players.map(player => player.id),
+  )
+  expect(state.playerBoards.every(board => (
+    board.assistants.office === setupComponentCatalog.assistantsPerPlayer.office
+    && board.assistants.hireQueue === setupComponentCatalog.assistantsPerPlayer.hireQueue
+    && board.startingLocationId === null
+    && board.thirdPartitionReputationTokenId === null
+  ))).toBe(true)
+})
+
+it('глубоко замораживает и сохраняет планшеты при переходах lifecycle', () => {
+  const setup = createGame(twoPlayerGameConfig, twoPlayerConfigs)
+  const regularPlay = startGame(setup)
+  const nextTurn = advanceTurn(regularPlay)
+  const endingCurrentRound = triggerGameEnd(nextTurn)
+
+  expect(Object.isFrozen(setup.playerBoards)).toBe(true)
+  expect(setup.playerBoards.every(Object.isFrozen)).toBe(true)
+  expect(setup.playerBoards.every(board => Object.isFrozen(board.assistants))).toBe(true)
+  expect(regularPlay.playerBoards).toBe(setup.playerBoards)
+  expect(nextTurn.playerBoards).toBe(setup.playerBoards)
+  expect(endingCurrentRound.playerBoards).toBe(setup.playerBoards)
+})
+
+it.each([
+  [2, 42, twoPlayerConfigs, ['player-2', 'player-1']],
+  [3, -1, threePlayerConfigs, ['player-2', 'player-1', 'player-3']],
+  [4, 1, fourPlayerConfigs, ['player-1', 'player-4', 'player-3', 'player-2']],
+] as const)('для %i игроков строит обратный порядок выбора стартовых локаций', (playerCount, seed, players, expectedOrder) => {
+  const state = createGame({ playerCount, seed }, players)
+
+  expect(state.setupStage).toBe('choosing_starting_locations')
+  expect(state.startingLocationSelectionOrder).toEqual(expectedOrder)
+  expect(state.currentStartingLocationPlayerId).toBe(expectedOrder[0])
+  expect(state.availableStartingLocationIds).toEqual(
+    setupComponentCatalog.startingLocationOrder,
+  )
+  expect(state).not.toHaveProperty('firstPlayerId')
+  expect(Object.isFrozen(state.startingLocationSelectionOrder)).toBe(true)
+  expect(Object.isFrozen(state.availableStartingLocationIds)).toBe(true)
+})
+
+it('удаляет временные поля выбора локаций при переходе в regular_play', () => {
+  const setup = createGame(twoPlayerGameConfig, twoPlayerConfigs)
+  const setupSnapshot = structuredClone(setup)
+  const regularPlay = startGame(setup)
+
+  expect(regularPlay).not.toHaveProperty('setupStage')
+  expect(regularPlay).not.toHaveProperty('startingLocationSelectionOrder')
+  expect(regularPlay).not.toHaveProperty('currentStartingLocationPlayerId')
+  expect(regularPlay).not.toHaveProperty('availableStartingLocationIds')
+  expect(setup).toEqual(setupSnapshot)
+})
+
+it.each([
+  [2, twoPlayerConfigs, 1],
+  [3, threePlayerConfigs, 2],
+  [4, fourPlayerConfigs, 3],
+] as const)('для %i игроков сохраняет в GameState нужное число выдающихся работ', (playerCount, players, expectedArtworkCount) => {
+  const state = createGame({ playerCount, seed: 42 }, players)
+  const deferredIds = new Set(
+    Object.values(state.artworkMarket.deferredArtworksByGenre).map(artwork => artwork.id),
+  )
+  const auctionIds = state.masterpieceAuction.artworks.map(artwork => artwork.id)
+
+  expect(state.masterpieceAuction.artworks).toHaveLength(expectedArtworkCount)
+  expect(new Set(auctionIds).size).toBe(expectedArtworkCount)
+  expect(auctionIds.every(id => deferredIds.has(id))).toBe(true)
+})
+
+it('детерминированно готовит, замораживает и сохраняет аукцион выдающихся работ', () => {
+  const config: GameConfig = { playerCount: 2, seed: -42 }
+  const first = createGame(config, twoPlayerConfigs)
+  const second = createGame({ ...config }, twoPlayerConfigs.map(player => ({ ...player })))
+  const regularPlay = startGame(first)
+  const endingCurrentRound = triggerGameEnd(advanceTurn(regularPlay))
+
+  expect(first.masterpieceAuction).toEqual(second.masterpieceAuction)
+  expect(Object.isFrozen(first.masterpieceAuction)).toBe(true)
+  expect(Object.isFrozen(first.masterpieceAuction.artworks)).toBe(true)
+  expect(first.masterpieceAuction.artworks.every(Object.isFrozen)).toBe(true)
+  expect(regularPlay.masterpieceAuction).toBe(first.masterpieceAuction)
+  expect(endingCurrentRound.masterpieceAuction).toBe(first.masterpieceAuction)
+})
+
+it.each([
+  [2, twoPlayerConfigs, 8, 8],
+  [3, threePlayerConfigs, 12, 4],
+  [4, fourPlayerConfigs, 12, 4],
+] as const)('сохраняет в GameState полную раскладку международного рынка для %i игроков', (playerCount, players, expectedTableCount, expectedRemainingCount) => {
+  const state = createGame({ playerCount, seed: 42 }, players)
+  const market = state.internationalMarket
+  const placedIds = [
+    ...market.tableIds.map(cell => cell.tokenId),
+    ...market.locationTokens.map(location => location.tokenId),
+  ]
+  const allIds = [...placedIds, ...market.remainingTokenIds]
+
+  expect(market.tableIds).toHaveLength(expectedTableCount)
+  expect(market.locationTokens).toHaveLength(4)
+  expect(market.remainingTokenIds).toHaveLength(expectedRemainingCount)
+  expect(new Set(allIds).size).toBe(20)
+  expect([...allIds].sort()).toEqual([...setupComponentCatalog.reputationTokenIds].sort())
+  if (playerCount === 2) {
+    expect(market.tableIds.every(cell => cell.column !== 2)).toBe(true)
+  }
+})
+
+it('детерминированно готовит, замораживает и сохраняет международный рынок', () => {
+  const config: GameConfig = { playerCount: 2, seed: -42 }
+  const first = createGame(config, twoPlayerConfigs)
+  const second = createGame({ ...config }, twoPlayerConfigs.map(player => ({ ...player })))
+  const regularPlay = startGame(first)
+  const endingCurrentRound = triggerGameEnd(advanceTurn(regularPlay))
+
+  expect(first.internationalMarket).toEqual(second.internationalMarket)
+  expect(Object.isFrozen(first.internationalMarket)).toBe(true)
+  expect(Object.isFrozen(first.internationalMarket.tableIds)).toBe(true)
+  expect(Object.isFrozen(first.internationalMarket.locationTokens)).toBe(true)
+  expect(Object.isFrozen(first.internationalMarket.remainingTokenIds)).toBe(true)
+  expect(first.internationalMarket.tableIds.every(Object.isFrozen)).toBe(true)
+  expect(first.internationalMarket.locationTokens.every(Object.isFrozen)).toBe(true)
+  expect(regularPlay.internationalMarket).toBe(first.internationalMarket)
+  expect(endingCurrentRound.internationalMarket).toBe(first.internationalMarket)
+})
 
 it( 'отклоняет число игроков, не совпадающее с конфигурацией', () => {
   expect( () =>

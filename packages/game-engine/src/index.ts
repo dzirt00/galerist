@@ -16,7 +16,17 @@ export {
   type SetupRng,
   type SetupRngConfig,
 } from './setup-rng.js'
+export {
+  preparePrivateGoals,
+  type PlayerPrivateGoals,
+  type PrivateGoalsByPlayer,
+  type PreparedPrivateGoals,
+} from './setup-goals.js'
 export { determineWinners } from './winner-determination.js'
+export {
+  preparePlayerBoards,
+  type PlayerBoard,
+} from './player-boards.js'
 export { type HireQueueEntry, type HireAssistantsResult, type HireAssistantsInput, hireAssistants} from './hiring.js'
 export { applyArtworkPurchaseCostAndMoveVisitors, type ArtworkPurchaseType, type ApplyArtworkPurchaseInput, type ArtworkPurchasePaymentResult } from './artwork-purchase-payment.js'
 export { refillArtworkMarket, type ArtworkMarketRefillResult } from './artwork-market-refill.js'
