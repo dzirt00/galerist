@@ -1,9 +1,0 @@
- .../skills/galerist-rule-implementation/SKILL.md   |  17 [32m++[m
- .agents/skills/galerist-rules-audit/SKILL.md       |  19 [32m+++[m
- .agents/skills/galerist-task-cycle/SKILL.md        |  24 [32m+++[m
- AGENTS.md                                          |  17 [32m++[m
- packages/game-engine/src/game-events.ts            |  40 [32m+++++[m
- packages/game-engine/src/game-projection.ts        |  87 [32m++++++++++[m
- packages/game-engine/test/game-projection.test.ts  |  75 [32m+++++++++[m
- packages/game-engine/test/setup-pipeline.test.ts   | 175 [32m+++++++++++++++++++++[m
- 8 files changed, 454 insertions(+)
