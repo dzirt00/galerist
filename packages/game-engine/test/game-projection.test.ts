@@ -21,7 +21,7 @@ describe('projectGameForViewer', () => {
     expect(projection.orderMarket).not.toHaveProperty('remainingOrderIds')
     expect(projection.visitorBag).not.toHaveProperty('visitors')
     expect(projection.artistMarket).not.toHaveProperty('unselectedArtistIds')
-    expect(projection.internationalMarket).not.toHaveProperty('remainingTokenIds')
+    expect(projection.internationalMarket).not.toHaveProperty('remainingReputationTokenIds')
     expect(projection.artworkMarket).not.toHaveProperty('deferredArtworksByGenre')
     expect(projection.artworkMarket).not.toHaveProperty('remainingArtworksByGenre')
     expect(projection.privateGoals).not.toHaveProperty('remainingCuratorGoals')

@@ -88,13 +88,13 @@ describe('Начальное размещение посетителей чер�
     const result = placeInitialVisitors({ visitors }, playerIds)
 
     expect(result.plazaVisitors.map(visitor => visitor.id)).toEqual(visitors.slice(0, 4).map(visitor => visitor.id))
-    expect(result.visitorPlayers.map(({ playerId, vestibuleVisitor }) => [playerId, vestibuleVisitor.id])).toEqual(
+    expect(result.vestibuleVisitors.map(({ playerId, vestibuleVisitor }) => [playerId, vestibuleVisitor.id])).toEqual(
       playerIds.map((id, index) => [id, visitors[index + 4]!.id]),
     )
     expect(result.remainingVisitors.map(visitor => visitor.id)).toEqual(visitors.slice(7).map(visitor => visitor.id))
     expect([
       ...result.plazaVisitors,
-      ...result.visitorPlayers.map(({ vestibuleVisitor }) => vestibuleVisitor),
+      ...result.vestibuleVisitors.map(({ vestibuleVisitor }) => vestibuleVisitor),
       ...result.remainingVisitors,
     ].map(visitor => visitor.id)).toEqual(visitors.map(visitor => visitor.id))
   })
@@ -122,9 +122,9 @@ describe('Начальное размещение посетителей чер�
     expect(visitors.every(visitor => !Object.isFrozen(visitor))).toBe(true)
     expect(Object.isFrozen(result)).toBe(true)
     expect(Object.isFrozen(result.plazaVisitors)).toBe(true)
-    expect(Object.isFrozen(result.visitorPlayers)).toBe(true)
+    expect(Object.isFrozen(result.vestibuleVisitors)).toBe(true)
     expect(Object.isFrozen(result.remainingVisitors)).toBe(true)
-    expect(result.visitorPlayers.every(Object.isFrozen)).toBe(true)
+    expect(result.vestibuleVisitors.every(Object.isFrozen)).toBe(true)
     expect(result.plazaVisitors[0]).not.toBe(visitors[0])
   })
 })

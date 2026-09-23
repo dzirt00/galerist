@@ -22,9 +22,9 @@ export function applyInfluenceGainToPlayer(
 export function applyInfluenceGainToPlayers(
   entries: readonly PlayerGainedInfluence[]
 ): readonly Readonly<PlayerState>[] {
-  const res = entries.map((entry =>
+  const updatedPlayers = entries.map((entry =>
     applyInfluenceGainToPlayer(entry.player,entry.gainedInfluence)
   ))
 
-  return Object.freeze(res)
+  return Object.freeze(updatedPlayers)
 }

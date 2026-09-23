@@ -103,7 +103,7 @@ export interface PlayerState {
 }
 
 export interface GameStateBase {
-  readonly stateSchemaVersion: 1
+  readonly stateSchemaVersion: 2
   readonly id: GameId
   readonly config: Readonly<GameConfig>
   readonly players: readonly PlayerState[]
@@ -119,7 +119,7 @@ export interface GameStateBase {
   readonly privateGoals: PreparedPrivateGoals
   readonly playerBoards: readonly PlayerBoard[]
   readonly plazaVisitors: InitialVisitorPlacement['plazaVisitors']
-  readonly vestibuleVisitors: InitialVisitorPlacement['visitorPlayers']
+  readonly vestibuleVisitors: InitialVisitorPlacement['vestibuleVisitors']
   readonly setupVersions: {
     readonly rulesVersion: 'galerist-rules-2026-09-15-v1'
     readonly componentsVersion: string

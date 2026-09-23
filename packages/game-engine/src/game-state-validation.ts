@@ -199,8 +199,8 @@ function validatePhase(
 /** Проверяет восстановленный JSON-снимок, копирует его и возвращает замороженный GameState. */
 export function restoreGameState(input: unknown): GameState {
   const state = requireRecord(input, 'state')
-  if (state.stateSchemaVersion !== 1) {
-    fail('stateSchemaVersion must equal 1')
+  if (state.stateSchemaVersion !== 2) {
+    fail('stateSchemaVersion must equal 2')
   }
   requireNonEmptyString(state.id, 'id')
 

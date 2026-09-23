@@ -37,10 +37,10 @@ it.each([
 
     const cloneVisitor = structuredClone(visitor)
     const clonePlayerState = structuredClone(playerState)
-    const res = applyIntermediateIncomeToPlayer(playerState,visitor)
+    const updatedPlayer = applyIntermediateIncomeToPlayer(playerState,visitor)
 
-    expect(res).toEqual(playerStateRes)
-    expect(Object.isFrozen(res)).toBe(true)
+    expect(updatedPlayer).toEqual(playerStateRes)
+    expect(Object.isFrozen(updatedPlayer)).toBe(true)
     expect(visitor).toEqual(cloneVisitor)
     expect(playerState).toEqual(clonePlayerState)
   },
@@ -74,8 +74,8 @@ it.each([
       coins: coinsRes,
     }
 
-    const res = applyIntermediateIncomeToPlayer(playerState, visitor)
-    expect(res).toEqual(playerStateRes)
-    expect(res).not.toBe(playerState)
+    const updatedPlayer = applyIntermediateIncomeToPlayer(playerState, visitor)
+    expect(updatedPlayer).toEqual(playerStateRes)
+    expect(updatedPlayer).not.toBe(playerState)
   },
 )

@@ -11,7 +11,7 @@ export interface PlayerVestibuleVisitor {
 }
 
 export interface InitialVisitorPlacement{
-  readonly visitorPlayers:  readonly Readonly<PlayerVestibuleVisitor>[]
+  readonly vestibuleVisitors: readonly Readonly<PlayerVestibuleVisitor>[]
   readonly plazaVisitors:  readonly Readonly<VisitorInstance>[]
   readonly remainingVisitors: readonly Readonly<VisitorInstance>[]
 }
@@ -48,20 +48,20 @@ export function placeInitialVisitors(
     throw new Error( 'invalid playerIds' )
   }
 
-  const visitorPlayers: PlayerVestibuleVisitor[] = []
+  const vestibuleVisitors: PlayerVestibuleVisitor[] = []
   const remainingVisitors = [ ...visitorsBag.visitors ];
   const center = remainingVisitors.splice( 0, 4 )
 
   playerIds.forEach( id => {
     const rawVisitor = remainingVisitors.shift()!;
-    visitorPlayers.push( {
+    vestibuleVisitors.push( {
       playerId: id,
       vestibuleVisitor: { ...rawVisitor }
     } )
   } )
 
   return deepFreeze( {
-    visitorPlayers: visitorPlayers,
+    vestibuleVisitors,
     plazaVisitors: center.map( visitor => ( { ...visitor } ) ),
     remainingVisitors: remainingVisitors.map( visitor => ( { ...visitor } ) )
   })

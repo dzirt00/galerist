@@ -18,7 +18,7 @@ export function chooseStartingLocation(
     throw new Error('Starting location must be available')
   }
 
-  const selectedLocationToken = state.internationalMarket.locationTokens.find(
+  const selectedLocationToken = state.internationalMarket.locationReputationTokens.find(
     locationToken => locationToken.locationId === locationId,
   )
   if (selectedLocationToken === undefined) {
@@ -42,9 +42,9 @@ export function chooseStartingLocation(
   const availableStartingLocationIds = state.availableStartingLocationIds.filter(
     availableLocationId => availableLocationId !== locationId,
   )
-  const remainingLocationTokens = setupComplete
+  const remainingLocationReputationTokens = setupComplete
     ? []
-    : state.internationalMarket.locationTokens.filter(
+    : state.internationalMarket.locationReputationTokens.filter(
       locationToken => locationToken.locationId !== locationId,
     )
   const playerBoards = state.playerBoards.map((playerBoard, index) => (
@@ -62,7 +62,7 @@ export function chooseStartingLocation(
     playerBoards,
     internationalMarket: {
       ...state.internationalMarket,
-      locationTokens: remainingLocationTokens,
+      locationReputationTokens: remainingLocationReputationTokens,
     },
     setupStage: setupComplete ? 'complete' : 'choosing_starting_locations',
     currentStartingLocationPlayerId: nextPlayerId,

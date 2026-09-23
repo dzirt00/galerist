@@ -1,10 +1,10 @@
 import { expect, it } from 'vitest'
 import {
   createSetupRng,
-  curator,
-  dealer,
+  curatorGoals,
+  dealerGoals,
   preparePrivateGoals,
-  type CuratorDealer,
+  type GoalCardDefinition,
 } from '../src/index.js'
 
 const playerIds = ['player-1', 'player-2'] as const
@@ -18,12 +18,12 @@ function createRng() {
   })
 }
 
-function mutableGoalCopies(goals: readonly CuratorDealer[]): CuratorDealer[] {
-  return structuredClone(goals) as CuratorDealer[]
+function mutableGoalCopies(goals: readonly GoalCardDefinition[]): GoalCardDefinition[] {
+  return structuredClone(goals) as GoalCardDefinition[]
 }
 
 it('раздаёт каждому игроку по одной цели куратора и арт-дилера', () => {
-  const result = preparePrivateGoals(playerIds, curator, dealer, createRng())
+  const result = preparePrivateGoals(playerIds, curatorGoals, dealerGoals, createRng())
   const dealt = Object.values(result.goalsByPlayer)
   const curatorIds = dealt.map(goals => goals.curatorGoal.id)
   const dealerIds = dealt.map(goals => goals.dealerGoal.id)
@@ -39,29 +39,29 @@ it('раздаёт каждому игроку по одной цели кура
 })
 
 it('не изменяет и не замораживает переданные колоды', () => {
-  const curatorGoals = mutableGoalCopies(curator)
-  const dealerGoals = mutableGoalCopies(dealer)
-  const curatorSnapshot = structuredClone(curatorGoals)
-  const dealerSnapshot = structuredClone(dealerGoals)
+  const mutableCuratorGoals = mutableGoalCopies(curatorGoals)
+  const mutableDealerGoals = mutableGoalCopies(dealerGoals)
+  const curatorSnapshot = structuredClone(mutableCuratorGoals)
+  const dealerSnapshot = structuredClone(mutableDealerGoals)
 
-  preparePrivateGoals(playerIds, curatorGoals, dealerGoals, createRng())
+  preparePrivateGoals(playerIds, mutableCuratorGoals, mutableDealerGoals, createRng())
 
-  expect(curatorGoals).toEqual(curatorSnapshot)
-  expect(dealerGoals).toEqual(dealerSnapshot)
-  expect(Object.isFrozen(curatorGoals)).toBe(false)
-  expect(Object.isFrozen(dealerGoals)).toBe(false)
-  expect(Object.isFrozen(curatorGoals[0])).toBe(false)
-  expect(Object.isFrozen(dealerGoals[0])).toBe(false)
-  expect(Object.isFrozen(curatorGoals[0]!.targets)).toBe(false)
-  expect(Object.isFrozen(dealerGoals[0]!.targets)).toBe(false)
+  expect(mutableCuratorGoals).toEqual(curatorSnapshot)
+  expect(mutableDealerGoals).toEqual(dealerSnapshot)
+  expect(Object.isFrozen(mutableCuratorGoals)).toBe(false)
+  expect(Object.isFrozen(mutableDealerGoals)).toBe(false)
+  expect(Object.isFrozen(mutableCuratorGoals[0])).toBe(false)
+  expect(Object.isFrozen(mutableDealerGoals[0])).toBe(false)
+  expect(Object.isFrozen(mutableCuratorGoals[0]!.rewardTiers)).toBe(false)
+  expect(Object.isFrozen(mutableDealerGoals[0]!.rewardTiers)).toBe(false)
 })
 
 it('не зависит от порядка входных колод', () => {
-  const direct = preparePrivateGoals(playerIds, curator, dealer, createRng())
+  const direct = preparePrivateGoals(playerIds, curatorGoals, dealerGoals, createRng())
   const reversed = preparePrivateGoals(
     playerIds,
-    [...curator].reverse(),
-    [...dealer].reverse(),
+    [...curatorGoals].reverse(),
+    [...dealerGoals].reverse(),
     createRng(),
   )
 

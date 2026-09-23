@@ -54,7 +54,12 @@ export {spendInfluenceForImmediatePayment} from './influence-spending-award.js'
 export {applyAdditionalFameSpend} from './influence-fame-spending-award.js'
 export {prepareTicketOffice, type PreparedTicketOffice} from './setup-tickets.js'
 export { calculateArtworkPurchaseFameGain } from './artwork-purchase-fame.js'
-export { dealer, curator, type CuratorDealer, type TargetCuratorDealer } from './setupComponentCatalog.js'
+export {
+  curatorGoals,
+  dealerGoals,
+  type GoalCardDefinition,
+  type GoalRewardTier,
+} from './goal-card-catalog.js'
 export { type PreparedPromotionSupply, preparePromotionSupply} from './setup-promotion.js'
 export { type PreparedVisitorBag, prepareVisitorBag, type InitialVisitorPlacement, type PlayerVestibuleVisitor, placeInitialVisitors} from './setup-visitors.js'
 export {
@@ -95,4 +100,10 @@ export {
   type PreparedArtistSetupSlot,
   type PreparedArtistSlot,
 } from './setup-artists.js'
-export {type SetupInternationalMarket, prepareInternationalMarket} from './setup-international-market.js'
+export {
+  prepareInternationalMarket,
+  type LocationReputationToken,
+  type MarketReputationCell,
+  type ReputationTokenIds,
+  type SetupInternationalMarket,
+} from './setup-international-market.js'

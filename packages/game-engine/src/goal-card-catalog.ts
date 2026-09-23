@@ -1,30 +1,30 @@
 import { type ArtworkGenre, deepFreeze } from "./component-catalog.js";
 
 export type GoalType = 'curator' | 'dealer'
-export interface TargetCuratorDealer {
-  readonly goal: readonly Readonly<ArtworkGenre>[],
+export interface GoalRewardTier {
+  readonly requiredGenres: readonly Readonly<ArtworkGenre>[],
   readonly coins: number
 
 }
-export interface CuratorDealer {
+export interface GoalCardDefinition {
   readonly id: string,
-  readonly targets: readonly Readonly<TargetCuratorDealer>[]
+  readonly rewardTiers: readonly Readonly<GoalRewardTier>[]
   readonly type: GoalType
   readonly artworkReuse: 'forbidden_across_targets'
 }
 
-export const curator: readonly CuratorDealer[] = deepFreeze( [
+export const curatorGoals: readonly GoalCardDefinition[] = deepFreeze( [
   {
     id: 'CURATOR-01',
     artworkReuse: 'forbidden_across_targets',
     type: 'curator',
-    targets: [ {
-      goal: [ 'S', 'D', 'A' ],
+    rewardTiers: [ {
+      requiredGenres: [ 'S', 'D', 'A' ],
       coins: 10
 
     },
       {
-        goal: [ 'P', 'P', 'D', 'A' ],
+        requiredGenres: [ 'P', 'P', 'D', 'A' ],
         coins: 15
       },
     ]
@@ -33,13 +33,13 @@ export const curator: readonly CuratorDealer[] = deepFreeze( [
     id: 'CURATOR-02',
     artworkReuse: 'forbidden_across_targets',
     type: 'curator',
-    targets: [
+    rewardTiers: [
       {
-        goal: [ 'P', 'D', 'A' ],
+        requiredGenres: [ 'P', 'D', 'A' ],
         coins: 10
       },
       {
-        goal: [ 'S', 'S', 'A', 'P' ],
+        requiredGenres: [ 'S', 'S', 'A', 'P' ],
         coins: 15
       },
     ]
@@ -48,13 +48,13 @@ export const curator: readonly CuratorDealer[] = deepFreeze( [
     id: 'CURATOR-03',
     artworkReuse: 'forbidden_across_targets',
     type: 'curator',
-    targets: [
+    rewardTiers: [
       {
-        goal: [ 'S', 'D', 'P' ],
+        requiredGenres: [ 'S', 'D', 'P' ],
         coins: 10
       },
       {
-        goal: [ 'A', 'A', 'S', 'D' ],
+        requiredGenres: [ 'A', 'A', 'S', 'D' ],
         coins: 15
       },
     ]
@@ -63,34 +63,34 @@ export const curator: readonly CuratorDealer[] = deepFreeze( [
     id: 'CURATOR-04',
     artworkReuse: 'forbidden_across_targets',
     type: 'curator',
-    targets: [
+    rewardTiers: [
       {
-        goal: [ 'P', 'S', 'A' ],
+        requiredGenres: [ 'P', 'S', 'A' ],
         coins: 10
       },
       {
-        goal: [ 'D', 'D', 'P', 'S' ],
+        requiredGenres: [ 'D', 'D', 'P', 'S' ],
         coins: 15
       },
     ]
   }
 ] )
-export const dealer: readonly CuratorDealer[] = deepFreeze( [
+export const dealerGoals: readonly GoalCardDefinition[] = deepFreeze( [
   {
     id: 'DEALER-01',
     type: 'dealer',
     artworkReuse: 'forbidden_across_targets',
-    targets: [
+    rewardTiers: [
       {
-        goal: [ 'P' ],
+        requiredGenres: [ 'P' ],
         coins: 5
       },
       {
-        goal: [ 'D', 'A' ],
+        requiredGenres: [ 'D', 'A' ],
         coins: 10
       },
       {
-        goal: [ 'S', 'S' ],
+        requiredGenres: [ 'S', 'S' ],
         coins: 10
       },
     ]
@@ -99,17 +99,17 @@ export const dealer: readonly CuratorDealer[] = deepFreeze( [
     id: 'DEALER-02',
     type: 'dealer',
     artworkReuse: 'forbidden_across_targets',
-    targets: [
+    rewardTiers: [
       {
-        goal: [ 'S' ],
+        requiredGenres: [ 'S' ],
         coins: 5
       },
       {
-        goal: [ 'D', 'P' ],
+        requiredGenres: [ 'D', 'P' ],
         coins: 10
       },
       {
-        goal: [ 'A', 'A' ],
+        requiredGenres: [ 'A', 'A' ],
         coins: 10
       },
     ]
@@ -118,17 +118,17 @@ export const dealer: readonly CuratorDealer[] = deepFreeze( [
     id: 'DEALER-03',
     type: 'dealer',
     artworkReuse: 'forbidden_across_targets',
-    targets: [
+    rewardTiers: [
       {
-        goal: [ 'A' ],
+        requiredGenres: [ 'A' ],
         coins: 5
       },
       {
-        goal: [ 'S', 'P' ],
+        requiredGenres: [ 'S', 'P' ],
         coins: 10
       },
       {
-        goal: [ 'D', 'D' ],
+        requiredGenres: [ 'D', 'D' ],
         coins: 10
       },
     ]
@@ -137,17 +137,17 @@ export const dealer: readonly CuratorDealer[] = deepFreeze( [
     id: 'DEALER-04',
     type: 'dealer',
     artworkReuse: 'forbidden_across_targets',
-    targets: [
+    rewardTiers: [
       {
-        goal: [ 'D' ],
+        requiredGenres: [ 'D' ],
         coins: 5
       },
       {
-        goal: [ 'S', 'A' ],
+        requiredGenres: [ 'S', 'A' ],
         coins: 10
       },
       {
-        goal: [ 'P', 'P' ],
+        requiredGenres: [ 'P', 'P' ],
         coins: 10
       },
     ]

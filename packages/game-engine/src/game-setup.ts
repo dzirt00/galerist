@@ -14,7 +14,7 @@ import { preparePromotionSupply } from './setup-promotion.js'
 import { createSetupRng, type SetupRngConfig } from './setup-rng.js'
 import { prepareTicketOffice } from './setup-tickets.js'
 import { placeInitialVisitors, prepareVisitorBag } from './setup-visitors.js'
-import { curator, dealer } from './setupComponentCatalog.js'
+import { curatorGoals, dealerGoals } from './goal-card-catalog.js'
 import { preparePlayerBoards } from './player-boards.js'
 import { getFirstPlayerIndex } from './turn-order.js'
 import type {
@@ -97,7 +97,7 @@ export function createGame(
   )
   const initialVisitors = placeInitialVisitors(artworkMarket.remainingVisitorBag, playerIds)
   const firstPlayerIndex = getFirstPlayerIndex(config.seed, players.length)
-  const privateGoals = preparePrivateGoals(playerIds, curator, dealer, setupRng)
+  const privateGoals = preparePrivateGoals(playerIds, curatorGoals, dealerGoals, setupRng)
   const playerBoards = preparePlayerBoards(playerIds, setupComponentCatalog.assistantsPerPlayer)
   const preparedPlayers: readonly PlayerState[] = players.map(player => Object.freeze({
     id: player.id,
@@ -113,7 +113,7 @@ export function createGame(
   const startingLocationSelectionOrder = Object.freeze([...regularTurnOrder].reverse())
 
   const state: SetupGameState = {
-    stateSchemaVersion: 1,
+    stateSchemaVersion: 2,
     id: gameId,
     status: 'setup',
     round: 0,
@@ -131,7 +131,7 @@ export function createGame(
     setupVersions,
     masterpieceAuction,
     plazaVisitors: initialVisitors.plazaVisitors,
-    vestibuleVisitors: initialVisitors.visitorPlayers,
+    vestibuleVisitors: initialVisitors.vestibuleVisitors,
     visitorBag: Object.freeze({ visitors: initialVisitors.remainingVisitors }),
     privateGoals,
     playerBoards,

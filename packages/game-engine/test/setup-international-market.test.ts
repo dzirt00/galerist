@@ -27,29 +27,29 @@ describe('SETUP-008: подготовка жетонов репутации', ()
       playerCount !== 2 || !cellId.includes('-C2-'),
     )
 
-    expect(result.tableIds.map(item => item.cellId)).toEqual(expectedCells)
-    expect(result.locationTokens.map(item => item.locationId)).toEqual(
+    expect(result.marketReputationCells.map(item => item.cellId)).toEqual(expectedCells)
+    expect(result.locationReputationTokens.map(item => item.locationId)).toEqual(
       setupComponentCatalog.startingLocationOrder,
     )
-    expect(result.tableIds).toHaveLength(playerCount === 2 ? 8 : 12)
-    expect(result.locationTokens).toHaveLength(4)
-    expect(result.remainingTokenIds).toHaveLength(playerCount === 2 ? 8 : 4)
+    expect(result.marketReputationCells).toHaveLength(playerCount === 2 ? 8 : 12)
+    expect(result.locationReputationTokens).toHaveLength(4)
+    expect(result.remainingReputationTokenIds).toHaveLength(playerCount === 2 ? 8 : 4)
 
     const used = [
-      ...result.tableIds.map(item => item.tokenId),
-      ...result.locationTokens.map(item => item.tokenId),
-      ...result.remainingTokenIds,
+      ...result.marketReputationCells.map(item => item.tokenId),
+      ...result.locationReputationTokens.map(item => item.tokenId),
+      ...result.remainingReputationTokenIds,
     ]
     expect(used).toHaveLength(20)
     expect(new Set(used)).toEqual(new Set(setupComponentCatalog.reputationTokenIds))
     expect(input).toEqual(snapshot)
     expect(Object.isFrozen(input)).toBe(false)
     expect(Object.isFrozen(result)).toBe(true)
-    expect(Object.isFrozen(result.tableIds)).toBe(true)
-    expect(Object.isFrozen(result.locationTokens)).toBe(true)
-    expect(Object.isFrozen(result.remainingTokenIds)).toBe(true)
-    expect(result.tableIds.every(Object.isFrozen)).toBe(true)
-    expect(result.locationTokens.every(Object.isFrozen)).toBe(true)
+    expect(Object.isFrozen(result.marketReputationCells)).toBe(true)
+    expect(Object.isFrozen(result.locationReputationTokens)).toBe(true)
+    expect(Object.isFrozen(result.remainingReputationTokenIds)).toBe(true)
+    expect(result.marketReputationCells.every(Object.isFrozen)).toBe(true)
+    expect(result.locationReputationTokens.every(Object.isFrozen)).toBe(true)
   })
 
   it('не зависит от порядка входного каталога при одинаковой конфигурации RNG', () => {

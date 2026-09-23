@@ -76,13 +76,13 @@ describe('Расчёт промежуточного дохода через calc
 
   it('возвращает одинаковый результат при повторных вызовах', () => {
     const vis: IntermediateVisitorCounts = { investors: 2, celebrities: 3, collectors: 1 }
-    const ex: IntermediateIncome = { coins: 5, influence: 7 }
+    const expectedIncome: IntermediateIncome = { coins: 5, influence: 7 }
     const originalVisitors = { ...vis }
     const firstResult = calculateIntermediateIncome(vis)
     const secondResult = calculateIntermediateIncome(vis)
 
     expect(vis).toEqual(originalVisitors)
-    expect(firstResult).toEqual(ex)
+    expect(firstResult).toEqual(expectedIncome)
     expect(Object.isFrozen(firstResult)).toBe(true)
     expect(secondResult).toEqual(firstResult)
     expect(secondResult).not.toBe(firstResult)

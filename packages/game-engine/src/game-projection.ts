@@ -54,9 +54,9 @@ export function projectGameForViewer(
     },
     visitorBag: { visitorCount: state.visitorBag.visitors.length },
     internationalMarket: {
-      tableIds: state.internationalMarket.tableIds,
-      locationTokens: state.internationalMarket.locationTokens,
-      remainingTokenCount: state.internationalMarket.remainingTokenIds.length,
+      marketReputationCells: state.internationalMarket.marketReputationCells,
+      locationReputationTokens: state.internationalMarket.locationReputationTokens,
+      remainingReputationTokenCount: state.internationalMarket.remainingReputationTokenIds.length,
     },
     artworkMarket: {
       openArtworksByGenre: state.artworkMarket.openArtworksByGenre,

@@ -15,18 +15,18 @@ export function preparePromotionSupply(
     throw new Error('Invalid tokens')
   }
 
-  const res: Record<1 | 2 | 3 | 4 | 5, string[]> = { 1: [], 2: [],3: [],4: [],5: []}
+  const tokenIdsByLevel: Record<1 | 2 | 3 | 4 | 5, string[]> = { 1: [], 2: [],3: [],4: [],5: []}
 
   tokens.forEach(token => {
-    res[token.level].push(token.id)
+    tokenIdsByLevel[token.level].push(token.id)
   })
 
-  for(let val of Object.values(res)) {
-    if(val.length !== 4) throw new Error('Invalid tokens')
+  for (const tokenIds of Object.values(tokenIdsByLevel)) {
+    if(tokenIds.length !== 4) throw new Error('Invalid tokens')
   }
-  for (const array of Object.values(res)) {
+  for (const array of Object.values(tokenIdsByLevel)) {
     Object.freeze(array);
   }
 
-  return Object.freeze({tokenIdsByLevel: Object.freeze(res)})
+  return Object.freeze({tokenIdsByLevel: Object.freeze(tokenIdsByLevel)})
 }

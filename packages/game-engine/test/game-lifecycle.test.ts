@@ -56,11 +56,11 @@ function startGame(state: GameState) {
 
 it('не позволяет повторно начать игру и сохраняет исходное состояние', () =>{
   const state = createGame( twoPlayerGameConfig, twoPlayerConfigs )
-  let sg = startGame(state)
-  const sgClone = structuredClone(sg)
+  const startedGame = startGame(state)
+  const startedGameSnapshot = structuredClone(startedGame)
 
-  expect(() => startGame(sg)).toThrow('Game can only be started from setup')
-  expect(sg).toEqual(sgClone)
+  expect(() => startGame(startedGame)).toThrow('Game can only be started from setup')
+  expect(startedGame).toEqual(startedGameSnapshot)
   expect(state.phase).toBe('setup')
   expect(state.activePlayerId).toBe(null)
   expect(state).not.toHaveProperty('endTriggeredRound');
@@ -572,18 +572,18 @@ it.each([
   const state = createGame({ playerCount, seed: 42 }, players)
   const market = state.internationalMarket
   const placedIds = [
-    ...market.tableIds.map(cell => cell.tokenId),
-    ...market.locationTokens.map(location => location.tokenId),
+    ...market.marketReputationCells.map(cell => cell.tokenId),
+    ...market.locationReputationTokens.map(location => location.tokenId),
   ]
-  const allIds = [...placedIds, ...market.remainingTokenIds]
+  const allIds = [...placedIds, ...market.remainingReputationTokenIds]
 
-  expect(market.tableIds).toHaveLength(expectedTableCount)
-  expect(market.locationTokens).toHaveLength(4)
-  expect(market.remainingTokenIds).toHaveLength(expectedRemainingCount)
+  expect(market.marketReputationCells).toHaveLength(expectedTableCount)
+  expect(market.locationReputationTokens).toHaveLength(4)
+  expect(market.remainingReputationTokenIds).toHaveLength(expectedRemainingCount)
   expect(new Set(allIds).size).toBe(20)
   expect([...allIds].sort()).toEqual([...setupComponentCatalog.reputationTokenIds].sort())
   if (playerCount === 2) {
-    expect(market.tableIds.every(cell => cell.column !== 2)).toBe(true)
+    expect(market.marketReputationCells.every(cell => cell.column !== 2)).toBe(true)
   }
 })
 
@@ -597,11 +597,11 @@ it('детерминированно готовит, замораживает и
 
   expect(first.internationalMarket).toEqual(second.internationalMarket)
   expect(Object.isFrozen(first.internationalMarket)).toBe(true)
-  expect(Object.isFrozen(first.internationalMarket.tableIds)).toBe(true)
-  expect(Object.isFrozen(first.internationalMarket.locationTokens)).toBe(true)
-  expect(Object.isFrozen(first.internationalMarket.remainingTokenIds)).toBe(true)
-  expect(first.internationalMarket.tableIds.every(Object.isFrozen)).toBe(true)
-  expect(first.internationalMarket.locationTokens.every(Object.isFrozen)).toBe(true)
+  expect(Object.isFrozen(first.internationalMarket.marketReputationCells)).toBe(true)
+  expect(Object.isFrozen(first.internationalMarket.locationReputationTokens)).toBe(true)
+  expect(Object.isFrozen(first.internationalMarket.remainingReputationTokenIds)).toBe(true)
+  expect(first.internationalMarket.marketReputationCells.every(Object.isFrozen)).toBe(true)
+  expect(first.internationalMarket.locationReputationTokens.every(Object.isFrozen)).toBe(true)
   expect(regularPlay.internationalMarket).toBe(completedSetup.internationalMarket)
   expect(endingCurrentRound.internationalMarket).toBe(completedSetup.internationalMarket)
 })
@@ -715,47 +715,47 @@ it('начинает игру без изменения исходного со�
 
   const conf: GameConfig = { playerCount: 2, seed: 42 }
   const game = createGame( conf, twoPlayerConfigs )
-  const sg = startGame(game)
+  const startedGame = startGame(game)
 
   expect(game.status).toBe('setup')
   expect(game.round).toBe(0)
   expect(game.activePlayerId).toBe(null)
 
-  expect(sg).not.toBe(game)
+  expect(startedGame).not.toBe(game)
 
-  expect(sg.status).toBe('in_progress')
-  expect(sg.round).toBe(1)
-  expect(sg.activePlayerId).toBe('player-1')
+  expect(startedGame.status).toBe('in_progress')
+  expect(startedGame.round).toBe(1)
+  expect(startedGame.activePlayerId).toBe('player-1')
 
   expect(() => {
-    (sg as any).round = 2
+    (startedGame as any).round = 2
   }).toThrow()
 
-  expect(sg.round).toBe(1)
+  expect(startedGame.round).toBe(1)
 })
 
 it('передаёт ход следующему игроку без изменения номера раунда', () => {
 
   const conf: GameConfig = { playerCount: 2, seed: 42 }
   const game = createGame( conf, twoPlayerConfigs )
-  const sg = startGame(game)
+  const startedGame = startGame(game)
 
-  let nextStep = advanceTurn(sg)
+  const nextStep = advanceTurn(startedGame)
 
   expect(nextStep.activePlayerId).toBe('player-2')
   expect(nextStep.round).toBe(1)
-  expect(sg).not.toBe(nextStep)
-  expect(sg.activePlayerId).toBe('player-1')
-  expect(sg.round).toBe(1)
+  expect(startedGame).not.toBe(nextStep)
+  expect(startedGame.activePlayerId).toBe('player-1')
+  expect(startedGame.round).toBe(1)
 })
 
 it('начинает новый раунд с первого игрока', () => {
 
   const conf: GameConfig = { playerCount: 2, seed: 42 }
   const game = createGame( conf, twoPlayerConfigs )
-  const sg = startGame(game)
+  const startedGame = startGame(game)
 
-  const nextStep1 = advanceTurn(sg)
+  const nextStep1 = advanceTurn(startedGame)
   const nextStep2 = advanceTurn(nextStep1)
 
   expect(nextStep1.activePlayerId).toBe('player-2');
@@ -774,9 +774,9 @@ it('начинает новый раунд с первого игрока при
 
   const conf: GameConfig = { playerCount: 3, seed: 42 }
   const game = createGame( conf, threePlayerConfigs )
-  const sg = startGame(game)
+  const startedGame = startGame(game)
 
-  advanceAndExpectTurns(sg, [
+  advanceAndExpectTurns(startedGame, [
     { activePlayerId: 'player-2', round: 1 },
     { activePlayerId: 'player-3', round: 1 },
     { activePlayerId: 'player-1', round: 2 },
@@ -790,9 +790,9 @@ it('начинает новый раунд с первого игрока при
 
   const conf: GameConfig = { playerCount: 4, seed: 4 }
   const game = createGame( conf, fourPlayerConfigs )
-  const sg = startGame(game)
+  const startedGame = startGame(game)
 
-  advanceAndExpectTurns(sg, [
+  advanceAndExpectTurns(startedGame, [
     { activePlayerId: 'player-2', round: 1 },
     { activePlayerId: 'player-3', round: 1 },
     { activePlayerId: 'player-4', round: 1 },
@@ -968,21 +968,21 @@ it('передаёт ход в фазе обычной игры', () => {
   }
 
   const stateCLone = structuredClone(state)
-  const res = advanceTurn(state)
-  expect(res.activePlayerId).toBe('player-2')
-  expect(res.firstPlayerId).toBe('player-1')
-  expect(res.phase).toBe('regular_play')
+  const advancedState = advanceTurn(state)
+  expect(advancedState.activePlayerId).toBe('player-2')
+  expect(advancedState.firstPlayerId).toBe('player-1')
+  expect(advancedState.phase).toBe('regular_play')
   expect(state).toEqual(stateCLone)
 })
 
 it('переводит игру в фазу обычной игры при запуске', () => {
   const state = createGame( twoPlayerGameConfig, twoPlayerConfigs )
-  const sg = startGame(state)
+  const startedGame = startGame(state)
 
-  expect(sg.status).toBe('in_progress')
-  expect(sg.phase).toBe('regular_play')
-  expect(sg.activePlayerId).toBe('player-1')
-  expect(sg.firstPlayerId).toBe('player-1')
+  expect(startedGame.status).toBe('in_progress')
+  expect(startedGame.phase).toBe('regular_play')
+  expect(startedGame.activePlayerId).toBe('player-1')
+  expect(startedGame.firstPlayerId).toBe('player-1')
 
 })
 
@@ -1049,14 +1049,14 @@ it('сохраняет активного и первого игроков пр�
     ],
     firstPlayerId: 'player-2',
   }
-  const at1 = advanceTurn(state)
-  const at2 = advanceTurn(at1)
-  expect(at2.round).toBe(2)
-  expect(at1.round).toBe(2)
-  expect(at1.activePlayerId).toBe('player-2')
-  expect(at1.firstPlayerId).toBe('player-2')
-  expect(at2.activePlayerId).toBe('player-1')
-  expect(at2.firstPlayerId).toBe('player-2')
+  const stateAfterFirstAdvance = advanceTurn(state)
+  const stateAfterSecondAdvance = advanceTurn(stateAfterFirstAdvance)
+  expect(stateAfterSecondAdvance.round).toBe(2)
+  expect(stateAfterFirstAdvance.round).toBe(2)
+  expect(stateAfterFirstAdvance.activePlayerId).toBe('player-2')
+  expect(stateAfterFirstAdvance.firstPlayerId).toBe('player-2')
+  expect(stateAfterSecondAdvance.activePlayerId).toBe('player-1')
+  expect(stateAfterSecondAdvance.firstPlayerId).toBe('player-2')
 
 })
 
@@ -1139,15 +1139,15 @@ it('переходит к итоговому подсчёту после все�
   }
 
   const trigger = triggerGameEnd(state)
-  const at1 = advanceTurn(trigger)
-  const at2 = advanceTurn(at1)
-  const at3 = advanceTurn(at2)
-  const at4 = advanceTurn(at3)
-  const at5 = advanceTurn(at4)
-  const at6 = advanceTurn(at5)
+  const stateAfterFirstAdvance = advanceTurn(trigger)
+  const stateAfterSecondAdvance = advanceTurn(stateAfterFirstAdvance)
+  const stateAfterThirdAdvance = advanceTurn(stateAfterSecondAdvance)
+  const stateAfterFourthAdvance = advanceTurn(stateAfterThirdAdvance)
+  const stateAfterFifthAdvance = advanceTurn(stateAfterFourthAdvance)
+  const stateAfterSixthAdvance = advanceTurn(stateAfterFifthAdvance)
 
 
-  expectEndingTurns([at1, at2, at3, at4, at5, at6], state, [
+  expectEndingTurns([stateAfterFirstAdvance, stateAfterSecondAdvance, stateAfterThirdAdvance, stateAfterFourthAdvance, stateAfterFifthAdvance, stateAfterSixthAdvance], state, [
     ['ending_current_round', 10, 'player-1', 'player-2'],
     ['ending_current_round', 10, 'player-1', 'player-3'],
     ['final_round', 11, 'player-1', 'player-1'],
@@ -1174,12 +1174,12 @@ it('завершает раунды при втором первом игрок�
   }
 
   const trigger = triggerGameEnd(state)
-  const at1 = advanceTurn(trigger)
-  const at2 = advanceTurn(at1)
-  const at3 = advanceTurn(at2)
-  const at4 = advanceTurn(at3)
+  const stateAfterFirstAdvance = advanceTurn(trigger)
+  const stateAfterSecondAdvance = advanceTurn(stateAfterFirstAdvance)
+  const stateAfterThirdAdvance = advanceTurn(stateAfterSecondAdvance)
+  const stateAfterFourthAdvance = advanceTurn(stateAfterThirdAdvance)
 
-  expectEndingTurns([at1, at2, at3, at4], state, [
+  expectEndingTurns([stateAfterFirstAdvance, stateAfterSecondAdvance, stateAfterThirdAdvance, stateAfterFourthAdvance], state, [
     ['final_round', 11, 'player-2', 'player-2'],
     ['final_round', 11, 'player-2', 'player-3'],
     ['final_round', 11, 'player-2', 'player-1'],
@@ -1205,13 +1205,13 @@ it('завершает раунды при втором первом игрок�
   }
 
   const trigger = triggerGameEnd(state)
-  const at1 = advanceTurn(trigger)
-  const at2 = advanceTurn(at1)
-  const at3 = advanceTurn(at2)
-  const at4 = advanceTurn(at3)
-  const at5 = advanceTurn(at4)
+  const stateAfterFirstAdvance = advanceTurn(trigger)
+  const stateAfterSecondAdvance = advanceTurn(stateAfterFirstAdvance)
+  const stateAfterThirdAdvance = advanceTurn(stateAfterSecondAdvance)
+  const stateAfterFourthAdvance = advanceTurn(stateAfterThirdAdvance)
+  const stateAfterFifthAdvance = advanceTurn(stateAfterFourthAdvance)
 
-  expectEndingTurns([at1, at2, at3, at4, at5], state, [
+  expectEndingTurns([stateAfterFirstAdvance, stateAfterSecondAdvance, stateAfterThirdAdvance, stateAfterFourthAdvance, stateAfterFifthAdvance], state, [
     ['ending_current_round', 10, 'player-3', 'player-2'],
     ['final_round', 11, 'player-3', 'player-3'],
     ['final_round', 11, 'player-3', 'player-1'],
@@ -1232,14 +1232,14 @@ it.each([
   { seed: 2, expectedPlayer: 'player-3' },
   { seed: 3, expectedPlayer: 'player-1' },
 ])('выбирает $expectedPlayer при seed: $seed', ({ seed, expectedPlayer }) => {
-  const cg = createGame(
+  const createdGame = createGame(
     { playerCount: 3, seed },
     threePlayerConfigs
   )
-  const sg = startGame(cg)
+  const startedGame = startGame(createdGame)
 
-  expect(sg.firstPlayerId).toBe(expectedPlayer)
-  expect(sg.activePlayerId).toBe(expectedPlayer)
+  expect(startedGame.firstPlayerId).toBe(expectedPlayer)
+  expect(startedGame.activePlayerId).toBe(expectedPlayer)
 })
 
 it('выбирает одного и того же игрока при одинаковом seed', () => {
@@ -1256,9 +1256,9 @@ it('выбирает одного и того же игрока при один�
 
 it('проверка невалидных значений в seed', () => {
 
-  const cg = createGame( { playerCount: 3, seed: -1 }, threePlayerConfigs )
-  const sg = startGame(cg)
-  expect(sg.firstPlayerId).toBe('player-3')
+  const createdGame = createGame( { playerCount: 3, seed: -1 }, threePlayerConfigs )
+  const startedGame = startGame(createdGame)
+  expect(startedGame.firstPlayerId).toBe('player-3')
   expect( () => createGame( { playerCount: 3, seed: NaN }, threePlayerConfigs ) ).toThrow( 'Seed must be a safe integer' )
   expect( () => createGame( { playerCount: 3, seed: Infinity }, threePlayerConfigs ) ).toThrow( 'Seed must be a safe integer' )
   expect( () => createGame( { playerCount: 3, seed: 9007199254740992 }, threePlayerConfigs ) ).toThrow( 'Seed must be a safe integer' )
@@ -1270,10 +1270,10 @@ it('каждый ID игрока достижим подходящим seed', ()
   const firstPlayersSelected: Set<string> = new Set()
 
   for (let seed = 0; seed < 10; seed++) {
-    const cg = createGame( { playerCount: 3, seed }, threePlayerConfigs )
-    const sg = startGame(cg)
+    const createdGame = createGame( { playerCount: 3, seed }, threePlayerConfigs )
+    const startedGame = startGame(createdGame)
 
-    firstPlayersSelected.add(sg.firstPlayerId)
+    firstPlayersSelected.add(startedGame.firstPlayerId)
   }
 
   expect( firstPlayersSelected.size ).toBe( threePlayerConfigs.length )
@@ -1286,24 +1286,24 @@ it('каждый ID игрока достижим подходящим seed', ()
 it('переходы хода и увеличение раунда при первом игроке, отличном от players[0]', () => {
 
   const conf: GameConfig = { playerCount: 3, seed: 1 }
-  const cg = createGame( conf, threePlayerConfigs )
-    const sg = startGame(cg)
-    const at1 = advanceTurn(sg)
-    const at2 = advanceTurn(at1)
-    const at3 = advanceTurn(at2)
+  const createdGame = createGame( conf, threePlayerConfigs )
+    const startedGame = startGame(createdGame)
+    const stateAfterFirstAdvance = advanceTurn(startedGame)
+    const stateAfterSecondAdvance = advanceTurn(stateAfterFirstAdvance)
+    const stateAfterThirdAdvance = advanceTurn(stateAfterSecondAdvance)
 
-    expect(sg.round).toBe(1)
-    expect(sg.firstPlayerId).toBe('player-2')
-    expect(sg.activePlayerId).toBe('player-2')
-    expect(at1.round).toBe(1)
-    expect(at1.firstPlayerId).toBe('player-2')
-    expect(at1.activePlayerId).toBe('player-3')
-    expect(at2.round).toBe(1)
-    expect(at2.firstPlayerId).toBe('player-2')
-    expect(at2.activePlayerId).toBe('player-1')
-    expect(at3.round).toBe(2)
-    expect(at3.firstPlayerId).toBe('player-2')
-    expect(at3.activePlayerId).toBe('player-2')
+    expect(startedGame.round).toBe(1)
+    expect(startedGame.firstPlayerId).toBe('player-2')
+    expect(startedGame.activePlayerId).toBe('player-2')
+    expect(stateAfterFirstAdvance.round).toBe(1)
+    expect(stateAfterFirstAdvance.firstPlayerId).toBe('player-2')
+    expect(stateAfterFirstAdvance.activePlayerId).toBe('player-3')
+    expect(stateAfterSecondAdvance.round).toBe(1)
+    expect(stateAfterSecondAdvance.firstPlayerId).toBe('player-2')
+    expect(stateAfterSecondAdvance.activePlayerId).toBe('player-1')
+    expect(stateAfterThirdAdvance.round).toBe(2)
+    expect(stateAfterThirdAdvance.firstPlayerId).toBe('player-2')
+    expect(stateAfterThirdAdvance.activePlayerId).toBe('player-2')
 })
 
 type PlayerConfigWithResources = PlayerConfig & {
@@ -1339,20 +1339,20 @@ it.each(initialResourceInitializationCases)(
     const configSnapshot = structuredClone(config)
     const numPlayersSnapshot = structuredClone(playerConfigs)
 
-    const cg = createGame(config, playerConfigs)
-    const sg = startGame(cg)
-    const at1 = advanceTurn(sg)
+    const createdGame = createGame(config, playerConfigs)
+    const startedGame = startGame(createdGame)
+    const stateAfterFirstAdvance = advanceTurn(startedGame)
 
-    expect(Object.isFrozen(cg.config)).toBe(true)
-    expect(Object.isFrozen(cg.players)).toBe(true)
-    expect(Object.isFrozen(cg)).toBe(true)
+    expect(Object.isFrozen(createdGame.config)).toBe(true)
+    expect(Object.isFrozen(createdGame.players)).toBe(true)
+    expect(Object.isFrozen(createdGame)).toBe(true)
 
-    cg.players.forEach(player => {
+    createdGame.players.forEach(player => {
       expect(Object.isFrozen(player)).toBe(true)
     })
-    expect(cg.players).toHaveLength(playerConfigs.length)
+    expect(createdGame.players).toHaveLength(playerConfigs.length)
 
-    const states = [cg, sg, at1]
+    const states = [createdGame, startedGame, stateAfterFirstAdvance]
     const expectedMeta = playerConfigs.map(({ id, name, kind }) => ({ id, name, kind }))
 
     states.forEach(gameState => {
@@ -1374,7 +1374,7 @@ it('влияние и монеты не изменяются с раундами
     { playerCount: 4, seed: 2543 },
     fourPlayerConfigs,
   )
-  const cgCustom: SetupGameState = Object.freeze({
+  const customCreatedGame: SetupGameState = Object.freeze({
     ...initialSetup,
     players: Object.freeze([
       {
@@ -1407,25 +1407,25 @@ it('влияние и монеты не изменяются с раундами
       },
     ]),
   })
-  const snapshot = structuredClone(cgCustom)
-  const sg = startGame(cgCustom)
-  const at1 = advanceTurn(sg)
-  const tg = triggerGameEnd(at1)
-  const at2 = advanceTurn(tg)
-  const at3 = advanceTurn(at2)
-  const at4 = advanceTurn(at3)
-  const at5 = advanceTurn(at4)
-  const at6 = advanceTurn(at5)
-  const at7 = advanceTurn(at6)
-  const at8 = advanceTurn(at7)
+  const snapshot = structuredClone(customCreatedGame)
+  const startedGame = startGame(customCreatedGame)
+  const stateAfterFirstAdvance = advanceTurn(startedGame)
+  const endTriggeredState = triggerGameEnd(stateAfterFirstAdvance)
+  const stateAfterSecondAdvance = advanceTurn(endTriggeredState)
+  const stateAfterThirdAdvance = advanceTurn(stateAfterSecondAdvance)
+  const stateAfterFourthAdvance = advanceTurn(stateAfterThirdAdvance)
+  const stateAfterFifthAdvance = advanceTurn(stateAfterFourthAdvance)
+  const stateAfterSixthAdvance = advanceTurn(stateAfterFifthAdvance)
+  const stateAfterSeventhAdvance = advanceTurn(stateAfterSixthAdvance)
+  const stateAfterEighthAdvance = advanceTurn(stateAfterSeventhAdvance)
 
-  const states = [sg, at1, tg, at2, at3, at4, at5, at6, at7, at8]
+  const states = [startedGame, stateAfterFirstAdvance, endTriggeredState, stateAfterSecondAdvance, stateAfterThirdAdvance, stateAfterFourthAdvance, stateAfterFifthAdvance, stateAfterSixthAdvance, stateAfterSeventhAdvance, stateAfterEighthAdvance]
   states.forEach(state => {
     expect(state.players).toEqual(snapshot.players)
-    expect(state.players).toBe(cgCustom.players)
+    expect(state.players).toBe(customCreatedGame.players)
   })
-  expect(cgCustom).toEqual(snapshot)
-  expect(at8.phase).toBe('final_scoring')
+  expect(customCreatedGame).toEqual(snapshot)
+  expect(stateAfterEighthAdvance.phase).toBe('final_scoring')
 })
 
 it.each([1, 5])('отклоняет согласованную конфигурацию на $playerCount игроков', playerCount => {

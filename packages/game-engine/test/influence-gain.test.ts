@@ -3,34 +3,34 @@ import { calculateInfluenceAfterGain } from '../src/index.js'
 
 
 it('обычный прирост: 10 + 5 → 15',() =>{
-  const res = calculateInfluenceAfterGain(10, 5)
-  expect(res).toBe(15)
+  const resultingInfluence = calculateInfluenceAfterGain(10, 5)
+  expect(resultingInfluence).toBe(15)
 })
 
 it('нулевая награда: 10 + 0 → 10',() =>{
-  const res = calculateInfluenceAfterGain(10, 0)
-  expect(res).toBe(10)
+  const resultingInfluence = calculateInfluenceAfterGain(10, 0)
+  expect(resultingInfluence).toBe(10)
 })
 it('нижняя граница: 0 + 1 → 1',() =>{
-  const res = calculateInfluenceAfterGain(0, 1)
-  expect(res).toBe(1)
+  const resultingInfluence = calculateInfluenceAfterGain(0, 1)
+  expect(resultingInfluence).toBe(1)
 })
 it(' точное достижение максимума: 34 + 1 → 35',() =>{
-  const res = calculateInfluenceAfterGain(34, 1)
-  expect(res).toBe(35)
+  const resultingInfluence = calculateInfluenceAfterGain(34, 1)
+  expect(resultingInfluence).toBe(35)
 })
 it('превышение максимума: 34 + 2 → 35;',() =>{
-  const res = calculateInfluenceAfterGain(34, 2)
-  expect(res).toBe(35)
+  const resultingInfluence = calculateInfluenceAfterGain(34, 2)
+  expect(resultingInfluence).toBe(35)
 })
 it('получение на максимуме: 35 + 1 → 35',() =>{
-  const res = calculateInfluenceAfterGain(35, 1)
-  expect(res).toBe(35)
+  const resultingInfluence = calculateInfluenceAfterGain(35, 1)
+  expect(resultingInfluence).toBe(35)
 })
 
 it('большая допустимая награда: 10 + Number.MAX_SAFE_INTEGER → 35;',() =>{
-  const res = calculateInfluenceAfterGain(10, Number.MAX_SAFE_INTEGER)
-  expect(res).toBe(35)
+  const resultingInfluence = calculateInfluenceAfterGain(10, Number.MAX_SAFE_INTEGER)
+  expect(resultingInfluence).toBe(35)
 })
 it.each([
   // Отрицательные значения

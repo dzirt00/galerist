@@ -138,21 +138,21 @@ describe('полный setup-пайплайн', () => {
       orders: ['ORDER-20', 'ORDER-16', 'ORDER-19', 'ORDER-08'],
       artists: ['ART-D-BLUE-1', 'ART-D-RED-5', 'ART-P-BLUE-4', 'ART-P-RED-8', 'ART-S-BLUE-3', 'ART-S-RED-7', 'ART-A-BLUE-5', 'ART-A-RED-10'],
       plaza: ['VIS-R-08', 'VIS-R-05', 'VIS-R-04', 'VIS-R-01'],
-      locationTokens: ['REP-005', 'REP-008', 'REP-010', 'REP-012'],
+      locationReputationTokens: ['REP-005', 'REP-008', 'REP-010', 'REP-012'],
       auction: ['WORK-P-01'],
     }],
     [3, threePlayerConfigs, {
       orders: ['ORDER-02', 'ORDER-09', 'ORDER-03', 'ORDER-07'],
       artists: ['ART-D-BLUE-4', 'ART-D-RED-5', 'ART-P-BLUE-4', 'ART-P-RED-5', 'ART-S-BLUE-3', 'ART-S-RED-7', 'ART-A-BLUE-3', 'ART-A-RED-10'],
       plaza: ['VIS-B-08', 'VIS-W-05', 'VIS-B-04', 'VIS-R-02'],
-      locationTokens: ['REP-009', 'REP-001', 'REP-004', 'REP-003'],
+      locationReputationTokens: ['REP-009', 'REP-001', 'REP-004', 'REP-003'],
       auction: ['WORK-A-02', 'WORK-P-01'],
     }],
     [4, fourPlayerConfigs, {
       orders: ['ORDER-05', 'ORDER-15', 'ORDER-09', 'ORDER-19'],
       artists: ['ART-D-BLUE-1', 'ART-D-RED-5', 'ART-P-BLUE-1', 'ART-P-RED-5', 'ART-S-BLUE-3', 'ART-S-RED-7', 'ART-A-BLUE-5', 'ART-A-RED-10'],
       plaza: ['VIS-B-02', 'VIS-W-07', 'VIS-R-07', 'VIS-B-11'],
-      locationTokens: ['REP-020', 'REP-004', 'REP-008', 'REP-018'],
+      locationReputationTokens: ['REP-020', 'REP-004', 'REP-008', 'REP-018'],
       auction: ['WORK-S-05', 'WORK-A-05', 'WORK-P-10'],
     }],
   ]
@@ -165,7 +165,7 @@ describe('полный setup-пайплайн', () => {
         orders: state.orderMarket.visibleOrders,
         artists: state.artistMarket.slots.map(slot => slot.artistId),
         plaza: state.plazaVisitors.map(visitor => visitor.id),
-        locationTokens: state.internationalMarket.locationTokens.map(token => token.tokenId),
+        locationReputationTokens: state.internationalMarket.locationReputationTokens.map(token => token.tokenId),
         auction: state.masterpieceAuction.artworks.map(artwork => artwork.id),
       }).toEqual(expected)
     },

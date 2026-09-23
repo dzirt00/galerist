@@ -26,9 +26,9 @@ export function applyIntermediateIncomeToPlayer(
 export function applyIntermediateIncomeToPlayers(
   entries: readonly IntermediateIncomeAwardInput[],
 ): readonly Readonly<PlayerState>[] {
-  const res = entries.map(entry =>
+  const updatedPlayers = entries.map(entry =>
     applyIntermediateIncomeToPlayer(entry.player, entry.visitors)
   )
 
-  return Object.freeze(res)
+  return Object.freeze(updatedPlayers)
 }

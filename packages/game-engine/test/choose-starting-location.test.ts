@@ -44,7 +44,7 @@ describe('chooseStartingLocation', () => {
       const initialState = createGameState({ playerCount, seed: 42 }, players)
       const initialSnapshot = structuredClone(initialState)
       const initialTokens = new Map(
-        initialState.internationalMarket.locationTokens.map(token => [
+        initialState.internationalMarket.locationReputationTokens.map(token => [
           token.locationId,
           token.tokenId,
         ]),
@@ -68,7 +68,7 @@ describe('chooseStartingLocation', () => {
         expect(Object.isFrozen(state.playerBoards)).toBe(true)
         expect(state.playerBoards.every(Object.isFrozen)).toBe(true)
         expect(Object.isFrozen(state.internationalMarket)).toBe(true)
-        expect(Object.isFrozen(state.internationalMarket.locationTokens)).toBe(true)
+        expect(Object.isFrozen(state.internationalMarket.locationReputationTokens)).toBe(true)
 
         const expectedNextPlayer =
           initialState.startingLocationSelectionOrder[index + 1] ?? null
@@ -78,13 +78,13 @@ describe('chooseStartingLocation', () => {
       expect(initialState).toEqual(initialSnapshot)
       expect(state.setupStage).toBe('complete')
       expect(state.currentStartingLocationPlayerId).toBe(null)
-      expect(state.internationalMarket.locationTokens).toEqual([])
+      expect(state.internationalMarket.locationReputationTokens).toEqual([])
       expect(state.availableStartingLocationIds).toEqual(
         setupComponentCatalog.startingLocationOrder.slice(playerCount),
       )
-      expect(state.internationalMarket.tableIds).toBe(initialState.internationalMarket.tableIds)
-      expect(state.internationalMarket.remainingTokenIds).toBe(
-        initialState.internationalMarket.remainingTokenIds,
+      expect(state.internationalMarket.marketReputationCells).toBe(initialState.internationalMarket.marketReputationCells)
+      expect(state.internationalMarket.remainingReputationTokenIds).toBe(
+        initialState.internationalMarket.remainingReputationTokenIds,
       )
     },
   )
