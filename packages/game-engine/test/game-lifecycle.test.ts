@@ -83,7 +83,8 @@ it('отклоняет запуск завершённой игры без из�
     round: 0,
     activePlayerId: null,
     firstPlayerId: 'player-1',
-    endTriggeredRound: 0
+    endTriggeredRound: 0,
+    winnerIds: ['player-1'],
   }
 
   const stateClone = structuredClone(state)
@@ -835,7 +836,8 @@ it('запрещает передавать ход после завершени
       seed: 42,
     },
     players: twoPlayerStates,
-    endTriggeredRound: 0
+    endTriggeredRound: 0,
+    winnerIds: ['player-1'],
   }
   const stateCLone = structuredClone(state)
   expect(() => advanceTurn(state).state).toThrow('Turns can only be advanced while game is in progress')

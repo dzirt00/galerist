@@ -3,6 +3,25 @@ import type { GamePhase, GameState, PlayerId } from './types.js'
 
 type UnknownRecord = Record<string, unknown>
 
+export function deepEqual(a: any, b: any): boolean {
+  if (a === b) return true;
+
+  if (a && b && typeof a === 'object' && typeof b === 'object') {
+    if (Array.isArray(a) && Array.isArray(b)) {
+      if (a.length !== b.length) return false;
+      return a.every((val, index) => deepEqual(val, b[index]));
+    }
+
+    const keysA = Object.keys(a);
+    const keysB = Object.keys(b);
+
+    if (keysA.length !== keysB.length) return false;
+    return keysA.every(key => keysB.includes(key) && deepEqual(a[key], b[key]));
+  }
+
+  return false;
+}
+
 /** Отличает объект снимка от null, массива и примитивных значений. */
 function isRecord(value: unknown): value is UnknownRecord {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -193,7 +212,29 @@ function validatePhase(
     if (state.status !== 'finished' || state.activePlayerId !== null) {
       fail('finished phase must have finished status and no active player')
     }
+
     requireSafeInteger(state.endTriggeredRound, 'endTriggeredRound')
+
+    if (!Array.isArray(state.winnerIds) || state.winnerIds.length === 0) {
+      fail('winnerIds must be a non-empty array')
+    }
+
+    const seenWinnerIds = new Set<PlayerId>()
+
+    state.winnerIds.forEach((winnerId, index) => {
+      const validatedWinnerId = requirePlayerReference(
+        winnerId,
+        playerIds,
+        `winnerIds[${index}]`,
+      )
+
+      if (seenWinnerIds.has(validatedWinnerId)) {
+        fail('winnerIds must contain unique players')
+      }
+
+      seenWinnerIds.add(validatedWinnerId)
+    })
+
     return
   }
   if (state.status !== 'in_progress') {

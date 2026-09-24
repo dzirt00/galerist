@@ -170,6 +170,7 @@ export interface FinishedGameState extends GameStateBase {
   readonly activePlayerId: null
   readonly firstPlayerId: PlayerId
   readonly endTriggeredRound: number
+  readonly winnerIds: readonly string[]
 }
 
 export interface SetupGameState extends GameStateBase {

@@ -20,6 +20,14 @@ export type GameEvent =
   | { readonly type: 'FinalScoringStarted' }
   | { readonly type: 'GameEndTriggered' }
   | {
+      readonly type: 'FinalScoringCompleted'
+      readonly winnerIds: readonly string[]
+    }
+  | {
+  readonly type: 'WinnerDetermined'
+  readonly winnerIds: readonly string[]
+}
+  | {
       readonly type: 'InfluenceScored'
       readonly playerId: PlayerId
       readonly coinsAwarded: number

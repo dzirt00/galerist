@@ -29,6 +29,7 @@ export function projectGameForViewer(
           ? { endTriggeredRound: state.endTriggeredRound }
           : {}),
       }
+  const winnerIds = (state.phase === 'finished' && 'winnerIds' in state) ? state.winnerIds : undefined
 
   const projection = {
     config: { playerCount: state.config.playerCount },
@@ -77,6 +78,7 @@ export function projectGameForViewer(
     playerBoards: state.playerBoards,
     plazaVisitors: state.plazaVisitors,
     vestibuleVisitors: state.vestibuleVisitors,
+    winnerIds
   }
 
   return deepFreeze(structuredClone(projection))
