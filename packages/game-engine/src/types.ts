@@ -103,7 +103,7 @@ export interface PlayerState {
 }
 
 export interface GameStateBase {
-  readonly stateSchemaVersion: 2
+  readonly stateSchemaVersion: 3
   readonly id: GameId
   readonly config: Readonly<GameConfig>
   readonly players: readonly PlayerState[]
@@ -160,6 +160,7 @@ export interface FinalScoringGameState extends GameStateBase {
   readonly activePlayerId: null
   readonly firstPlayerId: PlayerId
   readonly endTriggeredRound: number
+  readonly finalInfluenceScored: boolean
 }
 
 export interface FinishedGameState extends GameStateBase {

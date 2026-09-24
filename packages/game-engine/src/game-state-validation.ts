@@ -13,6 +13,13 @@ function fail(message: string): never {
   throw new Error(`Invalid game state: ${message}`)
 }
 
+function requireBoolean(value: unknown, name: string): boolean {
+  if (typeof value !== 'boolean') {
+    return fail(`${name} must be a boolean`)
+  }
+  return value
+}
+
 /** Требует объектное поле внешнего снимка. */
 function requireRecord(value: unknown, name: string): UnknownRecord {
   if (!isRecord(value)) {
@@ -197,6 +204,7 @@ function validatePhase(
       fail('final_scoring must not have an active player')
     }
     requireSafeInteger(state.endTriggeredRound, 'endTriggeredRound')
+    requireBoolean(state.finalInfluenceScored, 'finalInfluenceScored')
     return
   }
   requirePlayerReference(state.activePlayerId, playerIds, 'activePlayerId')
@@ -208,8 +216,8 @@ function validatePhase(
 /** Проверяет JSON-снимок по ADR-001/ADR-002 и возвращает независимый замороженный GameState. */
 export function restoreGameState(input: unknown): GameState {
   const state = requireRecord(input, 'state')
-  if (state.stateSchemaVersion !== 2) {
-    fail('stateSchemaVersion must equal 2')
+  if (state.stateSchemaVersion !== 3) {
+    fail('stateSchemaVersion must equal 3')
   }
   requireNonEmptyString(state.id, 'id')
 

@@ -93,6 +93,7 @@ export function advanceTurn(state: GameState): GameTransition<GameState> {
         phase: 'final_scoring',
         activePlayerId: null,
         endTriggeredRound: state.endTriggeredRound,
+        finalInfluenceScored: false
       },[{ type: 'FinalScoringStarted'} ])
     }
     return freezeTransition({

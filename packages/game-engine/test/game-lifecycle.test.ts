@@ -1034,7 +1034,8 @@ it('отклоняет передачу хода в фазе итогового 
     },
     players: twoPlayerStates,
     firstPlayerId: 'player-1',
-    endTriggeredRound: 1
+    endTriggeredRound: 1,
+    finalInfluenceScored: false,
   }
 
   expect(() => advanceTurn(state)).toThrow('Turns can only be advanced while game is in progress')

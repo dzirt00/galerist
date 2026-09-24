@@ -33,6 +33,7 @@ export {
   type PrivateGoalsByPlayer,
   type PreparedPrivateGoals,
 } from './setup-goals.js'
+export { applyFinalInfluenceScoringToGameState } from './final-influence-scoring-state.js'
 export { determineWinners } from './winner-determination.js'
 export {
   preparePlayerBoards,
