@@ -21,15 +21,15 @@ function createRegularTurnState(): GameState {
 /** Доводит тестовую игру до финального раунда. */
 function createFinalRoundTurnState(): GameState {
   let state: GameState = triggerGameEnd(createRegularTurnState()).state
-  state = advanceTurn(state)
-  return advanceTurn(state)
+  state = advanceTurn(state).state
+  return advanceTurn(state).state
 }
 
 /** Доводит тестовую игру до итогового подсчёта. */
 function createFinalScoringTurnState(): GameState {
   let state = createFinalRoundTurnState()
-  state = advanceTurn(state)
-  return advanceTurn(state)
+  state = advanceTurn(state).state
+  return advanceTurn(state).state
 }
 
 /** Создаёт подтверждённую команду хода с заданным временем управления. */
@@ -284,7 +284,7 @@ it('повторно проверяет активного игрока посл
 
   expect(() => prepareTurn(state, command)).not.toThrow()
 
-  const nextState = advanceTurn(state)
+  const nextState = advanceTurn(state).state
   expectPreparationRejectedWithoutChangingInputs(
     nextState,
     command,

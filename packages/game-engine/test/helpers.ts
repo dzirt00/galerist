@@ -60,7 +60,7 @@ export function advanceAndExpectTurns(
   let previousState = initialState
 
   for (const expectedTurn of expectedTurns) {
-    const nextState = advanceTurn(previousState)
+    const nextState = advanceTurn(previousState).state
 
     expect(nextState).not.toBe(previousState)
     nextStates.push(nextState)

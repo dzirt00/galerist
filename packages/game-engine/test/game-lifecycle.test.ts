@@ -2,6 +2,7 @@ import { expect, it } from 'vitest'
 import {
   advanceTurn,
   createGame as createGameTransition,
+  projectEventsForViewer,
   setupComponentCatalog,
   startGame as startGameTransition,
   triggerGameEnd,
@@ -135,12 +136,12 @@ it('детерминированно готовит и глубоко замор
 it('сохраняет подготовленный рынок заказов при переходах lifecycle', () => {
   const setup = createGame(twoPlayerGameConfig, twoPlayerConfigs)
   const regularPlay = startGame(setup)
-  const nextTurn = advanceTurn(regularPlay)
-  const endingCurrentRound = triggerGameEnd(nextTurn)
+  const nextTurn = advanceTurn(regularPlay).state
+  const endingCurrentRound = triggerGameEnd(nextTurn).state
 
   expect(regularPlay.orderMarket).toBe(setup.orderMarket)
   expect(nextTurn.orderMarket).toBe(setup.orderMarket)
-  expect(endingCurrentRound.state.orderMarket).toBe(setup.orderMarket)
+  expect(endingCurrentRound.orderMarket).toBe(setup.orderMarket)
 })
 
 it.each([
@@ -162,7 +163,7 @@ it.each([
 it('сохраняет подготовленную кассу билетов при переходах lifecycle', () => {
   const setup = createGame(twoPlayerGameConfig, twoPlayerConfigs)
   const regularPlay = startGame(setup)
-  const nextTurn = advanceTurn(regularPlay)
+  const nextTurn = advanceTurn(regularPlay).state
   const endingCurrentRound = triggerGameEnd(nextTurn)
 
   expect(regularPlay.ticketOffice).toBe(setup.ticketOffice)
@@ -185,7 +186,7 @@ it('сохраняет в GameState все 20 жетонов рекламы по
 it('глубоко замораживает и сохраняет запас рекламы при переходах lifecycle', () => {
   const setup = createGame(twoPlayerGameConfig, twoPlayerConfigs)
   const regularPlay = startGame(setup)
-  const nextTurn = advanceTurn(regularPlay)
+  const nextTurn = advanceTurn(regularPlay).state
   const endingCurrentRound = triggerGameEnd(nextTurn)
 
   expect(Object.isFrozen(setup.promotionSupply)).toBe(true)
@@ -217,7 +218,7 @@ it('детерминированно готовит, замораживает и
   const first = createGame(config, twoPlayerConfigs)
   const second = createGame({ ...config }, twoPlayerConfigs.map(player => ({ ...player })))
   const regularPlay = startGame(first)
-  const endingCurrentRound = triggerGameEnd(advanceTurn(regularPlay))
+  const endingCurrentRound = triggerGameEnd(advanceTurn(regularPlay).state)
 
   expect(first.artistMarket).toEqual(second.artistMarket)
   expect(Object.isFrozen(first.artistMarket)).toBe(true)
@@ -261,7 +262,7 @@ it('детерминированно готовит, замораживает и
   const first = createGame(config, twoPlayerConfigs)
   const second = createGame({ ...config }, twoPlayerConfigs.map(player => ({ ...player })))
   const regularPlay = startGame(first)
-  const endingCurrentRound = triggerGameEnd(advanceTurn(regularPlay))
+  const endingCurrentRound = triggerGameEnd(advanceTurn(regularPlay).state)
 
   expect(first.artistSetup).toEqual(second.artistSetup)
   expect(Object.isFrozen(first.artistSetup)).toBe(true)
@@ -311,7 +312,7 @@ it('детерминированно готовит, замораживает и
   const first = createGame(config, twoPlayerConfigs)
   const second = createGame({ ...config }, twoPlayerConfigs.map(player => ({ ...player })))
   const regularPlay = startGame(first)
-  const endingCurrentRound = triggerGameEnd(advanceTurn(regularPlay))
+  const endingCurrentRound = triggerGameEnd(advanceTurn(regularPlay).state)
 
   expect(first.visitorBag).toEqual(second.visitorBag)
   expect(Object.isFrozen(first.visitorBag)).toBe(true)
@@ -340,7 +341,7 @@ it('детерминированно размещает, замораживае�
   const first = createGame(config, twoPlayerConfigs)
   const second = createGame({ ...config }, twoPlayerConfigs.map(player => ({ ...player })))
   const regularPlay = startGame(first)
-  const endingCurrentRound = triggerGameEnd(advanceTurn(regularPlay))
+  const endingCurrentRound = triggerGameEnd(advanceTurn(regularPlay).state)
 
   expect(first.plazaVisitors).toEqual(second.plazaVisitors)
   expect(first.vestibuleVisitors).toEqual(second.vestibuleVisitors)
@@ -383,7 +384,7 @@ it('детерминированно готовит, замораживает и
   const first = createGame(config, twoPlayerConfigs)
   const second = createGame({ ...config }, twoPlayerConfigs.map(player => ({ ...player })))
   const regularPlay = startGame(first)
-  const endingCurrentRound = triggerGameEnd(advanceTurn(regularPlay))
+  const endingCurrentRound = triggerGameEnd(advanceTurn(regularPlay).state)
 
   expect(first.artworkMarket).toEqual(second.artworkMarket)
   expect(Object.isFrozen(first.artworkMarket)).toBe(true)
@@ -415,7 +416,7 @@ it('сохраняет в GameState точные версии правил, ко
 it('сохраняет тот же замороженный объект версий при переходах lifecycle', () => {
   const setup = createGame(twoPlayerGameConfig, twoPlayerConfigs)
   const regularPlay = startGame(setup)
-  const nextTurn = advanceTurn(regularPlay)
+  const nextTurn = advanceTurn(regularPlay).state
   const endingCurrentRound = triggerGameEnd(nextTurn)
 
   expect(regularPlay.setupVersions).toBe(setup.setupVersions)
@@ -457,7 +458,7 @@ it('детерминированно раздаёт, глубоко замора
   const first = createGame(config, twoPlayerConfigs)
   const second = createGame({ ...config }, twoPlayerConfigs.map(player => ({ ...player })))
   const regularPlay = startGame(first)
-  const endingCurrentRound = triggerGameEnd(advanceTurn(regularPlay))
+  const endingCurrentRound = triggerGameEnd(advanceTurn(regularPlay).state)
 
   expect(first.privateGoals).toEqual(second.privateGoals)
   expect(Object.isFrozen(first.privateGoals)).toBe(true)
@@ -492,7 +493,7 @@ it('глубоко замораживает и сохраняет планшет
   const setup = createGame(twoPlayerGameConfig, twoPlayerConfigs)
   const completedSetup = completeStartingLocationSelection(setup)
   const regularPlay = startGameFromSetup(completedSetup)
-  const nextTurn = advanceTurn(regularPlay)
+  const nextTurn = advanceTurn(regularPlay).state
   const endingCurrentRound = triggerGameEnd(nextTurn)
 
   expect(Object.isFrozen(setup.playerBoards)).toBe(true)
@@ -554,7 +555,7 @@ it('детерминированно готовит, замораживает и
   const first = createGame(config, twoPlayerConfigs)
   const second = createGame({ ...config }, twoPlayerConfigs.map(player => ({ ...player })))
   const regularPlay = startGame(first)
-  const endingCurrentRound = triggerGameEnd(advanceTurn(regularPlay))
+  const endingCurrentRound = triggerGameEnd(advanceTurn(regularPlay).state)
 
   expect(first.masterpieceAuction).toEqual(second.masterpieceAuction)
   expect(Object.isFrozen(first.masterpieceAuction)).toBe(true)
@@ -593,7 +594,7 @@ it('детерминированно готовит, замораживает и
   const second = createGame({ ...config }, twoPlayerConfigs.map(player => ({ ...player })))
   const completedSetup = completeStartingLocationSelection(first)
   const regularPlay = startGameFromSetup(completedSetup)
-  const endingCurrentRound = triggerGameEnd(advanceTurn(regularPlay))
+  const endingCurrentRound = triggerGameEnd(advanceTurn(regularPlay).state)
 
   expect(first.internationalMarket).toEqual(second.internationalMarket)
   expect(Object.isFrozen(first.internationalMarket)).toBe(true)
@@ -740,10 +741,15 @@ it('передаёт ход следующему игроку без измен�
   const game = createGame( conf, twoPlayerConfigs )
   const startedGame = startGame(game)
 
-  const nextStep = advanceTurn(startedGame)
+  const transition = advanceTurn(startedGame)
+  const nextStep = transition.state
 
   expect(nextStep.activePlayerId).toBe('player-2')
   expect(nextStep.round).toBe(1)
+  expect(transition.events).toEqual([])
+  expect(Object.isFrozen(transition)).toBe(true)
+  expect(Object.isFrozen(transition.state)).toBe(true)
+  expect(Object.isFrozen(transition.events)).toBe(true)
   expect(startedGame).not.toBe(nextStep)
   expect(startedGame.activePlayerId).toBe('player-1')
   expect(startedGame.round).toBe(1)
@@ -755,8 +761,8 @@ it('начинает новый раунд с первого игрока', () =
   const game = createGame( conf, twoPlayerConfigs )
   const startedGame = startGame(game)
 
-  const nextStep1 = advanceTurn(startedGame)
-  const nextStep2 = advanceTurn(nextStep1)
+  const nextStep1 = advanceTurn(startedGame).state
+  const nextStep2 = advanceTurn(nextStep1).state
 
   expect(nextStep1.activePlayerId).toBe('player-2');
   expect(nextStep2.activePlayerId).toBe('player-1');
@@ -810,7 +816,7 @@ it('запрещает передавать ход на этапе подгот�
     twoPlayerConfigs,
   )
   const stateCLone = structuredClone(state)
-  expect(() => advanceTurn(state)).toThrow('Turns can only be advanced while game is in progress')
+  expect(() => advanceTurn(state).state).toThrow('Turns can only be advanced while game is in progress')
   expect(state).toEqual(stateCLone)
 })
 
@@ -832,7 +838,7 @@ it('запрещает передавать ход после завершени
     endTriggeredRound: 0
   }
   const stateCLone = structuredClone(state)
-  expect(() => advanceTurn(state)).toThrow('Turns can only be advanced while game is in progress')
+  expect(() => advanceTurn(state).state).toThrow('Turns can only be advanced while game is in progress')
   expect(state).toEqual(stateCLone)
 })
 
@@ -884,7 +890,7 @@ it('отклоняет передачу хода при пустом ID акти
   }
   const stateBefore = structuredClone(state)
 
-  expect(() => advanceTurn(state as unknown as GameState)).toThrow(
+  expect(() => advanceTurn(state as unknown as GameState).state).toThrow(
     'Active player must belong to the game',
   )
   expect(state).toEqual(stateBefore)
@@ -905,7 +911,7 @@ it('возвращает новое замороженное состояние 
   };
 
   const originalStateSnapshot = structuredClone(initialState);
-  const nextState = advanceTurn(initialState);
+  const nextState = advanceTurn(initialState).state;
 
   expect(initialState).toEqual(originalStateSnapshot);
   expect(nextState).not.toBe(initialState);
@@ -931,7 +937,7 @@ it('отклоняет передачу хода неизвестного игр
   }
 
   const stateCLone = structuredClone(state)
-  expect(() => advanceTurn(state)).toThrow('Active player must belong to the game')
+  expect(() => advanceTurn(state).state).toThrow('Active player must belong to the game')
   expect(state).toEqual(stateCLone)
 })
 
@@ -951,7 +957,7 @@ it('отклоняет передачу хода в фазе подготовк�
   }
 
   const stateCLone = structuredClone(state)
-  expect(() => advanceTurn(state as unknown as GameState)).toThrow('Turns can only be advanced while game is in progress')
+  expect(() => advanceTurn(state as unknown as GameState).state).toThrow('Turns can only be advanced while game is in progress')
   expect(state).toEqual(stateCLone)
 })
 
@@ -972,7 +978,7 @@ it('передаёт ход в фазе обычной игры', () => {
   }
 
   const stateCLone = structuredClone(state)
-  const advancedState = advanceTurn(state)
+  const advancedState = advanceTurn(state).state
   expect(advancedState.activePlayerId).toBe('player-2')
   expect(advancedState.firstPlayerId).toBe('player-1')
   expect(advancedState.phase).toBe('regular_play')
@@ -1006,7 +1012,7 @@ it('переводит игру в фазу завершения текущег�
     firstPlayerId: 'player-1',
     endTriggeredRound: 1
   }
-  const et = advanceTurn(state)
+  const et = advanceTurn(state).state
 
   expect(et.status).toBe('in_progress')
   expect(et.phase).toBe('ending_current_round')
@@ -1053,8 +1059,8 @@ it('сохраняет активного и первого игроков пр�
     ],
     firstPlayerId: 'player-2',
   }
-  const stateAfterFirstAdvance = advanceTurn(state)
-  const stateAfterSecondAdvance = advanceTurn(stateAfterFirstAdvance)
+  const stateAfterFirstAdvance = advanceTurn(state).state
+  const stateAfterSecondAdvance = advanceTurn(stateAfterFirstAdvance).state
   expect(stateAfterSecondAdvance.round).toBe(2)
   expect(stateAfterFirstAdvance.round).toBe(2)
   expect(stateAfterFirstAdvance.activePlayerId).toBe('player-2')
@@ -1080,11 +1086,21 @@ it('передаёт ход в финальном раунде', () => {
     firstPlayerId: 'player-2',
     endTriggeredRound: 2
   }
-  const at = advanceTurn(state)
+  const stateBefore = structuredClone(state)
+  const transition = advanceTurn(state)
+  const at = transition.state
 
   expect(at.phase).toBe('final_scoring')
   expect(at.firstPlayerId).toBe('player-2')
   expect(at.endTriggeredRound).toBe(2)
+  expect(transition.events).toEqual([{ type: 'FinalScoringStarted' }])
+  expect(projectEventsForViewer(transition.events, at, null)).toEqual(transition.events)
+  expect(projectEventsForViewer(transition.events, at, 'player-1')).toEqual(transition.events)
+  expect(Object.isFrozen(transition)).toBe(true)
+  expect(Object.isFrozen(transition.state)).toBe(true)
+  expect(Object.isFrozen(transition.events)).toBe(true)
+  expect(Object.isFrozen(transition.events[0])).toBe(true)
+  expect(state).toEqual(stateBefore)
 })
 
 it('запускает завершение только из фазы обычной игры', () => {
@@ -1143,12 +1159,12 @@ it('переходит к итоговому подсчёту после все�
   }
 
   const trigger = triggerGameEnd(state)
-  const stateAfterFirstAdvance = advanceTurn(trigger.state)
-  const stateAfterSecondAdvance = advanceTurn(stateAfterFirstAdvance)
-  const stateAfterThirdAdvance = advanceTurn(stateAfterSecondAdvance)
-  const stateAfterFourthAdvance = advanceTurn(stateAfterThirdAdvance)
-  const stateAfterFifthAdvance = advanceTurn(stateAfterFourthAdvance)
-  const stateAfterSixthAdvance = advanceTurn(stateAfterFifthAdvance)
+  const stateAfterFirstAdvance = advanceTurn(trigger.state).state
+  const stateAfterSecondAdvance = advanceTurn(stateAfterFirstAdvance).state
+  const stateAfterThirdAdvance = advanceTurn(stateAfterSecondAdvance).state
+  const stateAfterFourthAdvance = advanceTurn(stateAfterThirdAdvance).state
+  const stateAfterFifthAdvance = advanceTurn(stateAfterFourthAdvance).state
+  const stateAfterSixthAdvance = advanceTurn(stateAfterFifthAdvance).state
 
 
   expectEndingTurns([stateAfterFirstAdvance, stateAfterSecondAdvance, stateAfterThirdAdvance, stateAfterFourthAdvance, stateAfterFifthAdvance, stateAfterSixthAdvance], state, [
@@ -1178,10 +1194,10 @@ it('завершает раунды при втором первом игрок�
   }
 
   const trigger = triggerGameEnd(state)
-  const stateAfterFirstAdvance = advanceTurn(trigger.state)
-  const stateAfterSecondAdvance = advanceTurn(stateAfterFirstAdvance)
-  const stateAfterThirdAdvance = advanceTurn(stateAfterSecondAdvance)
-  const stateAfterFourthAdvance = advanceTurn(stateAfterThirdAdvance)
+  const stateAfterFirstAdvance = advanceTurn(trigger.state).state
+  const stateAfterSecondAdvance = advanceTurn(stateAfterFirstAdvance).state
+  const stateAfterThirdAdvance = advanceTurn(stateAfterSecondAdvance).state
+  const stateAfterFourthAdvance = advanceTurn(stateAfterThirdAdvance).state
 
   expectEndingTurns([stateAfterFirstAdvance, stateAfterSecondAdvance, stateAfterThirdAdvance, stateAfterFourthAdvance], state, [
     ['final_round', 11, 'player-2', 'player-2'],
@@ -1209,11 +1225,11 @@ it('завершает раунды при втором первом игрок�
   }
 
   const trigger = triggerGameEnd(state)
-  const stateAfterFirstAdvance = advanceTurn(trigger.state)
-  const stateAfterSecondAdvance = advanceTurn(stateAfterFirstAdvance)
-  const stateAfterThirdAdvance = advanceTurn(stateAfterSecondAdvance)
-  const stateAfterFourthAdvance = advanceTurn(stateAfterThirdAdvance)
-  const stateAfterFifthAdvance = advanceTurn(stateAfterFourthAdvance)
+  const stateAfterFirstAdvance = advanceTurn(trigger.state).state
+  const stateAfterSecondAdvance = advanceTurn(stateAfterFirstAdvance).state
+  const stateAfterThirdAdvance = advanceTurn(stateAfterSecondAdvance).state
+  const stateAfterFourthAdvance = advanceTurn(stateAfterThirdAdvance).state
+  const stateAfterFifthAdvance = advanceTurn(stateAfterFourthAdvance).state
 
   expectEndingTurns([stateAfterFirstAdvance, stateAfterSecondAdvance, stateAfterThirdAdvance, stateAfterFourthAdvance, stateAfterFifthAdvance], state, [
     ['ending_current_round', 10, 'player-3', 'player-2'],
@@ -1292,9 +1308,9 @@ it('переходы хода и увеличение раунда при пер
   const conf: GameConfig = { playerCount: 3, seed: 1 }
   const createdGame = createGame( conf, threePlayerConfigs )
     const startedGame = startGame(createdGame)
-    const stateAfterFirstAdvance = advanceTurn(startedGame)
-    const stateAfterSecondAdvance = advanceTurn(stateAfterFirstAdvance)
-    const stateAfterThirdAdvance = advanceTurn(stateAfterSecondAdvance)
+    const stateAfterFirstAdvance = advanceTurn(startedGame).state
+    const stateAfterSecondAdvance = advanceTurn(stateAfterFirstAdvance).state
+    const stateAfterThirdAdvance = advanceTurn(stateAfterSecondAdvance).state
 
     expect(startedGame.round).toBe(1)
     expect(startedGame.firstPlayerId).toBe('player-2')
@@ -1345,7 +1361,7 @@ it.each(initialResourceInitializationCases)(
 
     const createdGame = createGame(config, playerConfigs)
     const startedGame = startGame(createdGame)
-    const stateAfterFirstAdvance = advanceTurn(startedGame)
+    const stateAfterFirstAdvance = advanceTurn(startedGame).state
 
     expect(Object.isFrozen(createdGame.config)).toBe(true)
     expect(Object.isFrozen(createdGame.players)).toBe(true)
@@ -1413,15 +1429,15 @@ it('влияние и монеты не изменяются с раундами
   })
   const snapshot = structuredClone(customCreatedGame)
   const startedGame = startGame(customCreatedGame)
-  const stateAfterFirstAdvance = advanceTurn(startedGame)
+  const stateAfterFirstAdvance = advanceTurn(startedGame).state
   const endTriggeredState = triggerGameEnd(stateAfterFirstAdvance)
-  const stateAfterSecondAdvance = advanceTurn(endTriggeredState.state)
-  const stateAfterThirdAdvance = advanceTurn(stateAfterSecondAdvance)
-  const stateAfterFourthAdvance = advanceTurn(stateAfterThirdAdvance)
-  const stateAfterFifthAdvance = advanceTurn(stateAfterFourthAdvance)
-  const stateAfterSixthAdvance = advanceTurn(stateAfterFifthAdvance)
-  const stateAfterSeventhAdvance = advanceTurn(stateAfterSixthAdvance)
-  const stateAfterEighthAdvance = advanceTurn(stateAfterSeventhAdvance)
+  const stateAfterSecondAdvance = advanceTurn(endTriggeredState.state).state
+  const stateAfterThirdAdvance = advanceTurn(stateAfterSecondAdvance).state
+  const stateAfterFourthAdvance = advanceTurn(stateAfterThirdAdvance).state
+  const stateAfterFifthAdvance = advanceTurn(stateAfterFourthAdvance).state
+  const stateAfterSixthAdvance = advanceTurn(stateAfterFifthAdvance).state
+  const stateAfterSeventhAdvance = advanceTurn(stateAfterSixthAdvance).state
+  const stateAfterEighthAdvance = advanceTurn(stateAfterSeventhAdvance).state
 
   const states = [startedGame, stateAfterFirstAdvance, endTriggeredState.state, stateAfterSecondAdvance, stateAfterThirdAdvance, stateAfterFourthAdvance, stateAfterFifthAdvance, stateAfterSixthAdvance, stateAfterSeventhAdvance, stateAfterEighthAdvance]
   states.forEach(state => {

@@ -7,7 +7,7 @@ import type {
   RegularPlayGameState,
 } from './types.js'
 import {
-  freezeTransition,
+  freezeTransition, type GameEvent,
   type GameTransition,
 } from './game-events.js'
 import { getFirstPlayerIndex } from './turn-order.js'
@@ -56,16 +56,16 @@ export function startGame(state: GameState): GameTransition<RegularPlayGameState
 }
 
 /** Передаёт ход по TURN-005 и меняет раунд или фазу по TURN-006 и END-003–END-005. */
-export function advanceTurn(state: RegularPlayGameState): RegularPlayGameState
+export function advanceTurn(state: RegularPlayGameState): GameTransition<RegularPlayGameState>
 export function advanceTurn(
   state: EndingCurrentRoundGameState,
-): EndingCurrentRoundGameState | FinalRoundGameState
+): GameTransition<EndingCurrentRoundGameState | FinalRoundGameState>
 export function advanceTurn(
   state: FinalRoundGameState,
-): FinalRoundGameState | FinalScoringGameState
-export function advanceTurn(state: EndingSequenceGameState): EndingSequenceGameState
-export function advanceTurn(state: GameState): GameState
-export function advanceTurn(state: GameState): GameState {
+): GameTransition<FinalRoundGameState | FinalScoringGameState>
+export function advanceTurn(state: EndingSequenceGameState): GameTransition<EndingSequenceGameState>
+export function advanceTurn( state: GameState): GameTransition<GameState>
+export function advanceTurn(state: GameState): GameTransition<GameState> {
   if (state.status !== 'in_progress') {
     throw new Error('Turns can only be advanced while game is in progress')
   }
@@ -88,47 +88,47 @@ export function advanceTurn(state: GameState): GameState {
 
   if (state.phase === 'final_round') {
     if (isNewRound) {
-      return Object.freeze({
+      return freezeTransition({
         ...state,
         phase: 'final_scoring',
         activePlayerId: null,
         endTriggeredRound: state.endTriggeredRound,
-      })
+      },[{ type: 'FinalScoringStarted'} ])
     }
-    return Object.freeze({
+    return freezeTransition({
       ...state,
       round: nextRoundNumber,
       phase: 'final_round',
       activePlayerId: nextPlayer,
       endTriggeredRound: state.endTriggeredRound,
-    })
+    },[])
   }
 
   if (state.phase === 'ending_current_round') {
     if (isNewRound) {
-      return Object.freeze({
+      return freezeTransition({
         ...state,
         round: nextRoundNumber,
         phase: 'final_round',
         activePlayerId: nextPlayer,
         endTriggeredRound: state.endTriggeredRound,
-      })
+      },[])
     }
-    return Object.freeze({
+    return freezeTransition({
       ...state,
       round: nextRoundNumber,
       phase: 'ending_current_round',
       activePlayerId: nextPlayer,
       endTriggeredRound: state.endTriggeredRound,
-    })
+    },[])
   }
 
-  return Object.freeze({
+  return freezeTransition({
     ...state,
     round: nextRoundNumber,
     phase: 'regular_play',
     activePlayerId: nextPlayer,
-  })
+  },[])
 }
 
 /** Запускает доигрывание текущего раунда по END-002. */
