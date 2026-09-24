@@ -55,5 +55,5 @@ export function completeFinalScoring(
     status: 'finished',
     activePlayerId: null,
     winnerIds: winnersIds
-  },deepFreeze([{type:'WinnerDetermined', winnerIds: winnersIds },{type: 'FinalScoringCompleted', winnerIds: winnersIds}]))
+  },deepFreeze([{type:'WinnerDetermined', winnerIds: winnersIds },{type: 'FinalScoringCompleted', winnerIds: winnersIds}, { type: 'GameFinished', gameId: state.id }]))
 }

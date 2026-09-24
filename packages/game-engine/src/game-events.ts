@@ -19,6 +19,7 @@ export type GameEvent =
   | { readonly type: 'PrivateGoalsDealt'; readonly playerId: PlayerId }
   | { readonly type: 'FinalScoringStarted' }
   | { readonly type: 'GameEndTriggered' }
+  | { readonly type: 'GameFinished'; readonly gameId: string }
   | { readonly type: 'TurnEnded'; readonly playerId: PlayerId }
   | {
       readonly type: 'FinalScoringCompleted'

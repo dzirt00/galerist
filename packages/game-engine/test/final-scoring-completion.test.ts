@@ -70,6 +70,7 @@ describe('completeFinalScoring', () => {
     expect(transition.events).toEqual([
       { type: 'WinnerDetermined', winnerIds: ['player-2'] },
       { type: 'FinalScoringCompleted', winnerIds: ['player-2'] },
+      { type: 'GameFinished', gameId: state.id },
     ])
     expect(projectEventsForViewer(
       transition.events,
