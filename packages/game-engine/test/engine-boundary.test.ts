@@ -4,6 +4,7 @@ import {
   projectEventsForViewer,
   restoreGameState,
   startGame,
+  triggerGameEnd,
 } from '../src/index.js'
 import { twoPlayerConfigs } from './fixtures.js'
 import { completeStartingLocationSelection } from './helpers.js'
@@ -92,5 +93,24 @@ describe('граница игрового движка', () => {
       type: 'FirstPlayerSelected',
       playerId: 'player-1',
     })
+  })
+
+  it('показывает событие запуска завершения игрокам и наблюдателю', () => {
+    const setup = createSetup()
+    const regularPlay = startGame(
+      completeStartingLocationSelection(setup.state),
+    ).state
+    const transition = triggerGameEnd(regularPlay)
+
+    expect(projectEventsForViewer(
+      transition.events,
+      transition.state,
+      'player-1',
+    )).toEqual([{ type: 'GameEndTriggered' }])
+    expect(projectEventsForViewer(
+      transition.events,
+      transition.state,
+      null,
+    )).toEqual([{ type: 'GameEndTriggered' }])
   })
 })

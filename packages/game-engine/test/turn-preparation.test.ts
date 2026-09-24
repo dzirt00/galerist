@@ -20,7 +20,7 @@ function createRegularTurnState(): GameState {
 
 /** Доводит тестовую игру до финального раунда. */
 function createFinalRoundTurnState(): GameState {
-  let state: GameState = triggerGameEnd(createRegularTurnState())
+  let state: GameState = triggerGameEnd(createRegularTurnState()).state
   state = advanceTurn(state)
   return advanceTurn(state)
 }
@@ -126,7 +126,7 @@ it.each([
 
 it.each([
   ['regular_play', createRegularTurnState],
-  ['ending_current_round', () => triggerGameEnd(createRegularTurnState())],
+  ['ending_current_round', () => triggerGameEnd(createRegularTurnState()).state],
   ['final_round', createFinalRoundTurnState],
 ] as const)('подготавливает ход в фазе %s', (phase, createState) => {
   const prepared = prepareTurn(createState(), createConfirmedTurn())

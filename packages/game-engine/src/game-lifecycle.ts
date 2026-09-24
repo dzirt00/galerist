@@ -132,13 +132,16 @@ export function advanceTurn(state: GameState): GameState {
 }
 
 /** Запускает доигрывание текущего раунда по END-002. */
-export function triggerGameEnd(state: GameState): EndingCurrentRoundGameState {
+export function triggerGameEnd(state: GameState): GameTransition<EndingCurrentRoundGameState> {
   if (state.phase !== 'regular_play') {
     throw new Error('Only regular_play')
   }
-  return Object.freeze({
+  const updateState = {
     ...state,
     phase: 'ending_current_round',
     endTriggeredRound: state.round,
-  })
+  } satisfies EndingCurrentRoundGameState
+
+  return freezeTransition(updateState, [{ type: 'GameEndTriggered' }])
+
 }

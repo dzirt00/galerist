@@ -17,6 +17,7 @@ export type GameEvent =
   | { readonly type: 'FirstPlayerSelected'; readonly playerId: PlayerId }
   | { readonly type: 'PlayerBoardPrepared'; readonly playerId: PlayerId }
   | { readonly type: 'PrivateGoalsDealt'; readonly playerId: PlayerId }
+  | { readonly type: 'GameEndTriggered' }
   | {
       readonly type: 'StartingLocationChosen'
       readonly playerId: PlayerId

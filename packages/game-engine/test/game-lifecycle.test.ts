@@ -140,7 +140,7 @@ it('сохраняет подготовленный рынок заказов п
 
   expect(regularPlay.orderMarket).toBe(setup.orderMarket)
   expect(nextTurn.orderMarket).toBe(setup.orderMarket)
-  expect(endingCurrentRound.orderMarket).toBe(setup.orderMarket)
+  expect(endingCurrentRound.state.orderMarket).toBe(setup.orderMarket)
 })
 
 it.each([
@@ -167,7 +167,7 @@ it('сохраняет подготовленную кассу билетов п
 
   expect(regularPlay.ticketOffice).toBe(setup.ticketOffice)
   expect(nextTurn.ticketOffice).toBe(setup.ticketOffice)
-  expect(endingCurrentRound.ticketOffice).toBe(setup.ticketOffice)
+  expect(endingCurrentRound.state.ticketOffice).toBe(setup.ticketOffice)
 })
 
 it('сохраняет в GameState все 20 жетонов рекламы по четыре на каждом уровне', () => {
@@ -193,7 +193,7 @@ it('глубоко замораживает и сохраняет запас р�
   expect(Object.values(setup.promotionSupply.tokenIdsByLevel).every(Object.isFrozen)).toBe(true)
   expect(regularPlay.promotionSupply).toBe(setup.promotionSupply)
   expect(nextTurn.promotionSupply).toBe(setup.promotionSupply)
-  expect(endingCurrentRound.promotionSupply).toBe(setup.promotionSupply)
+  expect(endingCurrentRound.state.promotionSupply).toBe(setup.promotionSupply)
 })
 
 it('сохраняет в GameState восемь уникальных пар художников и открывает одного синего', () => {
@@ -225,7 +225,7 @@ it('детерминированно готовит, замораживает и
   expect(Object.isFrozen(first.artistMarket.unselectedArtistIds)).toBe(true)
   expect(first.artistMarket.slots.every(Object.isFrozen)).toBe(true)
   expect(regularPlay.artistMarket).toBe(first.artistMarket)
-  expect(endingCurrentRound.artistMarket).toBe(first.artistMarket)
+  expect(endingCurrentRound.state.artistMarket).toBe(first.artistMarket)
 })
 
 it('сохраняет в GameState бонусы, коллекционеров и подписи подготовленных художников', () => {
@@ -270,7 +270,7 @@ it('детерминированно готовит, замораживает и
   expect(Object.isFrozen(first.artistSetup.unusedBonuses)).toBe(true)
   expect(first.artistSetup.slots.every(Object.isFrozen)).toBe(true)
   expect(regularPlay.artistSetup).toBe(first.artistSetup)
-  expect(endingCurrentRound.artistSetup).toBe(first.artistSetup)
+  expect(endingCurrentRound.state.artistSetup).toBe(first.artistSetup)
 })
 
 it.each([
@@ -318,7 +318,7 @@ it('детерминированно готовит, замораживает и
   expect(Object.isFrozen(first.visitorBag.visitors)).toBe(true)
   expect(first.visitorBag.visitors.every(Object.isFrozen)).toBe(true)
   expect(regularPlay.visitorBag).toBe(first.visitorBag)
-  expect(endingCurrentRound.visitorBag).toBe(first.visitorBag)
+  expect(endingCurrentRound.state.visitorBag).toBe(first.visitorBag)
 })
 
 it.each([
@@ -350,8 +350,8 @@ it('детерминированно размещает, замораживае�
   expect(first.vestibuleVisitors.every(Object.isFrozen)).toBe(true)
   expect(regularPlay.plazaVisitors).toBe(first.plazaVisitors)
   expect(regularPlay.vestibuleVisitors).toBe(first.vestibuleVisitors)
-  expect(endingCurrentRound.plazaVisitors).toBe(first.plazaVisitors)
-  expect(endingCurrentRound.vestibuleVisitors).toBe(first.vestibuleVisitors)
+  expect(endingCurrentRound.state.plazaVisitors).toBe(first.plazaVisitors)
+  expect(endingCurrentRound.state.vestibuleVisitors).toBe(first.vestibuleVisitors)
 })
 
 it('сохраняет в GameState четыре стопки работ без потерь и дубликатов', () => {
@@ -391,7 +391,7 @@ it('детерминированно готовит, замораживает и
   expect(Object.isFrozen(first.artworkMarket.openArtworksByGenre)).toBe(true)
   expect(Object.isFrozen(first.artworkMarket.remainingArtworksByGenre)).toBe(true)
   expect(regularPlay.artworkMarket).toBe(first.artworkMarket)
-  expect(endingCurrentRound.artworkMarket).toBe(first.artworkMarket)
+  expect(endingCurrentRound.state.artworkMarket).toBe(first.artworkMarket)
 })
 
 it('сохраняет в GameState точные версии правил, компонентов и алгоритма подготовки', () => {
@@ -420,7 +420,7 @@ it('сохраняет тот же замороженный объект вер�
 
   expect(regularPlay.setupVersions).toBe(setup.setupVersions)
   expect(nextTurn.setupVersions).toBe(setup.setupVersions)
-  expect(endingCurrentRound.setupVersions).toBe(setup.setupVersions)
+  expect(endingCurrentRound.state.setupVersions).toBe(setup.setupVersions)
 })
 
 it.each([
@@ -466,7 +466,7 @@ it('детерминированно раздаёт, глубоко замора
   expect(Object.isFrozen(first.privateGoals.remainingDealerGoals)).toBe(true)
   expect(Object.values(first.privateGoals.goalsByPlayer).every(Object.isFrozen)).toBe(true)
   expect(regularPlay.privateGoals).toBe(first.privateGoals)
-  expect(endingCurrentRound.privateGoals).toBe(first.privateGoals)
+  expect(endingCurrentRound.state.privateGoals).toBe(first.privateGoals)
 })
 
 it.each([
@@ -500,7 +500,7 @@ it('глубоко замораживает и сохраняет планшет
   expect(setup.playerBoards.every(board => Object.isFrozen(board.assistants))).toBe(true)
   expect(regularPlay.playerBoards).toBe(completedSetup.playerBoards)
   expect(nextTurn.playerBoards).toBe(completedSetup.playerBoards)
-  expect(endingCurrentRound.playerBoards).toBe(completedSetup.playerBoards)
+  expect(endingCurrentRound.state.playerBoards).toBe(completedSetup.playerBoards)
 })
 
 it.each([
@@ -561,7 +561,7 @@ it('детерминированно готовит, замораживает и
   expect(Object.isFrozen(first.masterpieceAuction.artworks)).toBe(true)
   expect(first.masterpieceAuction.artworks.every(Object.isFrozen)).toBe(true)
   expect(regularPlay.masterpieceAuction).toBe(first.masterpieceAuction)
-  expect(endingCurrentRound.masterpieceAuction).toBe(first.masterpieceAuction)
+  expect(endingCurrentRound.state.masterpieceAuction).toBe(first.masterpieceAuction)
 })
 
 it.each([
@@ -603,7 +603,7 @@ it('детерминированно готовит, замораживает и
   expect(first.internationalMarket.marketReputationCells.every(Object.isFrozen)).toBe(true)
   expect(first.internationalMarket.locationReputationTokens.every(Object.isFrozen)).toBe(true)
   expect(regularPlay.internationalMarket).toBe(completedSetup.internationalMarket)
-  expect(endingCurrentRound.internationalMarket).toBe(completedSetup.internationalMarket)
+  expect(endingCurrentRound.state.internationalMarket).toBe(completedSetup.internationalMarket)
 })
 
 it( 'отклоняет число игроков, не совпадающее с конфигурацией', () => {
@@ -854,17 +854,21 @@ it('запускает завершение с новым замороженны
 
   expect(trigger).not.toBe(state)
   expect(Object.isFrozen(trigger)).toBe(true)
+  expect(Object.isFrozen(trigger.state)).toBe(true)
+  expect(Object.isFrozen(trigger.events)).toBe(true)
+  expect(trigger.events).toEqual([{ type: 'GameEndTriggered' }])
+  expect(Object.isFrozen(trigger.events[0])).toBe(true)
   expect(state).toEqual(stateBefore)
 
-  expect(trigger.id).toBe(state.id)
-  expect(trigger.phase).toBe('ending_current_round')
-  expect(trigger.status).toBe('in_progress')
-  expect(trigger.round).toBe(10)
-  expect(trigger.endTriggeredRound).toBe(10)
-  expect(trigger.activePlayerId).toBe('player-1')
-  expect(trigger.firstPlayerId).toBe('player-2')
-  expect(trigger.config).toBe(state.config)
-  expect(trigger.players).toBe(state.players)
+  expect(trigger.state.id).toBe(state.id)
+  expect(trigger.state.phase).toBe('ending_current_round')
+  expect(trigger.state.status).toBe('in_progress')
+  expect(trigger.state.round).toBe(10)
+  expect(trigger.state.endTriggeredRound).toBe(10)
+  expect(trigger.state.activePlayerId).toBe('player-1')
+  expect(trigger.state.firstPlayerId).toBe('player-2')
+  expect(trigger.state.config).toBe(state.config)
+  expect(trigger.state.players).toBe(state.players)
 })
 
 it('отклоняет передачу хода при пустом ID активного игрока', () => {
@@ -988,7 +992,7 @@ it('переводит игру в фазу обычной игры при за�
 
 it('переводит игру в фазу завершения текущего раунда', () => {
   const state: GameState = {
-    ...triggerGameEnd(startGame(createGame(twoPlayerGameConfig, twoPlayerConfigs))),
+    ...triggerGameEnd(startGame(createGame(twoPlayerGameConfig, twoPlayerConfigs))).state,
     id: 'game-1',
     status: 'in_progress',
     phase: 'ending_current_round',
@@ -1012,7 +1016,7 @@ it('переводит игру в фазу завершения текущег�
 
 it('отклоняет передачу хода в фазе итогового подсчёта', () => {
   const state: GameState = {
-    ...triggerGameEnd(startGame(createGame(twoPlayerGameConfig, twoPlayerConfigs))),
+    ...triggerGameEnd(startGame(createGame(twoPlayerGameConfig, twoPlayerConfigs))).state,
     id: 'game-1',
     status: 'in_progress',
     phase: 'final_scoring',
@@ -1062,7 +1066,7 @@ it('сохраняет активного и первого игроков пр�
 
 it('передаёт ход в финальном раунде', () => {
   const state: GameState = {
-    ...triggerGameEnd(startGame(createGame(twoPlayerGameConfig, twoPlayerConfigs))),
+    ...triggerGameEnd(startGame(createGame(twoPlayerGameConfig, twoPlayerConfigs))).state,
     id: 'game-1',
     status: 'in_progress',
     phase: 'final_round',
@@ -1102,14 +1106,14 @@ it('запускает завершение только из фазы обыч�
   const trigger = triggerGameEnd(state)
   const triggerClone = structuredClone(trigger)
 
-  expect(trigger.phase).toBe('ending_current_round')
-  expect(trigger.endTriggeredRound).toBe(10)
-  expect(trigger.players).toEqual(state.players)
-  expect(trigger.config).toEqual(state.config)
-  expect(trigger.firstPlayerId).toBe(state.firstPlayerId)
-  expect(trigger.round).toBe(state.round)
-  expect(trigger.status).toBe(state.status)
-  expect(trigger.activePlayerId).toBe(state.activePlayerId)
+  expect(trigger.state.phase).toBe('ending_current_round')
+  expect(trigger.state.endTriggeredRound).toBe(10)
+  expect(trigger.state.players).toEqual(state.players)
+  expect(trigger.state.config).toEqual(state.config)
+  expect(trigger.state.firstPlayerId).toBe(state.firstPlayerId)
+  expect(trigger.state.round).toBe(state.round)
+  expect(trigger.state.status).toBe(state.status)
+  expect(trigger.state.activePlayerId).toBe(state.activePlayerId)
   expect(trigger).toEqual(triggerClone)
 })
 
@@ -1118,7 +1122,7 @@ it('отклоняет повторный запуск завершения', ()
   const endingState = triggerGameEnd(regularState)
   const endingStateBefore = structuredClone(endingState)
 
-  expect(() => triggerGameEnd(endingState)).toThrow('Only regular_play')
+  expect(() => triggerGameEnd(endingState.state)).toThrow('Only regular_play')
   expect(endingState).toEqual(endingStateBefore)
 })
 
@@ -1139,7 +1143,7 @@ it('переходит к итоговому подсчёту после все�
   }
 
   const trigger = triggerGameEnd(state)
-  const stateAfterFirstAdvance = advanceTurn(trigger)
+  const stateAfterFirstAdvance = advanceTurn(trigger.state)
   const stateAfterSecondAdvance = advanceTurn(stateAfterFirstAdvance)
   const stateAfterThirdAdvance = advanceTurn(stateAfterSecondAdvance)
   const stateAfterFourthAdvance = advanceTurn(stateAfterThirdAdvance)
@@ -1174,7 +1178,7 @@ it('завершает раунды при втором первом игрок�
   }
 
   const trigger = triggerGameEnd(state)
-  const stateAfterFirstAdvance = advanceTurn(trigger)
+  const stateAfterFirstAdvance = advanceTurn(trigger.state)
   const stateAfterSecondAdvance = advanceTurn(stateAfterFirstAdvance)
   const stateAfterThirdAdvance = advanceTurn(stateAfterSecondAdvance)
   const stateAfterFourthAdvance = advanceTurn(stateAfterThirdAdvance)
@@ -1205,7 +1209,7 @@ it('завершает раунды при втором первом игрок�
   }
 
   const trigger = triggerGameEnd(state)
-  const stateAfterFirstAdvance = advanceTurn(trigger)
+  const stateAfterFirstAdvance = advanceTurn(trigger.state)
   const stateAfterSecondAdvance = advanceTurn(stateAfterFirstAdvance)
   const stateAfterThirdAdvance = advanceTurn(stateAfterSecondAdvance)
   const stateAfterFourthAdvance = advanceTurn(stateAfterThirdAdvance)
@@ -1411,7 +1415,7 @@ it('влияние и монеты не изменяются с раундами
   const startedGame = startGame(customCreatedGame)
   const stateAfterFirstAdvance = advanceTurn(startedGame)
   const endTriggeredState = triggerGameEnd(stateAfterFirstAdvance)
-  const stateAfterSecondAdvance = advanceTurn(endTriggeredState)
+  const stateAfterSecondAdvance = advanceTurn(endTriggeredState.state)
   const stateAfterThirdAdvance = advanceTurn(stateAfterSecondAdvance)
   const stateAfterFourthAdvance = advanceTurn(stateAfterThirdAdvance)
   const stateAfterFifthAdvance = advanceTurn(stateAfterFourthAdvance)
@@ -1419,7 +1423,7 @@ it('влияние и монеты не изменяются с раундами
   const stateAfterSeventhAdvance = advanceTurn(stateAfterSixthAdvance)
   const stateAfterEighthAdvance = advanceTurn(stateAfterSeventhAdvance)
 
-  const states = [startedGame, stateAfterFirstAdvance, endTriggeredState, stateAfterSecondAdvance, stateAfterThirdAdvance, stateAfterFourthAdvance, stateAfterFifthAdvance, stateAfterSixthAdvance, stateAfterSeventhAdvance, stateAfterEighthAdvance]
+  const states = [startedGame, stateAfterFirstAdvance, endTriggeredState.state, stateAfterSecondAdvance, stateAfterThirdAdvance, stateAfterFourthAdvance, stateAfterFifthAdvance, stateAfterSixthAdvance, stateAfterSeventhAdvance, stateAfterEighthAdvance]
   states.forEach(state => {
     expect(state.players).toEqual(snapshot.players)
     expect(state.players).toBe(customCreatedGame.players)
