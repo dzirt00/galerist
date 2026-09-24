@@ -772,11 +772,15 @@ it('завершает прежний и начинает новый ход пр
   expect(transition.state.activePlayerId).toBe('player-1')
   expect(transition.events).toEqual([
     { type: 'TurnEnded', playerId: 'player-2' },
+    { type: 'RoundEnded', round: 1 },
+    { type: 'RoundStarted', round: 2 },
     { type: 'TurnStarted', playerId: 'player-1' },
   ])
+  expect(projectEventsForViewer(transition.events, transition.state, null)).toEqual(
+    transition.events,
+  )
   expect(Object.isFrozen(transition.events)).toBe(true)
-  expect(Object.isFrozen(transition.events[0])).toBe(true)
-  expect(Object.isFrozen(transition.events[1])).toBe(true)
+  expect(transition.events.every(Object.isFrozen)).toBe(true)
 })
 
 it('начинает новый раунд с первого игрока', () => {
@@ -786,13 +790,24 @@ it('начинает новый раунд с первого игрока', () =
   const startedGame = startGame(game)
 
   const nextStep1 = advanceTurn(startedGame).state
-  const nextStep2 = advanceTurn(nextStep1).state
+  const transition = advanceTurn(nextStep1)
+  const nextStep2 = transition.state
 
   expect(nextStep1.activePlayerId).toBe('player-2');
   expect(nextStep2.activePlayerId).toBe('player-1');
   expect(nextStep1.round).toBe(1);
   expect(nextStep2.round).toBe(2);
   expect(nextStep1).not.toBe(nextStep2);
+  expect(transition.events).toEqual([
+    { type: 'TurnEnded', playerId: 'player-2' },
+    { type: 'RoundEnded', round: 1 },
+    { type: 'RoundStarted', round: 2 },
+    { type: 'TurnStarted', playerId: 'player-1' },
+  ])
+  expect(projectEventsForViewer(transition.events, nextStep2, 'player-1')).toEqual(
+    transition.events,
+  )
+  expect(transition.events.every(Object.isFrozen)).toBe(true)
   expect( () => {
     ( nextStep2 as any ).round = 3;
   } ).toThrow();
@@ -1121,6 +1136,7 @@ it('передаёт ход в финальном раунде', () => {
   expect(at.endTriggeredRound).toBe(2)
   expect(transition.events).toEqual([
     { type: 'TurnEnded', playerId: 'player-1' },
+    { type: 'RoundEnded', round: 10 },
     { type: 'FinalScoringStarted' },
   ])
   expect(projectEventsForViewer(transition.events, at, null)).toEqual(transition.events)

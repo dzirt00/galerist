@@ -87,6 +87,11 @@ export function advanceTurn(state: GameState): GameTransition<GameState> {
   const nextRoundNumber = isNewRound ? state.round + 1 : state.round
   const eventTurnEnded = { type: 'TurnEnded', playerId: state.activePlayerId } satisfies GameEvent
   const eventTurnStarted = { type: 'TurnStarted', playerId: nextPlayer } satisfies GameEvent
+  const eventRoundEnded =  { type: 'RoundEnded', round: state.round } satisfies GameEvent
+  const eventRoundStarted =  { type: 'RoundStarted', round: nextRoundNumber } satisfies GameEvent
+  const events = (isNewRound)
+    ? [eventTurnEnded, eventRoundEnded, eventRoundStarted, eventTurnStarted]
+    : [eventTurnEnded, eventTurnStarted]
 
   if (state.phase === 'final_round') {
     if (isNewRound) {
@@ -96,7 +101,8 @@ export function advanceTurn(state: GameState): GameTransition<GameState> {
         activePlayerId: null,
         endTriggeredRound: state.endTriggeredRound,
         finalInfluenceScored: false
-      },[ eventTurnEnded,  { type: 'FinalScoringStarted'} ])
+      },[ eventTurnEnded, eventRoundEnded, { type: 'FinalScoringStarted'}
+      ])
     }
     return freezeTransition({
       ...state,
@@ -104,7 +110,7 @@ export function advanceTurn(state: GameState): GameTransition<GameState> {
       phase: 'final_round',
       activePlayerId: nextPlayer,
       endTriggeredRound: state.endTriggeredRound,
-    },[eventTurnEnded, eventTurnStarted])
+    },events)
   }
 
   if (state.phase === 'ending_current_round') {
@@ -115,7 +121,7 @@ export function advanceTurn(state: GameState): GameTransition<GameState> {
         phase: 'final_round',
         activePlayerId: nextPlayer,
         endTriggeredRound: state.endTriggeredRound,
-      },[eventTurnEnded, eventTurnStarted])
+      },events)
     }
     return freezeTransition({
       ...state,
@@ -123,7 +129,7 @@ export function advanceTurn(state: GameState): GameTransition<GameState> {
       phase: 'ending_current_round',
       activePlayerId: nextPlayer,
       endTriggeredRound: state.endTriggeredRound,
-    },[eventTurnEnded, eventTurnStarted])
+    },events)
   }
 
   return freezeTransition({
@@ -131,7 +137,7 @@ export function advanceTurn(state: GameState): GameTransition<GameState> {
     round: nextRoundNumber,
     phase: 'regular_play',
     activePlayerId: nextPlayer,
-  },[eventTurnEnded, eventTurnStarted])
+  },events)
 }
 
 /** Запускает доигрывание текущего раунда по END-002. */
