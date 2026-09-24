@@ -747,13 +747,36 @@ it('передаёт ход следующему игроку без измен�
 
   expect(nextStep.activePlayerId).toBe('player-2')
   expect(nextStep.round).toBe(1)
-  expect(transition.events).toEqual([])
+  expect(transition.events).toEqual([
+    { type: 'TurnEnded', playerId: 'player-1' },
+    { type: 'TurnStarted', playerId: 'player-2' },
+  ])
+  expect(projectEventsForViewer(transition.events, nextStep, null)).toEqual(
+    transition.events,
+  )
   expect(Object.isFrozen(transition)).toBe(true)
   expect(Object.isFrozen(transition.state)).toBe(true)
   expect(Object.isFrozen(transition.events)).toBe(true)
   expect(startedGame).not.toBe(nextStep)
   expect(startedGame.activePlayerId).toBe('player-1')
   expect(startedGame.round).toBe(1)
+})
+
+it('завершает прежний и начинает новый ход при входе в финальный раунд', () => {
+  const startedGame = startGame(createGame(twoPlayerGameConfig, twoPlayerConfigs))
+  const endingCurrentRound = triggerGameEnd(startedGame).state
+  const lastEndingTurn = advanceTurn(endingCurrentRound).state
+  const transition = advanceTurn(lastEndingTurn)
+
+  expect(transition.state.phase).toBe('final_round')
+  expect(transition.state.activePlayerId).toBe('player-1')
+  expect(transition.events).toEqual([
+    { type: 'TurnEnded', playerId: 'player-2' },
+    { type: 'TurnStarted', playerId: 'player-1' },
+  ])
+  expect(Object.isFrozen(transition.events)).toBe(true)
+  expect(Object.isFrozen(transition.events[0])).toBe(true)
+  expect(Object.isFrozen(transition.events[1])).toBe(true)
 })
 
 it('начинает новый раунд с первого игрока', () => {
@@ -1096,7 +1119,10 @@ it('передаёт ход в финальном раунде', () => {
   expect(at.phase).toBe('final_scoring')
   expect(at.firstPlayerId).toBe('player-2')
   expect(at.endTriggeredRound).toBe(2)
-  expect(transition.events).toEqual([{ type: 'FinalScoringStarted' }])
+  expect(transition.events).toEqual([
+    { type: 'TurnEnded', playerId: 'player-1' },
+    { type: 'FinalScoringStarted' },
+  ])
   expect(projectEventsForViewer(transition.events, at, null)).toEqual(transition.events)
   expect(projectEventsForViewer(transition.events, at, 'player-1')).toEqual(transition.events)
   expect(Object.isFrozen(transition)).toBe(true)

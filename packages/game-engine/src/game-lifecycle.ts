@@ -85,6 +85,8 @@ export function advanceTurn(state: GameState): GameTransition<GameState> {
   const nextPlayer = state.players[(currentIndex + 1) % state.players.length]!.id
   const isNewRound = nextPlayer === state.firstPlayerId
   const nextRoundNumber = isNewRound ? state.round + 1 : state.round
+  const eventTurnEnded = { type: 'TurnEnded', playerId: state.activePlayerId } satisfies GameEvent
+  const eventTurnStarted = { type: 'TurnStarted', playerId: nextPlayer } satisfies GameEvent
 
   if (state.phase === 'final_round') {
     if (isNewRound) {
@@ -94,7 +96,7 @@ export function advanceTurn(state: GameState): GameTransition<GameState> {
         activePlayerId: null,
         endTriggeredRound: state.endTriggeredRound,
         finalInfluenceScored: false
-      },[{ type: 'FinalScoringStarted'} ])
+      },[ eventTurnEnded,  { type: 'FinalScoringStarted'} ])
     }
     return freezeTransition({
       ...state,
@@ -102,7 +104,7 @@ export function advanceTurn(state: GameState): GameTransition<GameState> {
       phase: 'final_round',
       activePlayerId: nextPlayer,
       endTriggeredRound: state.endTriggeredRound,
-    },[])
+    },[eventTurnEnded, eventTurnStarted])
   }
 
   if (state.phase === 'ending_current_round') {
@@ -113,7 +115,7 @@ export function advanceTurn(state: GameState): GameTransition<GameState> {
         phase: 'final_round',
         activePlayerId: nextPlayer,
         endTriggeredRound: state.endTriggeredRound,
-      },[])
+      },[eventTurnEnded, eventTurnStarted])
     }
     return freezeTransition({
       ...state,
@@ -121,7 +123,7 @@ export function advanceTurn(state: GameState): GameTransition<GameState> {
       phase: 'ending_current_round',
       activePlayerId: nextPlayer,
       endTriggeredRound: state.endTriggeredRound,
-    },[])
+    },[eventTurnEnded, eventTurnStarted])
   }
 
   return freezeTransition({
@@ -129,7 +131,7 @@ export function advanceTurn(state: GameState): GameTransition<GameState> {
     round: nextRoundNumber,
     phase: 'regular_play',
     activePlayerId: nextPlayer,
-  },[])
+  },[eventTurnEnded, eventTurnStarted])
 }
 
 /** Запускает доигрывание текущего раунда по END-002. */
