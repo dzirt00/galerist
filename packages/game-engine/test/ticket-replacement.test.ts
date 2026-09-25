@@ -35,7 +35,7 @@ describe('Замена недоступного билета через replaceU
     })
   })
 
-  it('при полностью пустой кассе выдаёт билет из сброса без обмена', () => {
+  it('при полностью пустой кассе не выдаёт билет из сброса', () => {
     const result = replaceUnavailableTicket({
       supplies: { office: { red: 0, blue: 0 }, discard: { red: 1, blue: 4 } },
       requiredColor: 'red',
@@ -44,9 +44,25 @@ describe('Замена недоступного билета через replaceU
     expect(result).toEqual({
       supplies: {
         office: { red: 0, blue: 0 },
-        discard: { red: 0, blue: 4 },
+        discard: { red: 1, blue: 4 },
       },
-      grantedColor: 'red',
+      grantedColor: null,
+      exchanged: false,
+    })
+  })
+
+  it('не требует цвет замены, если требуемого билета нет в сбросе', () => {
+    const result = replaceUnavailableTicket({
+      supplies: { office: { red: 0, blue: 1 }, discard: { red: 0, blue: 2 } },
+      requiredColor: 'red',
+    })
+
+    expect(result).toEqual({
+      supplies: {
+        office: { red: 0, blue: 1 },
+        discard: { red: 0, blue: 2 },
+      },
+      grantedColor: null,
       exchanged: false,
     })
   })

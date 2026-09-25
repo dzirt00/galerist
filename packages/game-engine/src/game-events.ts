@@ -1,4 +1,4 @@
-import { deepFreeze, type StartingLocationId } from './component-catalog.js'
+import { deepFreeze, type SetupTicketColor, type StartingLocationId } from './component-catalog.js'
 import type { PlayerId } from './types.js'
 
 export type GameEvent =
@@ -22,6 +22,17 @@ export type GameEvent =
   | { readonly type: 'RoundEnded'; readonly round: number }
   | { readonly type: 'GameFinished'; readonly gameId: string }
   | { readonly type: 'TurnEnded'; readonly playerId: PlayerId }
+  | {
+      readonly type: 'TicketReceived'
+      readonly playerId: PlayerId
+      readonly color: SetupTicketColor
+    }
+  | {
+      readonly type: 'TicketExchanged'
+      readonly playerId: PlayerId
+      readonly discardedColor: SetupTicketColor
+      readonly receivedColor: SetupTicketColor
+    }
   | {
       readonly type: 'FinalScoringCompleted'
       readonly winnerIds: readonly string[]

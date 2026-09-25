@@ -18,6 +18,7 @@ function createPlayer(
     kind: 'human',
     coins,
     influence,
+    ticketsByColor: { B: 0, R: 0, W: 0 },
   }
 }
 

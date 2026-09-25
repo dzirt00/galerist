@@ -5,14 +5,14 @@ import type {
 } from '../src/index.js'
 
 export const twoPlayerStates: PlayerState[] = [
-  { id: 'player-1', name: 'Алина', kind: 'human', coins: 10, influence: 10 },
-  { id: 'player-2', name: 'Алина', kind: 'human', coins: 10, influence: 10 },
+  { id: 'player-1', name: 'Алина', kind: 'human', coins: 10, influence: 10, ticketsByColor: { B: 0, R: 0, W: 0 } },
+  { id: 'player-2', name: 'Алина', kind: 'human', coins: 10, influence: 10, ticketsByColor: { B: 0, R: 0, W: 0 } },
 ]
 
 export const threePlayerStates: PlayerState[] = [
-  { id: 'player-1', name: 'Алина1', kind: 'human', coins: 10, influence: 10 },
-  { id: 'player-2', name: 'Алина2', kind: 'human', coins: 10, influence: 10 },
-  { id: 'player-3', name: 'Алина3', kind: 'human', coins: 10, influence: 10 },
+  { id: 'player-1', name: 'Алина1', kind: 'human', coins: 10, influence: 10, ticketsByColor: { B: 0, R: 0, W: 0 } },
+  { id: 'player-2', name: 'Алина2', kind: 'human', coins: 10, influence: 10, ticketsByColor: { B: 0, R: 0, W: 0 } },
+  { id: 'player-3', name: 'Алина3', kind: 'human', coins: 10, influence: 10, ticketsByColor: { B: 0, R: 0, W: 0 } },
 ]
 
 export const setupGameStateFixture = {

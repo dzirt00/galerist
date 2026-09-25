@@ -93,6 +93,10 @@ export {
   type TicketReplacementResult,
   type TicketSupplies,
 } from './ticket-replacement.js'
+export {
+  applyTicketRewardToGameState,
+  type TicketRewardRequest,
+} from './ticket-reward-to-game-state.js'
 export {prepareOrderMarket, type PreparedOrderMarket} from './setup-orders.js'
 export {
   prepareArtistMarket,

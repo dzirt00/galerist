@@ -63,6 +63,22 @@ function requireSafeInteger(value: unknown, name: string): number {
   return value as number
 }
 
+/** Проверяет точные неотрицательные запасы трёх цветов билетов. */
+function requireTicketCounts(value: unknown, name: string): void {
+  const counts = requireRecord(value, name)
+  const colors = ['B', 'R', 'W'] as const
+  if (
+    Object.keys(counts).length !== colors.length
+    || !colors.every(color => Object.hasOwn(counts, color))
+  ) {
+    fail(`${name} must contain exactly B, R, and W`)
+  }
+  colors.forEach(color => {
+    const count = requireSafeInteger(counts[color], `${name}.${color}`)
+    if (count < 0) fail(`${name}.${color} must be non-negative`)
+  })
+}
+
 /** Проверяет, что ссылка ведёт на участника восстанавливаемой партии. */
 function requirePlayerReference(
   value: unknown,
@@ -81,6 +97,7 @@ function validateCommonCollections(state: UnknownRecord): void {
   const objectFields = [
     'orderMarket',
     'ticketOffice',
+    'ticketDiscard',
     'promotionSupply',
     'artistMarket',
     'artistSetup',
@@ -107,6 +124,10 @@ function validateCommonCollections(state: UnknownRecord): void {
     setupVersions.setupAlgorithmVersion,
     'setupVersions.setupAlgorithmVersion',
   )
+
+  const ticketOffice = requireRecord(state.ticketOffice, 'ticketOffice')
+  requireTicketCounts(ticketOffice.ticketsByColor, 'ticketOffice.ticketsByColor')
+  requireTicketCounts(state.ticketDiscard, 'ticketDiscard')
 }
 
 /** Проверяет игроков и возвращает множество допустимых ссылок на них. */
@@ -131,6 +152,7 @@ function validatePlayers(state: UnknownRecord): ReadonlySet<PlayerId> {
     if (influence < 0 || influence > 35) {
       fail(`players[${index}].influence must be from 0 to 35`)
     }
+    requireTicketCounts(player.ticketsByColor, `players[${index}].ticketsByColor`)
     if (playerIds.has(playerId)) {
       fail('players must have unique IDs')
     }
@@ -257,8 +279,8 @@ function validatePhase(
 /** Проверяет JSON-снимок по ADR-001/ADR-002 и возвращает независимый замороженный GameState. */
 export function restoreGameState(input: unknown): GameState {
   const state = requireRecord(input, 'state')
-  if (state.stateSchemaVersion !== 3) {
-    fail('stateSchemaVersion must equal 3')
+  if (state.stateSchemaVersion !== 4) {
+    fail('stateSchemaVersion must equal 4')
   }
   requireNonEmptyString(state.id, 'id')
 

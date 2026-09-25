@@ -16,6 +16,7 @@ function createPlayer(
     kind: 'human',
     coins,
     influence,
+    ticketsByColor: { B: 0, R: 0, W: 0 },
   })
 }
 
@@ -37,6 +38,7 @@ describe('Итоговая выплата игроку через applyFinalInfl
         kind: 'human',
         coins: expectedCoins,
         influence,
+        ticketsByColor: { B: 0, R: 0, W: 0 },
       })
     },
   )
@@ -72,6 +74,7 @@ describe('Итоговые выплаты игрокам через applyFinalIn
         kind: 'human',
         coins: 10,
         influence: 0,
+        ticketsByColor: { B: 0, R: 0, W: 0 },
       },
       {
         id: 'second',
@@ -79,6 +82,7 @@ describe('Итоговые выплаты игрокам через applyFinalIn
         kind: 'bot',
         coins: 7,
         influence: 35,
+        ticketsByColor: { B: 0, R: 0, W: 0 },
       },
     ]
 
@@ -98,6 +102,7 @@ describe('Итоговые выплаты игрокам через applyFinalIn
       kind: 'human',
       coins: 4,
       influence: 23,
+      ticketsByColor: { B: 0, R: 0, W: 0 },
     }
     const secondPlayer: PlayerState = {
       id: 'second',
@@ -105,6 +110,7 @@ describe('Итоговые выплаты игрокам через applyFinalIn
       kind: 'bot',
       coins: 6,
       influence: 34,
+      ticketsByColor: { B: 0, R: 0, W: 0 },
     }
     const players: readonly PlayerState[] = [firstPlayer, secondPlayer]
     const snapshot = structuredClone(players)

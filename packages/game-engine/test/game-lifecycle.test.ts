@@ -75,8 +75,8 @@ it('отклоняет запуск завершённой игры без из�
     id: 'game-1',
     config: twoPlayerGameConfig,
     players: [
-      { id: 'player-1', name: 'Алина', kind: 'human', coins: 10, influence: 10 },
-      { id: 'player-2', name: 'Алина', kind: 'human', coins: 10, influence: 10 },
+      { id: 'player-1', name: 'Алина', kind: 'human', coins: 10, influence: 10, ticketsByColor: { B: 0, R: 0, W: 0 } },
+      { id: 'player-2', name: 'Алина', kind: 'human', coins: 10, influence: 10, ticketsByColor: { B: 0, R: 0, W: 0 } },
     ],
     phase: 'finished',
     status: 'finished',
@@ -636,7 +636,8 @@ it( 'запрещает изменение списка игроков в сос
     name: 'Алина',
     kind: 'human',
     coins: 10,
-    influence: 10
+    influence: 10,
+    ticketsByColor: { B: 0, R: 0, W: 0 },
   }
   const state = createGame( { playerCount: 2, seed: 42 }, twoPlayerConfigs )
 
@@ -1094,10 +1095,7 @@ it('сохраняет активного и первого игроков пр�
       playerCount: 2,
       seed: 42,
     },
-    players: [
-      { id: 'player-1', name: 'Алина', kind: 'human', coins: 10, influence: 10 },
-      { id: 'player-2', name: 'Бот', kind: 'bot', coins: 10, influence: 10 },
-    ],
+    players: twoPlayerStates,
     firstPlayerId: 'player-2',
   }
   const stateAfterFirstAdvance = advanceTurn(state).state
@@ -1443,32 +1441,36 @@ it('влияние и монеты не изменяются с раундами
     ...initialSetup,
     players: Object.freeze([
       {
+        ...initialSetup.players[0]!,
         id: 'player-1',
         name: 'Алина1',
         kind: 'human' as const,
         coins: 18,
-        influence: 15
+        influence: 15,
       },
       {
+        ...initialSetup.players[1]!,
         id: 'player-2',
         name: 'Алина2',
         kind: 'human' as const,
         coins: 51,
-        influence: 9
+        influence: 9,
       },
       {
+        ...initialSetup.players[2]!,
         id: 'player-3',
         name: 'Алина1',
         kind: 'human' as const,
         coins: 61,
-        influence: 23
+        influence: 23,
       },
       {
+        ...initialSetup.players[3]!,
         id: 'player-4',
         name: 'Алина',
         kind: 'human' as const,
         coins: 31,
-        influence: 22
+        influence: 22,
       },
     ]),
   })

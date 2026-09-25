@@ -100,17 +100,10 @@ export function replaceUnavailableTicket(
   const officeHasTickets = Object.values(office).some(count => count > 0)
 
   if (!officeHasTickets) {
-    // При пустой кассе билет из сброса выдаётся без обязательного обмена.
-    if (requiredInDiscard === 0) {
-      return createResult(office, discard, null, false)
-    }
-
-    return createResult(
-      office,
-      { ...discard, [input.requiredColor]: requiredInDiscard - 1 },
-      input.requiredColor,
-      false,
-    )
+    return createResult(office, discard, null, false)
+  }
+  if (requiredInDiscard === 0) {
+    return createResult(office, discard, null, false)
   }
 
   if (input.replacementColor === undefined) {
@@ -122,10 +115,6 @@ export function replaceUnavailableTicket(
   if (ticketCount(office, input.replacementColor) === 0) {
     throw new Error('Replacement ticket is unavailable in office')
   }
-  if (requiredInDiscard === 0) {
-    return createResult(office, discard, null, false)
-  }
-
   return createResult(
     {
       ...office,

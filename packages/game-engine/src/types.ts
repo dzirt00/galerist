@@ -8,7 +8,7 @@ import type { PreparedArtworkMarket } from "./setup-artworks.js";
 import type { PreparedMasterpieceAuction } from "./setup-masterpieces.js";
 import type { PreparedPrivateGoals } from './setup-goals.js'
 import type { PlayerBoard } from "./player-boards.js";
-import type { StartingLocationId } from "./component-catalog.js";
+import type { SetupTicketColor, StartingLocationId } from "./component-catalog.js";
 
 export type GameId = string
 export type PlayerId = string
@@ -100,10 +100,11 @@ export interface PlayerState {
   readonly kind: PlayerKind
   readonly coins: number
   readonly influence: number
+  readonly ticketsByColor: Readonly<Record<SetupTicketColor, number>>
 }
 
 export interface GameStateBase {
-  readonly stateSchemaVersion: 3
+  readonly stateSchemaVersion: 4
   readonly id: GameId
   readonly config: Readonly<GameConfig>
   readonly players: readonly PlayerState[]
@@ -125,6 +126,7 @@ export interface GameStateBase {
     readonly componentsVersion: string
     readonly setupAlgorithmVersion: 'setup-rng-v1'
   }
+  readonly ticketDiscard: Readonly<Record<SetupTicketColor, number>>
 }
 
 export interface RegularPlayGameState extends GameStateBase {

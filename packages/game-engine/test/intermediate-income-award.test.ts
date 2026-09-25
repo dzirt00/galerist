@@ -19,6 +19,7 @@ it.each([
       kind: kind,
       influence: influence,
       coins: coins,
+      ticketsByColor: { B: 0, R: 0, W: 0 },
     })
 
     const playerStateRes: PlayerState = Object.freeze({
@@ -27,6 +28,7 @@ it.each([
       kind: kind,
       influence: influenceRes,
       coins: coinsRes,
+      ticketsByColor: { B: 0, R: 0, W: 0 },
     })
 
     const visitor: IntermediateVisitorCounts = {
@@ -58,6 +60,7 @@ it.each([
       kind,
       influence,
       coins,
+      ticketsByColor: { B: 0, R: 0, W: 0 },
     })
 
     const visitor: IntermediateVisitorCounts = {
@@ -72,6 +75,7 @@ it.each([
       kind,
       influence: influenceRes,
       coins: coinsRes,
+      ticketsByColor: { B: 0, R: 0, W: 0 },
     }
 
     const updatedPlayer = applyIntermediateIncomeToPlayer(playerState, visitor)

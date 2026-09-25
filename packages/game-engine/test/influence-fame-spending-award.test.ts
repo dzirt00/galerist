@@ -14,6 +14,7 @@ function createPlayer(influence: number): PlayerState {
     kind: 'human',
     coins: 7,
     influence,
+    ticketsByColor: { B: 0, R: 0, W: 0 },
   }
 }
 

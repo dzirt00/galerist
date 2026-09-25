@@ -44,6 +44,7 @@ export function projectGameForViewer(
       remainingOrderCount: state.orderMarket.remainingOrderIds.length,
     },
     ticketOffice: state.ticketOffice,
+    ticketDiscard: state.ticketDiscard,
     promotionSupply: state.promotionSupply,
     artistMarket: {
       slots: state.artistMarket.slots,
