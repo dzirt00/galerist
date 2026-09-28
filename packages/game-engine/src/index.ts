@@ -40,6 +40,7 @@ export {
   type PlayerBoard,
 } from './player-boards.js'
 export {completeFinalScoring} from './final-scoring-completion.js'
+export {applyArtworkPurchasePaymentToGameState, type ArtworkPurchasePaymentRequest,} from './artwork-purchase-payment-state.js'
 export { type HireQueueEntry, type HireAssistantsResult, type HireAssistantsInput, hireAssistants} from './hiring.js'
 export { applyArtworkPurchaseCostAndMoveVisitors, type ArtworkPurchaseType, type ApplyArtworkPurchaseInput, type ArtworkPurchasePaymentResult } from './artwork-purchase-payment.js'
 export { refillArtworkMarket, type ArtworkMarketRefillResult } from './artwork-market-refill.js'

@@ -23,6 +23,14 @@ export type GameEvent =
   | { readonly type: 'GameFinished'; readonly gameId: string }
   | { readonly type: 'TurnEnded'; readonly playerId: PlayerId }
   | {
+      readonly type: 'ArtworkSelected'
+      readonly playerId: PlayerId
+      readonly artistId: string
+      readonly artworkId: string
+    }
+  | { readonly type: 'CoinsSpent'; readonly playerId: PlayerId, paid: number }
+  | { readonly type: 'VisitorMoved'; readonly visitorId: string, from: 'artwork', to: 'plaza'}
+  | {
       readonly type: 'TicketReceived'
       readonly playerId: PlayerId
       readonly color: SetupTicketColor
