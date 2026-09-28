@@ -43,21 +43,19 @@ export function applyArtworkPurchaseCostAndMoveVisitors(
 
   // Оплата завершается до подготовки перемещения: любой отказ оставляет работу
   // и площадь без изменений и не возвращает частично применённый результат.
-  if ( copyPlayer.coins >= cost ) {
-    copyPlayer = {
-      ...input.player,
-      coins: input.player.coins - cost
-    }
-  } else {
-    if ( input.targetInfluence === undefined ) {
-      throw new RangeError( 'Insufficient funds' )
-    }
-
+  if ( input.targetInfluence !== undefined ) {
     copyPlayer = spendInfluenceForImmediatePayment(
       copyPlayer,
       cost,
       input.targetInfluence,
     )
+  } else if ( copyPlayer.coins >= cost ) {
+    copyPlayer = {
+      ...input.player,
+      coins: input.player.coins - cost
+    }
+  } else {
+    throw new RangeError( 'Insufficient funds' )
   }
 
   // Каждый вложенный объект копируется до deepFreeze, иначе заморозка результата

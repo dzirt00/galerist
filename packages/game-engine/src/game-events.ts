@@ -19,6 +19,8 @@ export type GameEvent =
   | { readonly type: 'PrivateGoalsDealt'; readonly playerId: PlayerId }
   | { readonly type: 'FinalScoringStarted' }
   | { readonly type: 'GameEndTriggered' }
+  | { readonly type: 'InfluenceSpent', readonly playerId: PlayerId, readonly spentInfluence: number }
+  | { readonly type: 'CoinsReceived', readonly playerId: PlayerId, readonly coinsReceived: number }
   | { readonly type: 'RoundEnded'; readonly round: number }
   | { readonly type: 'GameFinished'; readonly gameId: string }
   | { readonly type: 'TurnEnded'; readonly playerId: PlayerId }

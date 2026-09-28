@@ -132,11 +132,78 @@ describe('applyArtworkPurchasePaymentToGameState', () => {
       coins: 1,
       influence: 0,
     })
-    expect(transition.events[1]).toEqual({
-      type: 'CoinsSpent',
-      playerId: request.playerId,
-      paid: 3,
+    expect(transition.events.slice(1, 4)).toEqual([
+      {
+        type: 'InfluenceSpent',
+        playerId: request.playerId,
+        spentInfluence: 10,
+      },
+      {
+        type: 'CoinsReceived',
+        playerId: request.playerId,
+        coinsReceived: 4,
+      },
+      {
+        type: 'CoinsSpent',
+        playerId: request.playerId,
+        paid: 3,
+      },
+    ])
+    expect(projectEventsForViewer(transition.events, transition.state, null)).toEqual(
+      transition.events,
+    )
+  })
+
+  it('разрешает конвертировать влияние при достаточном числе собственных монет', () => {
+    const state = createPurchaseState({ coins: 10, currentFame: 3 })
+    const request: ArtworkPurchasePaymentRequest = {
+      ...requestForOpenArtist(state, 'regular'),
+      targetInfluence: 8,
+    }
+    const stateSnapshot = structuredClone(state)
+    const requestSnapshot = structuredClone(request)
+
+    const transition = applyArtworkPurchasePaymentToGameState(state, request)
+
+    expect(transition.state.players[0]).toMatchObject({
+      coins: 8,
+      influence: 8,
     })
+    expect(transition.events.slice(1, 4)).toEqual([
+      {
+        type: 'InfluenceSpent',
+        playerId: request.playerId,
+        spentInfluence: 2,
+      },
+      {
+        type: 'CoinsReceived',
+        playerId: request.playerId,
+        coinsReceived: 1,
+      },
+      {
+        type: 'CoinsSpent',
+        playerId: request.playerId,
+        paid: 3,
+      },
+    ])
+    expect(state).toEqual(stateSnapshot)
+    expect(request).toEqual(requestSnapshot)
+    expect(Object.isFrozen(transition)).toBe(true)
+    expect(transition.events.every(Object.isFrozen)).toBe(true)
+  })
+
+  it('отклоняет невалидную цель влияния при достаточном числе монет', () => {
+    const state = createPurchaseState({ coins: 10, currentFame: 3 })
+    const request: ArtworkPurchasePaymentRequest = {
+      ...requestForOpenArtist(state, 'regular'),
+      targetInfluence: 7,
+    }
+    const snapshot = structuredClone(state)
+
+    expect(() => applyArtworkPurchasePaymentToGameState(state, request)).toThrow(
+      'Invalid influence spend',
+    )
+    expect(state).toEqual(snapshot)
   })
 
   it('атомарно отклоняет покупку при недостатке средств', () => {
