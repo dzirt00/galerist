@@ -35,9 +35,13 @@ function visitor(id: string, type: VisitorInstance['type']): VisitorInstance {
 
 describe('Оплата работы и перенос посетителей через applyArtworkPurchaseCostAndMoveVisitors', () => {
   it.each([
-    { purchaseType: 'regular' as const, expectedCoins: 4 },
-    { purchaseType: 'contract' as const, expectedCoins: 7 },
-  ])('использует правильную цену для $purchaseType покупки', ({ purchaseType, expectedCoins }) => {
+    { purchaseType: 'regular' as const, expectedCoins: 4, expectedPaid: 6 },
+    { purchaseType: 'contract' as const, expectedCoins: 7, expectedPaid: 3 },
+  ])('возвращает факты оплаты для $purchaseType покупки', ({
+    purchaseType,
+    expectedCoins,
+    expectedPaid,
+  }) => {
     const result = applyArtworkPurchaseCostAndMoveVisitors({
       player: createPlayer(10),
       openArtwork: { artwork: createArtwork(), visitors: [] },
@@ -49,6 +53,11 @@ describe('Оплата работы и перенос посетителей ч�
 
     expect(result.player.coins).toBe(expectedCoins)
     expect(result.player.influence).toBe(10)
+    expect(result).toMatchObject({
+      paid: expectedPaid,
+      spentInfluence: 0,
+      coinsReceived: 0,
+    })
   })
 
   it('доплачивает монетами за достигнутые денежные отметки влияния', () => {
@@ -64,6 +73,11 @@ describe('Оплата работы и перенос посетителей ч�
 
     expect(result.player.coins).toBe(0)
     expect(result.player.influence).toBe(4)
+    expect(result).toMatchObject({
+      paid: 2,
+      spentInfluence: 6,
+      coinsReceived: 2,
+    })
   })
 
   it('переносит всех посетителей с работы на площадь с сохранением порядка', () => {

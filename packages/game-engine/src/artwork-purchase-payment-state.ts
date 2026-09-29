@@ -43,11 +43,6 @@ export function applyArtworkPurchasePaymentToGameState(
     throw new Error('Artwork genre must match artist genre')
   }
 
-  const purchaseCost =
-    purchaseType === 'contract'
-      ? getArtist.initialFame
-      : getArtist.fame!
-
   const inputData: ApplyArtworkPurchaseInput = {
     player: { ...getPlayer },
     openArtwork: {...getArtwork},
@@ -57,9 +52,7 @@ export function applyArtworkPurchasePaymentToGameState(
     plazaVisitors: state.plazaVisitors,
     ...(targetInfluence !== undefined && { targetInfluence })
   }
-  const  artworkPurchasePaymentResult = applyArtworkPurchaseCostAndMoveVisitors(inputData)
-  const spentInfluence = getPlayer.influence - artworkPurchasePaymentResult.player.influence
-  const coinsReceived = artworkPurchasePaymentResult.player.coins + purchaseCost - getPlayer.coins
+  const artworkPurchasePaymentResult = applyArtworkPurchaseCostAndMoveVisitors(inputData)
 
   const visitorMovedEvents = getArtwork.visitors.reduce((acc,visitor) =>{
     const event = Object.freeze({
@@ -81,13 +74,13 @@ export function applyArtworkPurchasePaymentToGameState(
       artistId: artistId,
       artworkId: artworkPurchasePaymentResult.openArtwork.artwork.id
     },
-    ...(spentInfluence > 0
+    ...(artworkPurchasePaymentResult.spentInfluence > 0
       ? [
-          { type: 'InfluenceSpent', playerId, spentInfluence } as const,
-          { type: 'CoinsReceived', playerId, coinsReceived } as const,
+          { type: 'InfluenceSpent', playerId, spentInfluence: artworkPurchasePaymentResult.spentInfluence } as const,
+          { type: 'CoinsReceived', playerId, coinsReceived: artworkPurchasePaymentResult.coinsReceived } as const,
         ]
       : []),
-    { type: 'CoinsSpent', playerId: playerId, paid: purchaseCost!},
+    { type: 'CoinsSpent', playerId: playerId, paid: artworkPurchasePaymentResult.paid},
     ...visitorMovedEvents
   ]
 

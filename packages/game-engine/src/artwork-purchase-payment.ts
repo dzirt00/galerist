@@ -20,6 +20,9 @@ export interface ArtworkPurchasePaymentResult {
   readonly player: Readonly<PlayerState>
   readonly openArtwork: Readonly<OpenArtworkSlot>
   readonly plazaVisitors: readonly VisitorInstance[]
+  readonly spentInfluence: number
+  readonly coinsReceived: number
+  readonly paid: number
 }
 
 /**
@@ -62,17 +65,18 @@ export function applyArtworkPurchaseCostAndMoveVisitors(
   // могла бы затронуть переданные вызывающей стороной работу и посетителей.
   let artworkVisitors = [ ...input.openArtwork.visitors.map( item => ( { ...item } ) ) ]
   let plazaVisitorsCopy = [ ...input.plazaVisitors ].map( item => ( { ...item } ) )
-
   // Новые посетители добавляются после уже находящихся на площади, сохраняя
   // исходный порядок посетителей на купленной работе.
   plazaVisitorsCopy.push( ...artworkVisitors )
-
   return deepFreeze( {
     player: copyPlayer,
     plazaVisitors: plazaVisitorsCopy,
     openArtwork: {
       artwork: { ...input.openArtwork.artwork },
       visitors: []
-    }
+    },
+    spentInfluence: input.player.influence - copyPlayer.influence,
+    coinsReceived: copyPlayer.coins + cost - input.player.coins,
+    paid: cost
   } )
 }
