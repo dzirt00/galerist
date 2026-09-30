@@ -1,7 +1,7 @@
 import type { SetupTicketColor } from './component-catalog.js'
 import { freezeTransition, type GameEvent, type GameTransition } from './game-events.js'
 import { replaceUnavailableTicket } from './ticket-replacement.js'
-import type { GameState, PlayerId } from './types.js'
+import type { GameState, IntermediateScoringStatus, PlayerId } from './types.js'
 
 export interface TicketRewardRequest {
   readonly playerId: PlayerId
@@ -15,6 +15,7 @@ export interface TicketRewardApplicationInput extends TicketRewardRequest {
   readonly player: GameState['players'][number]
   readonly ticketOffice: GameState['ticketOffice']
   readonly ticketDiscard: GameState['ticketDiscard']
+  readonly intermediateScoringStatus: IntermediateScoringStatus
 }
 
 export interface TicketRewardApplicationResult {
@@ -22,6 +23,7 @@ export interface TicketRewardApplicationResult {
   readonly ticketOffice: GameState['ticketOffice']
   readonly ticketDiscard: GameState['ticketDiscard']
   readonly events: readonly GameEvent[]
+  readonly intermediateScoringStatus: IntermediateScoringStatus
 }
 
 const TICKET_COLORS: readonly SetupTicketColor[] = ['B', 'R', 'W']
@@ -77,6 +79,7 @@ export function applyTicketRewardToGameState(
     player: state.players[playerIndex]!,
     ticketOffice: state.ticketOffice,
     ticketDiscard: state.ticketDiscard,
+    intermediateScoringStatus: state.intermediateScoringStatus,
   })
   const players = [...state.players]
   players[playerIndex] = result.player
@@ -87,6 +90,7 @@ export function applyTicketRewardToGameState(
       players,
       ticketDiscard: result.ticketDiscard,
       ticketOffice: result.ticketOffice,
+      intermediateScoringStatus: result.intermediateScoringStatus
     },
     result.events,
   )
@@ -103,8 +107,11 @@ export function applyTicketReward(
   let ticketDiscard = copyTicketCounts(input.ticketDiscard)
   const playerTicketsByColor = copyTicketCounts(input.player.ticketsByColor)
   const events: GameEvent[] = []
+  let isScoringStatusChange = false
+  let intermediateScoringStatus = input.intermediateScoringStatus
 
   for (const color of input.requestedColors) {
+    const ticketOfficeStart = ticketOffice[color]
     if (ticketOffice[color] > 0) {
       ticketOffice[color] -= 1
     } else {
@@ -131,12 +138,22 @@ export function applyTicketReward(
 
     playerTicketsByColor[color] += 1
     events.push({ type: 'TicketReceived', playerId: input.playerId, color })
+
+    if(intermediateScoringStatus === 'not_triggered') {
+      if(ticketOffice[color] === 0 && ticketOfficeStart === 1) {
+        isScoringStatusChange = true
+        intermediateScoringStatus = 'pending'
+      }
+    }
   }
+
+  if(isScoringStatusChange) events.push({type: 'IntermediateScoringTriggered'})
 
   return {
     player: { ...input.player, ticketsByColor: playerTicketsByColor },
     ticketDiscard,
     ticketOffice: { ticketsByColor: ticketOffice },
     events,
+    intermediateScoringStatus
   }
 }

@@ -12,7 +12,7 @@ import type { SetupTicketColor, StartingLocationId } from "./component-catalog.j
 
 export type GameId = string
 export type PlayerId = string
-
+export type IntermediateScoringStatus = 'not_triggered' | 'pending' | 'completed'
 export interface MovementCommand {
   readonly category: 'movement'
 }
@@ -104,7 +104,7 @@ export interface PlayerState {
 }
 
 export interface GameStateBase {
-  readonly stateSchemaVersion: 5
+  readonly stateSchemaVersion: 6
   readonly id: GameId
   readonly config: Readonly<GameConfig>
   readonly players: readonly PlayerState[]
@@ -127,6 +127,7 @@ export interface GameStateBase {
     readonly setupAlgorithmVersion: 'setup-rng-v1'
   }
   readonly ticketDiscard: Readonly<Record<SetupTicketColor, number>>
+  readonly intermediateScoringStatus: IntermediateScoringStatus
 }
 
 export interface RegularPlayGameState extends GameStateBase {

@@ -79,7 +79,8 @@ export function projectGameForViewer(
     playerBoards: state.playerBoards,
     plazaVisitors: state.plazaVisitors,
     vestibuleVisitors: state.vestibuleVisitors,
-    winnerIds
+    winnerIds,
+    intermediateScoringStatus: state.intermediateScoringStatus
   }
 
   return deepFreeze(structuredClone(projection))

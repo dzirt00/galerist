@@ -44,7 +44,8 @@ describe('граница игрового движка', () => {
   })
 
   it.each([
-    ['неизвестная версия схемы', { stateSchemaVersion: 6 }],
+    ['неизвестная версия схемы', { stateSchemaVersion: 7 }],
+    ['неизвестный статус промежуточного подсчёта', { intermediateScoringStatus: 'unknown' }],
     ['несогласованная фаза', { phase: 'regular_play' }],
     ['неизвестный активный игрок', {
       phase: 'regular_play',

@@ -85,6 +85,58 @@ describe('Выдача билетов через applyTicketRewardToGameState', 
     ])
   })
 
+  it('назначает промежуточный подсчёт после всех билетных событий', () => {
+    const state = mutableStateWithSupplies(
+      { B: 1, R: 1, W: 2 },
+      { B: 0, R: 0, W: 0 },
+    )
+    const snapshot = structuredClone(state)
+
+    const transition = applyTicketRewardToGameState(state, {
+      playerId: 'player-1',
+      requestedColors: ['B', 'R'],
+    })
+
+    expect(transition.state.players[0]!.ticketsByColor).toEqual({ B: 1, R: 1, W: 0 })
+    expect(transition.state.players[0]!.coins).toBe(state.players[0]!.coins)
+    expect(transition.state.players[0]!.influence).toBe(state.players[0]!.influence)
+    expect(transition.state.ticketOffice.ticketsByColor).toEqual({ B: 0, R: 0, W: 2 })
+    expect(transition.state.intermediateScoringStatus).toBe('pending')
+    expect(transition.events).toEqual([
+      { type: 'TicketReceived', playerId: 'player-1', color: 'B' },
+      { type: 'TicketReceived', playerId: 'player-1', color: 'R' },
+      { type: 'IntermediateScoringTriggered' },
+    ])
+    expect(projectEventsForViewer(transition.events, transition.state, null)).toEqual(
+      transition.events,
+    )
+    expect(projectGameForViewer(transition.state, null).intermediateScoringStatus).toBe('pending')
+    expect(restoreGameState(structuredClone(transition.state))).toEqual(transition.state)
+    expect(state).toEqual(snapshot)
+    expect(Object.isFrozen(transition.state)).toBe(true)
+    expect(Object.isFrozen(transition.events)).toBe(true)
+  })
+
+  it('не назначает промежуточный подсчёт повторно', () => {
+    const state = {
+      ...mutableStateWithSupplies(
+        { B: 1, R: 1, W: 1 },
+        { B: 0, R: 0, W: 0 },
+      ),
+      intermediateScoringStatus: 'pending' as const,
+    }
+
+    const transition = applyTicketRewardToGameState(state, {
+      playerId: 'player-1',
+      requestedColors: ['B'],
+    })
+
+    expect(transition.state.intermediateScoringStatus).toBe('pending')
+    expect(transition.events).toEqual([
+      { type: 'TicketReceived', playerId: 'player-1', color: 'B' },
+    ])
+  })
+
   it('не выдаёт билет из сброса при полностью пустой кассе', () => {
     const state = mutableStateWithSupplies(
       { B: 0, R: 0, W: 0 },

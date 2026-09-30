@@ -349,8 +349,8 @@ function validatePhase(
 /** Проверяет JSON-снимок по ADR-001/ADR-002 и возвращает независимый замороженный GameState. */
 export function restoreGameState(input: unknown): GameState {
   const state = requireRecord(input, 'state')
-  if (state.stateSchemaVersion !== 5) {
-    fail('stateSchemaVersion must equal 5')
+  if (state.stateSchemaVersion !== 6) {
+    fail('stateSchemaVersion must equal 6')
   }
   requireNonEmptyString(state.id, 'id')
 
@@ -367,6 +367,9 @@ export function restoreGameState(input: unknown): GameState {
   validateCommonCollections(state)
   validatePlayerBoards(state, playerIds)
   validatePhase(state, playerIds)
+  if(state.intermediateScoringStatus !== 'not_triggered' && state.intermediateScoringStatus !== 'pending' && state.intermediateScoringStatus !== 'completed') {
+    fail('intermediateScoringStatus invalid')
+  }
 
   return deepFreeze(structuredClone(state)) as unknown as GameState
 }

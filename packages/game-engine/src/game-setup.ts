@@ -116,7 +116,7 @@ export function createGame(
   const startingLocationSelectionOrder = Object.freeze([...regularTurnOrder].reverse())
 
   const state: SetupGameState = {
-    stateSchemaVersion: 5,
+    stateSchemaVersion: 6,
     id: gameId,
     status: 'setup',
     round: 0,
@@ -139,6 +139,7 @@ export function createGame(
     visitorBag: Object.freeze({ visitors: initialVisitors.remainingVisitors }),
     privateGoals,
     playerBoards,
+    intermediateScoringStatus: 'not_triggered',
     setupStage: 'choosing_starting_locations',
     startingLocationSelectionOrder,
     currentStartingLocationPlayerId: startingLocationSelectionOrder[0]!,

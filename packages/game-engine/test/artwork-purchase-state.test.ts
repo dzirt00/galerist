@@ -195,6 +195,34 @@ describe('applyArtworkPurchaseToGameState', () => {
     expect(transition.events.some(event => event.type === 'ArtistFameIncreased')).toBe(false)
   })
 
+  it('назначает промежуточный подсчёт при опустошении кассы покупкой', () => {
+    const baseState = createGameState(twoPlayerGameConfig, twoPlayerConfigs)
+    const artist = baseState.artistMarket.slots.find(slot => slot.isOpen)!
+    const open = baseState.artworkMarket.openArtworksByGenre[artist.genre]!
+    const state = {
+      ...baseState,
+      ticketOffice: { ticketsByColor: { B: 1, R: 2, W: 2 } },
+      artworkMarket: {
+        ...baseState.artworkMarket,
+        openArtworksByGenre: {
+          ...baseState.artworkMarket.openArtworksByGenre,
+          [artist.genre]: { ...open, artwork: { ...open.artwork, ticketReward: 'B' } },
+        },
+      },
+    }
+
+    const transition = applyArtworkPurchaseToGameState(state, regularRequest(state))
+    const eventTypes = transition.events.map(event => event.type)
+
+    expect(transition.state.intermediateScoringStatus).toBe('pending')
+    expect(eventTypes.filter(type => type === 'IntermediateScoringTriggered')).toHaveLength(1)
+    expect(eventTypes.indexOf('IntermediateScoringTriggered')).toBeGreaterThan(
+      eventTypes.lastIndexOf('TicketReceived'),
+    )
+    expect(projectGameForViewer(transition.state, state.players[0]!.id).intermediateScoringStatus)
+      .toBe('pending')
+  })
+
   it('применяет отдельный расход влияния на дополнительную известность после базового роста', () => {
     const baseState = createGameState(twoPlayerGameConfig, twoPlayerConfigs)
     const artist = baseState.artistMarket.slots.find(slot => slot.isOpen)!

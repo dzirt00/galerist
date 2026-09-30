@@ -256,6 +256,7 @@ export function applyArtworkPurchaseToGameState(
         ticketOffice: state.ticketOffice,
         ticketDiscard: state.ticketDiscard,
         events: [] as readonly GameEvent[],
+        intermediateScoringStatus: state.intermediateScoringStatus
       }
     : applyTicketReward({
         playerId: availability.player.id,
@@ -266,6 +267,7 @@ export function applyArtworkPurchaseToGameState(
         player: artworkPurchasePaymentResult.player,
         ticketOffice: state.ticketOffice,
         ticketDiscard: state.ticketDiscard,
+        intermediateScoringStatus: state.intermediateScoringStatus
       })
 
   const oldFame = availability.artist.fame!
@@ -413,6 +415,7 @@ export function applyArtworkPurchaseToGameState(
       },
       remainingVisitorBag: refill.remainingVisitorBag,
     },
+    intermediateScoringStatus: ticketResult.intermediateScoringStatus
   }, events)
 }
 
