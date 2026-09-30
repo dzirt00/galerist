@@ -123,7 +123,7 @@ describe('Подготовка бонусов, коллекционеров и �
     const slots = result.slots
     const closedSlots = slots.filter(slot => !slot.isOpen)
     const redSlots = slots.filter(slot => slot.category === 'red')
-    const signatureIds = slots.flatMap(slot => slot.signatureIds)
+    const signatureIds = slots.flatMap(slot => slot.availableSignatureTokenIds)
 
     expect(slots).toHaveLength(8)
     expect(slots.filter(slot => slot.isOpen).map(slot => slot.bonus)).toEqual([null])

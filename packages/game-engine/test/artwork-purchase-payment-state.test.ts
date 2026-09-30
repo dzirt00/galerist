@@ -55,7 +55,7 @@ describe('applyArtworkPurchasePaymentToGameState', () => {
     const state = createPurchaseState()
     const request = requestForOpenArtist(state, 'regular')
     const artist = state.artistMarket.slots.find(item => item.artistId === request.artistId)!
-    const openArtwork = state.artworkMarket.openArtworksByGenre[artist.genre]
+    const openArtwork = state.artworkMarket.openArtworksByGenre[artist.genre]!
     const originalPlazaVisitors = [...state.plazaVisitors]
     const stateSnapshot = structuredClone(state)
     const requestSnapshot = structuredClone(request)
@@ -90,7 +90,7 @@ describe('applyArtworkPurchasePaymentToGameState', () => {
       transition.events,
     )
     const projection = projectGameForViewer(transition.state, null)
-    expect(projection.artworkMarket.openArtworksByGenre[artist.genre].visitors).toEqual([])
+    expect(projection.artworkMarket.openArtworksByGenre[artist.genre]!.visitors).toEqual([])
     expect(projection.plazaVisitors).toEqual(transition.state.plazaVisitors)
     expect(state).toEqual(stateSnapshot)
     expect(request).toEqual(requestSnapshot)
@@ -223,7 +223,7 @@ describe('applyArtworkPurchasePaymentToGameState', () => {
     const original = createPurchaseState()
     const request = requestForOpenArtist(original, 'regular')
     const artist = original.artistMarket.slots.find(item => item.artistId === request.artistId)!
-    const openArtwork = original.artworkMarket.openArtworksByGenre[artist.genre]
+    const openArtwork = original.artworkMarket.openArtworksByGenre[artist.genre]!
     const mismatchedGenre = artist.genre === 'D' ? 'P' : 'D'
     const state: SetupGameState = {
       ...original,

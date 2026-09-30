@@ -32,6 +32,14 @@ export type GameEvent =
     }
   | { readonly type: 'CoinsSpent'; readonly playerId: PlayerId, paid: number }
   | { readonly type: 'VisitorMoved'; readonly visitorId: string, from: 'artwork', to: 'plaza'}
+  | { readonly type: 'ArtistFameIncreased'; readonly artistId: string; readonly previousFame: number; readonly fame: number }
+  | { readonly type: 'ArtworkSaleValuesChanged'; readonly artistId: string; readonly saleValue: number }
+  | { readonly type: 'ArtistBecameSuperstar'; readonly artistId: string }
+  | { readonly type: 'ArtworkBecameMasterpiece'; readonly playerId: PlayerId; readonly artworkId: string }
+  | { readonly type: 'ArtworkExhibited'; readonly playerId: PlayerId; readonly artistId: string; readonly artworkId: string; readonly artworkSlotIndex: number }
+  | { readonly type: 'SignaturePriceSet'; readonly signatureTokenId: string; readonly saleValue: number }
+  | { readonly type: 'ExhibitionCapacityChanged'; readonly playerId: PlayerId; readonly capacity: number }
+  | { readonly type: 'ArtworkMarketRefilled'; readonly genre: string; readonly artworkId: string }
   | {
       readonly type: 'TicketReceived'
       readonly playerId: PlayerId

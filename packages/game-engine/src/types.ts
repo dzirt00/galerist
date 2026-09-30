@@ -104,7 +104,7 @@ export interface PlayerState {
 }
 
 export interface GameStateBase {
-  readonly stateSchemaVersion: 4
+  readonly stateSchemaVersion: 5
   readonly id: GameId
   readonly config: Readonly<GameConfig>
   readonly players: readonly PlayerState[]

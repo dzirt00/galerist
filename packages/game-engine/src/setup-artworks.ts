@@ -19,7 +19,7 @@ export interface PreparedArtworkMarket {
   /** По одной верхней работе каждого жанра, отложенной для SETUP-009. */
   readonly deferredArtworksByGenre: Readonly<Record<ArtworkGenre, ArtworkDefinition>>
   /** Новая верхняя работа каждого жанра и посетители в количестве, напечатанном на ней. */
-  readonly openArtworksByGenre: Readonly<Record<ArtworkGenre, OpenArtworkSlot>>
+  readonly openArtworksByGenre: Readonly<Record<ArtworkGenre, OpenArtworkSlot | null>>
   /** Закрытые части стопок после удаления отложенной и открытой работ. */
   readonly remainingArtworksByGenre: Readonly<
     Record<ArtworkGenre, readonly ArtworkDefinition[]>

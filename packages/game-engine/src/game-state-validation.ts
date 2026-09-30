@@ -128,6 +128,76 @@ function validateCommonCollections(state: UnknownRecord): void {
   const ticketOffice = requireRecord(state.ticketOffice, 'ticketOffice')
   requireTicketCounts(ticketOffice.ticketsByColor, 'ticketOffice.ticketsByColor')
   requireTicketCounts(state.ticketDiscard, 'ticketDiscard')
+
+  const artistMarket = requireRecord(state.artistMarket, 'artistMarket')
+  if (!Array.isArray(artistMarket.slots)) fail('artistMarket.slots must be an array')
+  artistMarket.slots.forEach((value, index) => {
+    const slot = requireRecord(value, `artistMarket.slots[${index}]`)
+    requireNonEmptyString(slot.artistId, `artistMarket.slots[${index}].artistId`)
+    requireBoolean(slot.isSuperstar, `artistMarket.slots[${index}].isSuperstar`)
+  })
+
+  const artistSetup = requireRecord(state.artistSetup, 'artistSetup')
+  if (!Array.isArray(artistSetup.slots)) fail('artistSetup.slots must be an array')
+  artistSetup.slots.forEach((value, index) => {
+    const slot = requireRecord(value, `artistSetup.slots[${index}]`)
+    if (!Array.isArray(slot.availableSignatureTokenIds)) {
+      fail(`artistSetup.slots[${index}].availableSignatureTokenIds must be an array`)
+    }
+    slot.availableSignatureTokenIds.forEach((signatureTokenId, signatureIndex) => {
+      requireNonEmptyString(
+        signatureTokenId,
+        `artistSetup.slots[${index}].availableSignatureTokenIds[${signatureIndex}]`,
+      )
+    })
+  })
+}
+
+function validatePlayerBoards(state: UnknownRecord, playerIds: ReadonlySet<PlayerId>): void {
+  if (!Array.isArray(state.playerBoards)) fail('playerBoards must be an array')
+  const signatureLocations = new Set<string>()
+  const artistSetup = requireRecord(state.artistSetup, 'artistSetup')
+  for (const value of artistSetup.slots as unknown[]) {
+    const slot = requireRecord(value, 'artistSetup slot')
+    for (const signatureTokenId of slot.availableSignatureTokenIds as unknown[]) {
+      const id = requireNonEmptyString(signatureTokenId, 'available signatureTokenId')
+      if (signatureLocations.has(id)) fail('signatureTokenId must have one location')
+      signatureLocations.add(id)
+    }
+  }
+
+  state.playerBoards.forEach((value, index) => {
+    const board = requireRecord(value, `playerBoards[${index}]`)
+    requirePlayerReference(board.playerId, playerIds, `playerBoards[${index}].playerId`)
+    const gallery = requireRecord(board.gallery, `playerBoards[${index}].gallery`)
+    if (!Array.isArray(gallery.artworkSlots) || gallery.artworkSlots.length !== 4) {
+      fail(`playerBoards[${index}].gallery.artworkSlots must contain four slots`)
+    }
+    if (!Array.isArray(gallery.visitors)) {
+      fail(`playerBoards[${index}].gallery.visitors must be an array`)
+    }
+    gallery.artworkSlots.forEach((artworkValue, artworkIndex) => {
+      if (artworkValue === null) return
+      const artwork = requireRecord(
+        artworkValue,
+        `playerBoards[${index}].gallery.artworkSlots[${artworkIndex}]`,
+      )
+      requireNonEmptyString(artwork.artworkId, 'artworkId')
+      requireNonEmptyString(artwork.artistId, 'artistId')
+      const signatureTokenId = requireNonEmptyString(artwork.signatureTokenId, 'signatureTokenId')
+      requireSafeInteger(artwork.saleValue, 'saleValue')
+      requireBoolean(artwork.isMasterpiece, 'isMasterpiece')
+      if (signatureLocations.has(signatureTokenId)) fail('signatureTokenId must have one location')
+      signatureLocations.add(signatureTokenId)
+    })
+    if (board.contract !== null) {
+      const contract = requireRecord(board.contract, `playerBoards[${index}].contract`)
+      requireNonEmptyString(contract.artistId, 'contract.artistId')
+      const signatureTokenId = requireNonEmptyString(contract.signatureTokenId, 'contract.signatureTokenId')
+      if (signatureLocations.has(signatureTokenId)) fail('signatureTokenId must have one location')
+      signatureLocations.add(signatureTokenId)
+    }
+  })
 }
 
 /** Проверяет игроков и возвращает множество допустимых ссылок на них. */
@@ -279,8 +349,8 @@ function validatePhase(
 /** Проверяет JSON-снимок по ADR-001/ADR-002 и возвращает независимый замороженный GameState. */
 export function restoreGameState(input: unknown): GameState {
   const state = requireRecord(input, 'state')
-  if (state.stateSchemaVersion !== 4) {
-    fail('stateSchemaVersion must equal 4')
+  if (state.stateSchemaVersion !== 5) {
+    fail('stateSchemaVersion must equal 5')
   }
   requireNonEmptyString(state.id, 'id')
 
@@ -295,6 +365,7 @@ export function restoreGameState(input: unknown): GameState {
     fail('players length must match config.playerCount')
   }
   validateCommonCollections(state)
+  validatePlayerBoards(state, playerIds)
   validatePhase(state, playerIds)
 
   return deepFreeze(structuredClone(state)) as unknown as GameState

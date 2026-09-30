@@ -251,7 +251,7 @@ it('сохраняет в GameState бонусы, коллекционеров �
   )
 
   for (const slot of state.artistSetup.slots) {
-    expect(slot.signatureIds).toEqual([
+    expect(slot.availableSignatureTokenIds).toEqual([
       `${slot.artistId}-SIG-1`,
       `${slot.artistId}-SIG-2`,
     ])
@@ -285,7 +285,7 @@ it.each([
     slot.collector === null ? [] : [slot.collector.id],
   )
   const artworkVisitorIds = Object.values(state.artworkMarket.openArtworksByGenre)
-    .flatMap(slot => slot.visitors.map(visitor => visitor.id))
+    .flatMap(slot => slot?.visitors.map(visitor => visitor.id) ?? [])
   const plazaVisitorIds = state.plazaVisitors.map(visitor => visitor.id)
   const vestibuleVisitorIds = state.vestibuleVisitors
     .map(placement => placement.vestibuleVisitor.id)
@@ -364,7 +364,7 @@ it('сохраняет в GameState четыре стопки работ без 
   const remaining = Object.values(market.remainingArtworksByGenre).flat()
   const allArtworkIds = [
     ...deferred.map(artwork => artwork.id),
-    ...open.map(slot => slot.artwork.id),
+    ...open.map(slot => slot!.artwork.id),
     ...remaining.map(artwork => artwork.id),
   ]
 
@@ -376,6 +376,8 @@ it('сохраняет в GameState четыре стопки работ без 
     setupComponentCatalog.artworks.map(artwork => artwork.id).sort(),
   )
   for (const slot of open) {
+    expect(slot).not.toBeNull()
+    if (slot === null) continue
     expect(slot.visitors).toHaveLength(slot.artwork.visitorCount)
   }
 })

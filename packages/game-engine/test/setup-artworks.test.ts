@@ -79,11 +79,11 @@ describe('Подготовка рынка произведений через pr
         items: artworks.filter(artwork => artwork.genre === genre).sort(compareAsciiIds),
       })
       expect(result.deferredArtworksByGenre[genre]).toEqual(expectedStack[0])
-      expect(result.openArtworksByGenre[genre].artwork).toEqual(expectedOpen)
-      expect(result.openArtworksByGenre[genre].visitors).toEqual(
+      expect(result.openArtworksByGenre[genre]!.artwork).toEqual(expectedOpen)
+      expect(result.openArtworksByGenre[genre]!.visitors).toEqual(
         visitorsBag.visitors.slice(visitorOffset, nextVisitorOffset),
       )
-      expect(result.openArtworksByGenre[genre].visitors).toHaveLength(expectedOpen.visitorCount)
+      expect(result.openArtworksByGenre[genre]!.visitors).toHaveLength(expectedOpen.visitorCount)
       expect(result.remainingArtworksByGenre[genre]).toEqual(expectedStack.slice(2))
       visitorOffset = nextVisitorOffset
     }
@@ -117,7 +117,7 @@ describe('Подготовка рынка произведений через pr
 
     const outputArtworkIds = setupComponentCatalog.genreOrder.flatMap(genre => [
       forward.deferredArtworksByGenre[genre].id,
-      forward.openArtworksByGenre[genre].artwork.id,
+      forward.openArtworksByGenre[genre]!.artwork.id,
       ...forward.remainingArtworksByGenre[genre].map(artwork => artwork.id),
     ])
     expect(outputArtworkIds.sort()).toEqual(artworks.map(artwork => artwork.id).sort())
@@ -125,7 +125,7 @@ describe('Подготовка рынка произведений через pr
 
     const outputVisitorIds = [
       ...setupComponentCatalog.genreOrder.flatMap(genre =>
-        forward.openArtworksByGenre[genre].visitors.map(visitor => visitor.id)),
+        forward.openArtworksByGenre[genre]!.visitors.map(visitor => visitor.id)),
       ...forward.remainingVisitorBag.visitors.map(visitor => visitor.id),
     ]
     expect(outputVisitorIds).toEqual(visitorsBag.visitors.map(visitor => visitor.id))
@@ -150,12 +150,12 @@ describe('Подготовка рынка произведений через pr
     for (const genre of setupComponentCatalog.genreOrder) {
       expect(Object.isFrozen(first.deferredArtworksByGenre[genre])).toBe(true)
       expect(Object.isFrozen(first.openArtworksByGenre[genre])).toBe(true)
-      expect(Object.isFrozen(first.openArtworksByGenre[genre].artwork)).toBe(true)
-      expect(Object.isFrozen(first.openArtworksByGenre[genre].visitors)).toBe(true)
+      expect(Object.isFrozen(first.openArtworksByGenre[genre]!.artwork)).toBe(true)
+      expect(Object.isFrozen(first.openArtworksByGenre[genre]!.visitors)).toBe(true)
       expect(Object.isFrozen(first.remainingArtworksByGenre[genre])).toBe(true)
 
       expect(artworks).not.toContain(first.deferredArtworksByGenre[genre])
-      expect(artworks).not.toContain(first.openArtworksByGenre[genre].artwork)
+      expect(artworks).not.toContain(first.openArtworksByGenre[genre]!.artwork)
       expect(second.deferredArtworksByGenre[genre])
         .not.toBe(first.deferredArtworksByGenre[genre])
     }

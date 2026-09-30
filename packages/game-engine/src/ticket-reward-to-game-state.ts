@@ -11,6 +11,19 @@ export interface TicketRewardRequest {
   >
 }
 
+export interface TicketRewardApplicationInput extends TicketRewardRequest {
+  readonly player: GameState['players'][number]
+  readonly ticketOffice: GameState['ticketOffice']
+  readonly ticketDiscard: GameState['ticketDiscard']
+}
+
+export interface TicketRewardApplicationResult {
+  readonly player: GameState['players'][number]
+  readonly ticketOffice: GameState['ticketOffice']
+  readonly ticketDiscard: GameState['ticketDiscard']
+  readonly events: readonly GameEvent[]
+}
+
 const TICKET_COLORS: readonly SetupTicketColor[] = ['B', 'R', 'W']
 
 function isTicketColor(value: unknown): value is SetupTicketColor {
@@ -54,24 +67,48 @@ export function applyTicketRewardToGameState(
   state: Readonly<GameState>,
   request: TicketRewardRequest,
 ): GameTransition<Readonly<GameState>> {
-  validateRequest(request)
-
   const playerIndex = state.players.findIndex(player => player.id === request.playerId)
   if (playerIndex === -1) {
     throw new Error('Player must belong to the game')
   }
 
-  let ticketOffice = copyTicketCounts(state.ticketOffice.ticketsByColor)
-  let ticketDiscard = copyTicketCounts(state.ticketDiscard)
-  const player = state.players[playerIndex]!
-  const playerTicketsByColor = copyTicketCounts(player.ticketsByColor)
+  const result = applyTicketReward({
+    ...request,
+    player: state.players[playerIndex]!,
+    ticketOffice: state.ticketOffice,
+    ticketDiscard: state.ticketDiscard,
+  })
+  const players = [...state.players]
+  players[playerIndex] = result.player
+
+  return freezeTransition(
+    {
+      ...state,
+      players,
+      ticketDiscard: result.ticketDiscard,
+      ticketOffice: result.ticketOffice,
+    },
+    result.events,
+  )
+}
+
+/** Применяет билетную награду к переданным ресурсам без сборки GameState. */
+export function applyTicketReward(
+  input: TicketRewardApplicationInput,
+): TicketRewardApplicationResult {
+  validateRequest(input)
+  if (input.player.id !== input.playerId) throw new Error('Ticket reward player mismatch')
+
+  let ticketOffice = copyTicketCounts(input.ticketOffice.ticketsByColor)
+  let ticketDiscard = copyTicketCounts(input.ticketDiscard)
+  const playerTicketsByColor = copyTicketCounts(input.player.ticketsByColor)
   const events: GameEvent[] = []
 
-  for (const color of request.requestedColors) {
+  for (const color of input.requestedColors) {
     if (ticketOffice[color] > 0) {
       ticketOffice[color] -= 1
     } else {
-      const replacementColor = request.replacementColorsByRequestedColor?.[color]
+      const replacementColor = input.replacementColorsByRequestedColor?.[color]
       const replacement = replaceUnavailableTicket({
         supplies: { office: ticketOffice, discard: ticketDiscard },
         requiredColor: color,
@@ -85,7 +122,7 @@ export function applyTicketRewardToGameState(
       if (replacement.exchanged) {
         events.push({
           type: 'TicketExchanged',
-          playerId: request.playerId,
+          playerId: input.playerId,
           discardedColor: replacementColor!,
           receivedColor: color,
         })
@@ -93,19 +130,13 @@ export function applyTicketRewardToGameState(
     }
 
     playerTicketsByColor[color] += 1
-    events.push({ type: 'TicketReceived', playerId: request.playerId, color })
+    events.push({ type: 'TicketReceived', playerId: input.playerId, color })
   }
 
-  const players = [...state.players]
-  players[playerIndex] = { ...player, ticketsByColor: playerTicketsByColor }
-
-  return freezeTransition(
-    {
-      ...state,
-      players,
-      ticketDiscard,
-      ticketOffice: { ticketsByColor: ticketOffice },
-    },
+  return {
+    player: { ...input.player, ticketsByColor: playerTicketsByColor },
+    ticketDiscard,
+    ticketOffice: { ticketsByColor: ticketOffice },
     events,
-  )
+  }
 }

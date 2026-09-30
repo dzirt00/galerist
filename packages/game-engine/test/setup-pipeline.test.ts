@@ -110,7 +110,7 @@ describe('полный setup-пайплайн', () => {
     expect(openSlot.fame).toBe(openSlot.initialFame)
     expect(closedSlots.every(slot => slot.fame === null)).toBe(true)
     expect(state.artistMarket.slots).toEqual(
-      state.artistSetup.slots.map(({ bonus: _bonus, collector: _collector, signatureIds: _signatures, ...slot }) => slot),
+      state.artistSetup.slots.map(({ bonus: _bonus, collector: _collector, availableSignatureTokenIds: _signatures, ...slot }) => ({ ...slot, isSuperstar: false })),
     )
   })
 

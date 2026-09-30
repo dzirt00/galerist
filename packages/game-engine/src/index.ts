@@ -37,10 +37,19 @@ export { applyFinalInfluenceScoringToGameState } from './final-influence-scoring
 export { determineWinners } from './winner-determination.js'
 export {
   preparePlayerBoards,
+  type ExhibitedArtwork,
+  type Gallery,
+  type PlayerContract,
   type PlayerBoard,
 } from './player-boards.js'
 export {completeFinalScoring} from './final-scoring-completion.js'
-export {applyArtworkPurchasePaymentToGameState, type ArtworkPurchasePaymentRequest,} from './artwork-purchase-payment-state.js'
+export {
+  applyArtworkPurchasePaymentToGameState,
+  applyArtworkPurchaseToGameState,
+  validateArtworkPurchaseAvailability,
+  type ArtworkPurchasePaymentRequest,
+  type ArtworkPurchaseRequest,
+} from './artwork-purchase-payment-state.js'
 export { type HireQueueEntry, type HireAssistantsResult, type HireAssistantsInput, hireAssistants} from './hiring.js'
 export { applyArtworkPurchaseCostAndMoveVisitors, type ArtworkPurchaseType, type ApplyArtworkPurchaseInput, type ArtworkPurchasePaymentResult } from './artwork-purchase-payment.js'
 export { refillArtworkMarket, type ArtworkMarketRefillResult } from './artwork-market-refill.js'
@@ -57,6 +66,7 @@ export {spendInfluenceForImmediatePayment} from './influence-spending-award.js'
 export {applyAdditionalFameSpend} from './influence-fame-spending-award.js'
 export {prepareTicketOffice, type PreparedTicketOffice} from './setup-tickets.js'
 export { calculateArtworkPurchaseFameGain } from './artwork-purchase-fame.js'
+export { calculateArtworkSaleValue } from './artwork-sale-value.js'
 export {
   curatorGoals,
   dealerGoals,
@@ -95,7 +105,10 @@ export {
   type TicketSupplies,
 } from './ticket-replacement.js'
 export {
+  applyTicketReward,
   applyTicketRewardToGameState,
+  type TicketRewardApplicationInput,
+  type TicketRewardApplicationResult,
   type TicketRewardRequest,
 } from './ticket-reward-to-game-state.js'
 export {prepareOrderMarket, type PreparedOrderMarket} from './setup-orders.js'
