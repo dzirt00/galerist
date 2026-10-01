@@ -3,7 +3,7 @@ import type {
   EndingSequenceGameState,
   FinalRoundGameState,
   FinalScoringGameState,
-  GameState,
+  GameState, PlayerState,
   RegularPlayGameState,
 } from './types.js'
 import {
@@ -11,8 +11,62 @@ import {
   type GameTransition,
 } from './game-events.js'
 import { getFirstPlayerIndex } from './turn-order.js'
+import type { PlayerBoard } from "./player-boards.js";
+import { applyIntermediateIncomeToPlayers, type IntermediateIncomeAwardInput } from "./intermediate-income-award.js";
 
 /** Начинает обычную игру по TURN-001 и выбирает первого игрока по ADR-001. */
+
+function arraysEqual  (a: string[], b: string[]): boolean {
+  return a.length === b.length && a.every((val, i) => val === b[i]);
+}
+
+function sortedPlayers (playersIds: string[]): string[] {
+  return playersIds.sort( ( a, b ) => {
+    if ( a > b ) return 1;
+    if ( a < b ) return -1;
+    return 0;
+  } )
+}
+
+function prepareIntermediateIncomeEntries(
+  players:  readonly PlayerState[],
+  playerBoards:  readonly PlayerBoard[]
+): IntermediateIncomeAwardInput[]{
+  const sortPlayersIds = sortedPlayers(players.reduce((acc,player) => {
+    acc.push(player.id)
+    return acc;
+  },[] as string[]))
+
+  const sortPlayersIdsFromGallery = sortedPlayers(playerBoards.reduce( (acc,playerBoard) => {
+    acc.push(playerBoard.playerId)
+    return acc;
+  },[] as string[]))
+
+  if(!arraysEqual(sortPlayersIds, sortPlayersIdsFromGallery)){
+    throw new Error( 'Invalid players ID' )
+  }
+
+  return players.reduce((accData,player) => {
+    const [visitors] = playerBoards.filter(playerBoard => playerBoard.playerId === player.id)
+    const visitorsInGallery = visitors!.gallery.visitors.reduce((accVisitor,galleryVisitor) =>{
+      if(galleryVisitor.type === 'W') accVisitor.collectors +=1
+      if(galleryVisitor.type === 'B') accVisitor.investors +=1
+      if(galleryVisitor.type === 'R') accVisitor.celebrities +=1
+
+      return accVisitor
+    },{investors: 0,celebrities: 0,collectors: 0})
+
+    const data = {
+      player,
+      visitors: visitorsInGallery
+    }
+
+    accData.push(data)
+    return accData;
+
+  },[] as IntermediateIncomeAwardInput[])
+}
+
 export function startGame(state: GameState): GameTransition<RegularPlayGameState> {
   if (state.phase !== 'setup') {
     throw new Error('Game can only be started from setup')
@@ -81,6 +135,29 @@ export function advanceTurn(state: GameState): GameTransition<GameState> {
   if (currentIndex === -1) {
     throw new Error('Active player must belong to the game')
   }
+  let updatePlayersState:  readonly Readonly<PlayerState>[] | null = null
+  let eventsIntermediateIncomeAwarded:GameEvent[] | null = null
+  let intermediateScoringStatus = state.intermediateScoringStatus
+
+  if(intermediateScoringStatus === 'pending') {
+    const intermediateIncomeAwardInput = prepareIntermediateIncomeEntries(state.players,state.playerBoards)
+    updatePlayersState = applyIntermediateIncomeToPlayers(intermediateIncomeAwardInput)
+    eventsIntermediateIncomeAwarded = (state.players.reduce((acc,player) => {
+      acc.push({
+        type: 'IntermediateIncomeAwarded',
+        playerId: player.id
+      })
+      return acc;
+    },[] as GameEvent[]))
+
+    intermediateScoringStatus = 'completed'
+
+  }
+  const addEventsIntermediateIncomeAwardInput = (intermediateScoringStatus === 'completed' && state.intermediateScoringStatus === 'pending' && eventsIntermediateIncomeAwarded !== null)
+    ? [...eventsIntermediateIncomeAwarded]
+    : []
+
+  const updatePlayers = (updatePlayersState === null) ? state.players : updatePlayersState;
 
   const nextPlayer = state.players[(currentIndex + 1) % state.players.length]!.id
   const isNewRound = nextPlayer === state.firstPlayerId
@@ -90,26 +167,30 @@ export function advanceTurn(state: GameState): GameTransition<GameState> {
   const eventRoundEnded =  { type: 'RoundEnded', round: state.round } satisfies GameEvent
   const eventRoundStarted =  { type: 'RoundStarted', round: nextRoundNumber } satisfies GameEvent
   const events = (isNewRound)
-    ? [eventTurnEnded, eventRoundEnded, eventRoundStarted, eventTurnStarted]
-    : [eventTurnEnded, eventTurnStarted]
+    ? [eventTurnEnded, ...addEventsIntermediateIncomeAwardInput,eventRoundEnded, eventRoundStarted, eventTurnStarted]
+    : [eventTurnEnded, ...addEventsIntermediateIncomeAwardInput, eventTurnStarted]
 
   if (state.phase === 'final_round') {
     if (isNewRound) {
       return freezeTransition({
         ...state,
+        players: updatePlayers,
         phase: 'final_scoring',
         activePlayerId: null,
         endTriggeredRound: state.endTriggeredRound,
+        intermediateScoringStatus: intermediateScoringStatus,
         finalInfluenceScored: false
-      },[ eventTurnEnded, eventRoundEnded, { type: 'FinalScoringStarted'}
+      },[ eventTurnEnded, ...addEventsIntermediateIncomeAwardInput, eventRoundEnded, { type: 'FinalScoringStarted'}
       ])
     }
     return freezeTransition({
       ...state,
+      players: updatePlayers,
       round: nextRoundNumber,
       phase: 'final_round',
       activePlayerId: nextPlayer,
       endTriggeredRound: state.endTriggeredRound,
+      intermediateScoringStatus: intermediateScoringStatus,
     },events)
   }
 
@@ -117,26 +198,32 @@ export function advanceTurn(state: GameState): GameTransition<GameState> {
     if (isNewRound) {
       return freezeTransition({
         ...state,
+        players: updatePlayers,
         round: nextRoundNumber,
         phase: 'final_round',
         activePlayerId: nextPlayer,
         endTriggeredRound: state.endTriggeredRound,
+        intermediateScoringStatus: intermediateScoringStatus,
       },events)
     }
     return freezeTransition({
       ...state,
+      players: updatePlayers,
       round: nextRoundNumber,
       phase: 'ending_current_round',
       activePlayerId: nextPlayer,
       endTriggeredRound: state.endTriggeredRound,
+      intermediateScoringStatus: intermediateScoringStatus,
     },events)
   }
 
   return freezeTransition({
     ...state,
+    players: updatePlayers,
     round: nextRoundNumber,
     phase: 'regular_play',
     activePlayerId: nextPlayer,
+    intermediateScoringStatus: intermediateScoringStatus,
   },events)
 }
 

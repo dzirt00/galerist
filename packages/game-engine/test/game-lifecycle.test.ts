@@ -6,11 +6,13 @@ import {
   setupComponentCatalog,
   startGame as startGameTransition,
   triggerGameEnd,
+  type EndingSequenceGameState,
   type FinishedGameState,
   type GameConfig,
   type GameState,
   type PlayerConfig,
   type PlayerState,
+  type RegularPlayGameState,
   type SetupGameState,
 } from '../src/index.js'
 import {
@@ -46,6 +48,28 @@ function startGame(state: GameState) {
       ? completeStartingLocationSelection(state)
       : state,
   ).state
+}
+
+function withPendingIntermediateScoring<
+  TState extends RegularPlayGameState | EndingSequenceGameState,
+>(state: TState): TState {
+  return {
+    ...structuredClone(state),
+    intermediateScoringStatus: 'pending',
+    playerBoards: state.playerBoards.map((board, index) => ({
+      ...structuredClone(board),
+      gallery: {
+        ...structuredClone(board.gallery),
+        visitors: index === 0
+          ? [
+              { id: 'intermediate-investor-1', type: 'B' as const },
+              { id: 'intermediate-investor-2', type: 'B' as const },
+              { id: 'intermediate-celebrity-1', type: 'R' as const },
+            ]
+          : [{ id: 'intermediate-collector-1', type: 'W' as const }],
+      },
+    })),
+  } as TState
 }
 
   it( 'хранит исходные данные игры', () => {
@@ -1520,4 +1544,103 @@ it.each([
 
   expect(game.config.playerCount).toBe(playerCount)
   expect(game.players).toHaveLength(playerCount)
+})
+
+it('исполняет pending промежуточный подсчёт перед началом следующего хода', () => {
+  const started = startGame(createGame(twoPlayerGameConfig, twoPlayerConfigs))
+  const state = withPendingIntermediateScoring(started)
+  const snapshot = structuredClone(state)
+  const activePlayerIndex = state.players.findIndex(player => player.id === state.activePlayerId)
+  const nextPlayerId = state.players[(activePlayerIndex + 1) % state.players.length]!.id
+
+  const transition = advanceTurn(state)
+
+  expect(transition.state.players[0]).toMatchObject({ coins: 14, influence: 12 })
+  expect(transition.state.players[1]).toMatchObject({ coins: 11, influence: 11 })
+  expect(transition.state.intermediateScoringStatus).toBe('completed')
+  expect(transition.state.playerBoards).toEqual(state.playerBoards)
+  expect(transition.events).toEqual([
+    { type: 'TurnEnded', playerId: state.activePlayerId },
+    ...state.players.map(player => ({
+      type: 'IntermediateIncomeAwarded' as const,
+      playerId: player.id,
+    })),
+    { type: 'TurnStarted', playerId: nextPlayerId },
+  ])
+  expect(projectEventsForViewer(transition.events, transition.state, null)).toEqual(
+    transition.events,
+  )
+  expect(state).toEqual(snapshot)
+  expect(Object.isFrozen(transition.state)).toBe(true)
+  expect(Object.isFrozen(transition.state.players)).toBe(true)
+  expect(transition.state.players.every(Object.isFrozen)).toBe(true)
+
+  const secondTransition = advanceTurn(transition.state)
+  expect(secondTransition.state.players).toEqual(transition.state.players)
+  expect(secondTransition.state.intermediateScoringStatus).toBe('completed')
+  expect(secondTransition.events.some(event => event.type === 'IntermediateIncomeAwarded')).toBe(false)
+})
+
+it('начисляет промежуточный доход до событий границы раунда', () => {
+  const started = startGame(createGame(twoPlayerGameConfig, twoPlayerConfigs))
+  const lastTurnOfRound = advanceTurn(started).state
+  const state = withPendingIntermediateScoring(lastTurnOfRound)
+
+  const transition = advanceTurn(state)
+
+  expect(transition.events).toEqual([
+    { type: 'TurnEnded', playerId: state.activePlayerId },
+    ...state.players.map(player => ({
+      type: 'IntermediateIncomeAwarded' as const,
+      playerId: player.id,
+    })),
+    { type: 'RoundEnded', round: state.round },
+    { type: 'RoundStarted', round: state.round + 1 },
+    { type: 'TurnStarted', playerId: state.firstPlayerId },
+  ])
+  expect(transition.state.round).toBe(state.round + 1)
+  expect(transition.state.intermediateScoringStatus).toBe('completed')
+})
+
+it('начисляет pending промежуточный доход до перехода в final_scoring', () => {
+  const started = startGame(createGame(twoPlayerGameConfig, twoPlayerConfigs))
+  const endingCurrentRound = triggerGameEnd(started).state
+  const lastEndingTurn = advanceTurn(endingCurrentRound).state
+  const firstFinalTurn = advanceTurn(lastEndingTurn).state
+  const lastFinalTurn = advanceTurn(firstFinalTurn).state
+
+  if (lastFinalTurn.phase !== 'final_round') {
+    throw new Error(`Expected final_round, received ${lastFinalTurn.phase}`)
+  }
+  const state = withPendingIntermediateScoring(lastFinalTurn)
+
+  const transition = advanceTurn(state)
+
+  expect(transition.events).toEqual([
+    { type: 'TurnEnded', playerId: state.activePlayerId },
+    ...state.players.map(player => ({
+      type: 'IntermediateIncomeAwarded' as const,
+      playerId: player.id,
+    })),
+    { type: 'RoundEnded', round: state.round },
+    { type: 'FinalScoringStarted' },
+  ])
+  expect(transition.state.phase).toBe('final_scoring')
+  expect(transition.state.intermediateScoringStatus).toBe('completed')
+  expect(transition.state.players[0]).toMatchObject({ coins: 14, influence: 12 })
+  expect(transition.state.players[1]).toMatchObject({ coins: 11, influence: 11 })
+})
+
+it('отклоняет несогласованные списки игроков и планшетов без частичных эффектов', () => {
+  const started = startGame(createGame(twoPlayerGameConfig, twoPlayerConfigs))
+  const pending = withPendingIntermediateScoring(started)
+  const state: RegularPlayGameState = {
+    ...pending,
+    playerBoards: pending.playerBoards.slice(1),
+  }
+  const snapshot = structuredClone(state)
+
+  expect(() => advanceTurn(state)).toThrow('Invalid players ID')
+  expect(state).toEqual(snapshot)
+  expect(state.intermediateScoringStatus).toBe('pending')
 })

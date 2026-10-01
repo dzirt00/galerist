@@ -24,6 +24,7 @@ export type GameEvent =
   | { readonly type: 'CoinsReceived', readonly playerId: PlayerId, readonly coinsReceived: number }
   | { readonly type: 'RoundEnded'; readonly round: number }
   | { readonly type: 'GameFinished'; readonly gameId: string }
+  | { readonly type: 'IntermediateIncomeAwarded'; readonly playerId: PlayerId }
   | { readonly type: 'TurnEnded'; readonly playerId: PlayerId }
   | {
       readonly type: 'ArtworkSelected'
