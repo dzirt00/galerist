@@ -14,12 +14,12 @@ import { getFirstPlayerIndex } from './turn-order.js'
 import type { PlayerBoard } from "./player-boards.js";
 import { applyIntermediateIncomeToPlayers, type IntermediateIncomeAwardInput } from "./intermediate-income-award.js";
 
-/** Начинает обычную игру по TURN-001 и выбирает первого игрока по ADR-001. */
-
+/** Сравнивает списки ID с учётом длины и порядка. */
 function arraysEqual  (a: string[], b: string[]): boolean {
   return a.length === b.length && a.every((val, i) => val === b[i]);
 }
 
+/** Сортирует переданный рабочий массив ID на месте для сравнения состава игроков. */
 function sortedPlayers (playersIds: string[]): string[] {
   return playersIds.sort( ( a, b ) => {
     if ( a > b ) return 1;
@@ -28,6 +28,7 @@ function sortedPlayers (playersIds: string[]): string[] {
   } )
 }
 
+/** Собирает актуальные числа посетителей галерей для дохода, сохраняя порядок players. */
 function prepareIntermediateIncomeEntries(
   players:  readonly PlayerState[],
   playerBoards:  readonly PlayerBoard[]
@@ -42,6 +43,7 @@ function prepareIntermediateIncomeEntries(
     return acc;
   },[] as string[]))
 
+  // Порядок планшетов может отличаться; состав ID должен совпасть с составом игроков.
   if(!arraysEqual(sortPlayersIds, sortPlayersIdsFromGallery)){
     throw new Error( 'Invalid players ID' )
   }
@@ -67,6 +69,7 @@ function prepareIntermediateIncomeEntries(
   },[] as IntermediateIncomeAwardInput[])
 }
 
+/** Начинает обычную игру по TURN-001 и выбирает первого игрока по ADR-001. */
 export function startGame(state: GameState): GameTransition<RegularPlayGameState> {
   if (state.phase !== 'setup') {
     throw new Error('Game can only be started from setup')
@@ -81,6 +84,7 @@ export function startGame(state: GameState): GameTransition<RegularPlayGameState
   )
   const firstPlayerId = state.players[firstPlayerIndex]!.id
 
+  // Поля выбора стартовой локации принадлежат только setup и не переходят в regular_play.
   const {
     setupStage: _setupStage,
     startingLocationSelectionOrder: _selectionOrder,
@@ -139,6 +143,7 @@ export function advanceTurn(state: GameState): GameTransition<GameState> {
   let eventsIntermediateIncomeAwarded:GameEvent[] | null = null
   let intermediateScoringStatus = state.intermediateScoringStatus
 
+  // Доход начисляется один раз при завершении хода, по текущим посетителям галерей.
   if(intermediateScoringStatus === 'pending') {
     const intermediateIncomeAwardInput = prepareIntermediateIncomeEntries(state.players,state.playerBoards)
     updatePlayersState = applyIntermediateIncomeToPlayers(intermediateIncomeAwardInput)
@@ -160,16 +165,19 @@ export function advanceTurn(state: GameState): GameTransition<GameState> {
   const updatePlayers = (updatePlayersState === null) ? state.players : updatePlayersState;
 
   const nextPlayer = state.players[(currentIndex + 1) % state.players.length]!.id
+  // Граница раунда — возврат к firstPlayerId, который может быть не первым элементом players.
   const isNewRound = nextPlayer === state.firstPlayerId
   const nextRoundNumber = isNewRound ? state.round + 1 : state.round
   const eventTurnEnded = { type: 'TurnEnded', playerId: state.activePlayerId } satisfies GameEvent
   const eventTurnStarted = { type: 'TurnStarted', playerId: nextPlayer } satisfies GameEvent
   const eventRoundEnded =  { type: 'RoundEnded', round: state.round } satisfies GameEvent
   const eventRoundStarted =  { type: 'RoundStarted', round: nextRoundNumber } satisfies GameEvent
+  // Отложенный доход следует за TurnEnded, но предшествует границе раунда и следующему ходу.
   const events = (isNewRound)
     ? [eventTurnEnded, ...addEventsIntermediateIncomeAwardInput,eventRoundEnded, eventRoundStarted, eventTurnStarted]
     : [eventTurnEnded, ...addEventsIntermediateIncomeAwardInput, eventTurnStarted]
 
+  // После последнего финального хода следующего TurnStarted уже нет: начинается подсчёт.
   if (state.phase === 'final_round') {
     if (isNewRound) {
       return freezeTransition({

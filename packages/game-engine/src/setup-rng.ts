@@ -40,6 +40,7 @@ export function createSetupRng(config: SetupRngConfig): SetupRng {
 
   const playerIds = Object.freeze([...config.playerIds])
   const seedString = Object.is(config.seed, -0) ? '0' : String(config.seed)
+  // Каждый этап расходует свой счётчик: добавление вызовов одного этапа не сдвигает остальные.
   const stageCounters = new Map<string, bigint>()
 
   /** Возвращает следующее 32-битное значение для указанного этапа. */
@@ -74,6 +75,7 @@ export function createSetupRng(config: SetupRngConfig): SetupRng {
     assertStageId(stageId)
     assertItemCount(itemCount)
 
+    // Оставляем диапазон, кратный числу элементов, чтобы остаток от деления не давал смещения.
     const limit = Math.floor(UINT32_RANGE / itemCount) * itemCount
     let value: number
     do {

@@ -46,6 +46,7 @@ export function hireAssistants(
   input: Readonly<HireAssistantsInput>,
 ): Readonly<HireAssistantsResult> {
 
+  // splice и последующая заморозка затрагивают только независимые копии очереди и её записей.
   let remainingQueue = [ ...input.queue.map( item => ( { ...item } ) ) ]
 
   if (
@@ -74,6 +75,7 @@ export function hireAssistants(
       coins: input.player.coins - totalCost,
     }
   } else {
+    // Явно выбранный расход влияния применяется даже при достаточном количестве монет.
     updatedPlayer = spendInfluenceForImmediatePayment(
       input.player,
       totalCost,

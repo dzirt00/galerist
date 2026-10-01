@@ -23,6 +23,7 @@ const cases: readonly [
   [4, fourPlayerConfigs],
 ]
 
+/** Завершает setup, последовательно выбирая первую доступную локацию. */
 function chooseAllStartingLocations(initialState: SetupGameState): SetupGameState {
   let state = initialState
 

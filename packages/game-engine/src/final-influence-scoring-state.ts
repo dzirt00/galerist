@@ -3,6 +3,7 @@ import type { FinalScoringGameState, GameState } from "./types.js";
 import { applyFinalInfluenceScoreToPlayers } from "./final-influence-award.js";
 import { calculateFinalInfluenceCoins } from "./influence-scoring.js";
 
+/** Однократно начисляет всем игрокам итоговую ценность влияния в фазе final_scoring. */
 export function applyFinalInfluenceScoringToGameState(
   state: Readonly<GameState>,
 ): GameTransition<Readonly<FinalScoringGameState>> {
@@ -14,6 +15,7 @@ export function applyFinalInfluenceScoringToGameState(
     throw new Error('Is status not in_progress')
   }
 
+  // Флаг хранится в снимке, поэтому повторное начисление запрещено и после восстановления.
   if (state.finalInfluenceScored) {
     throw new Error('Final influence has already been scored')
   }

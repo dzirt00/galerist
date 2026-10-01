@@ -105,12 +105,15 @@ describe('Подготовка рынка художников через prepar
 })
 
 describe('Подготовка бонусов, коллекционеров и подписей художников', () => {
+  /** Повторяет подготовку художников с тем же seed и независимыми копиями входа. */
   const inputMarket = () => prepareArtistMarket(
     setupComponentCatalog.artists.map(artist => ({ ...artist })),
     createSetupRng(config),
   )
+  /** Создаёт изменяемые копии посетителей, чтобы обнаружить изменение входных объектов. */
   const inputVisitors = () =>
     setupComponentCatalog.visitorInstancesByPlayerCount[2].map(visitor => ({ ...visitor }))
+  /** Создаёт изменяемые копии бонусов, чтобы обнаружить изменение входных объектов. */
   const inputBonuses = () => setupComponentCatalog.artistBonuses.map(bonus => ({ ...bonus }))
 
   it('раздаёт бонусы закрытым художникам, коллекционеров красным и по две подписи каждому', () => {

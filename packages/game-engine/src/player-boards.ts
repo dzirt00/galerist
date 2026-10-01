@@ -24,7 +24,7 @@ export interface PlayerContract {
 }
 
 export interface PlayerBoard {
- readonly playerId: string,
+  readonly playerId: string,
   readonly assistants: {
     readonly office: number,
     readonly hireQueue: number
@@ -33,8 +33,8 @@ export interface PlayerBoard {
   readonly thirdPartitionReputationTokenId: string | null
   readonly gallery: Gallery
   readonly contract: PlayerContract | null
+  readonly reputationTokenArtworkIds: Record<string, string> | null
 }
-
 /** Подготавливает личные планшеты игроков по SETUP-012 в порядке мест. */
 export function preparePlayerBoards(
   playerIds: readonly string[],
@@ -53,6 +53,7 @@ export function preparePlayerBoards(
         visitors: [],
       },
       contract: null,
+      reputationTokenArtworkIds: null
     }
   });
   return deepFreeze(playerBoards)

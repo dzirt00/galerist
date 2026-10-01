@@ -11,6 +11,7 @@ import {
 import { twoPlayerConfigs, twoPlayerGameConfig } from './fixtures.js'
 import { createGameState } from './helpers.js'
 
+/** Создаёт независимый снимок с заданными запасами кассы и сброса. */
 function mutableStateWithSupplies(
   office: Record<SetupTicketColor, number>,
   discard: Record<SetupTicketColor, number>,

@@ -25,6 +25,7 @@ export interface ArtworkPurchaseRequest extends ArtworkPurchasePaymentRequest {
   >
 }
 
+/** Проверяет наличие работы и списка посетителей в открытой позиции рынка. */
 function isOpenArtworkSlot(object: unknown): object is OpenArtworkSlot {
   return (
     object != null &&
@@ -35,6 +36,7 @@ function isOpenArtworkSlot(object: unknown): object is OpenArtworkSlot {
   );
 }
 
+/** Проверяет покупку и возвращает источник подписи, позиции и данные для её применения. */
 export function validateArtworkPurchaseAvailability(
   state: Readonly<GameState>,
   request: Readonly<ArtworkPurchasePaymentRequest>
@@ -162,6 +164,7 @@ export function validateArtworkPurchaseAvailability(
   }
 }
 
+/** Проверяет выбор цветов по награде работы; однозначные награды выбирает автоматически. */
 function resolveArtworkTicketColors(
   ticketReward: string,
   requestedColors: readonly SetupTicketColor[] | undefined,
@@ -177,6 +180,7 @@ function resolveArtworkTicketColors(
   )
   if (colors === undefined) throw new Error('Artwork ticket colors must be selected')
   if (new Set(colors).size !== colors.length) throw new Error('Artwork ticket colors must be unique')
+  // Порядок цветов не важен; количество и состав должны совпадать.
   const hasExact = (...expected: SetupTicketColor[]) => (
     colors.length === expected.length && expected.every(color => colors.includes(color))
   )
@@ -194,6 +198,7 @@ function resolveArtworkTicketColors(
   return colors
 }
 
+/** Копирует четырёхпозиционный список, чтобы размещение не изменяло входной планшет. */
 function copyArtworkSlots(board: PlayerBoard): [
   ExhibitedArtwork | null,
   ExhibitedArtwork | null,
@@ -208,6 +213,7 @@ function copyArtworkSlots(board: PlayerBoard): [
   ]
 }
 
+/** Атомарно применяет покупку, награды, известность, размещение и пополнение рынка. */
 export function applyArtworkPurchaseToGameState(
   state: Readonly<GameState>,
   request: Readonly<ArtworkPurchaseRequest>
@@ -250,6 +256,7 @@ export function applyArtworkPurchaseToGameState(
     })),
   ]
 
+  // Работа без билетной награды не вызывает расчёт, требующий хотя бы один цвет.
   const ticketResult = requestedTicketColors.length === 0
     ? {
         player: artworkPurchasePaymentResult.player,
@@ -280,6 +287,7 @@ export function applyArtworkPurchaseToGameState(
   let nextPlayer = ticketResult.player
   let nextFame = baseFame
   let additionalFame = 0
+  // Дополнительное влияние расходуется после оплаты и базового прироста известности.
   if (request.fameTargetInfluence !== undefined) {
     if (baseFameGain === 0) throw new Error('Artwork X blocks additional fame spending')
     if (baseFame >= 19) throw new Error('Additional fame is unavailable at maximum fame')
@@ -305,11 +313,13 @@ export function applyArtworkPurchaseToGameState(
 
   const previousSaleValue = calculateArtworkSaleValue(availability.artist.artistId, oldFame)
   const saleValue = calculateArtworkSaleValue(availability.artist.artistId, nextFame)
+  // Награда выдаётся только при первом достижении статуса, а не при каждой покупке.
   const becameSuperstar = !availability.artist.isSuperstar && nextFame === 19
   if (becameSuperstar) nextPlayer = { ...nextPlayer, coins: nextPlayer.coins + 5 }
 
   const saleValueEvents: GameEvent[] = []
   const masterpieceEvents: GameEvent[] = []
+  // Рост известности меняет работы этого художника в галереях всех игроков.
   let playerBoards: readonly PlayerBoard[] = state.playerBoards.map(board => {
     const artworkSlots = copyArtworkSlots(board)
     let changed = false
@@ -334,6 +344,7 @@ export function applyArtworkPurchaseToGameState(
   })
 
   const isMasterpiece = availability.artist.isSuperstar || becameSuperstar
+  // Третье произведение-шедевр занимает четвёртую позицию по ARTWORK-005.
   const artworkSlotIndex = availability.occupiedArtworkSlotCount === 2
     && isMasterpiece
     && availability.emptyArtworkSlotIndexes.includes(3)
@@ -350,13 +361,28 @@ export function applyArtworkPurchaseToGameState(
     if (index !== availability.playerBoardIndex) return board
     const artworkSlots = copyArtworkSlots(board)
     artworkSlots[artworkSlotIndex] = exhibitedArtwork
+    let updateBoard: PlayerBoard | null = null
+    // Считаются работы, а не индекс покупки: шедевр тоже активирует стартовый жетон.
+    // Здесь жетон остаётся на работе; получение на клетку в конце хода — отдельный этап.
+    if(artworkSlots.filter(slot => slot !== null).length === 3 && board.thirdPartitionReputationTokenId !== null) {
+
+      updateBoard = {
+        ...board,
+        reputationTokenArtworkIds: ({
+          [board.thirdPartitionReputationTokenId]: exhibitedArtwork.artworkId
+        }),
+        thirdPartitionReputationTokenId: null,
+      }
+    }
+
+    updateBoard = (updateBoard === null) ? board : updateBoard
+
     return {
-      ...board,
+      ...updateBoard,
       gallery: { ...board.gallery, artworkSlots },
       contract: availability.sourceSignature === 'contract' ? null : board.contract,
     }
   })
-
   const artistSetupSlots = state.artistSetup.slots.map(slot => slot.artistId === availability.artist.artistId
     ? {
         ...slot,
@@ -366,6 +392,7 @@ export function applyArtworkPurchaseToGameState(
       }
     : slot)
 
+  // Пополнение не определяет получение стартового жетона: последняя работа тоже его активирует.
   const refill = refillArtworkMarket(
     state.artworkMarket.remainingArtworksByGenre[availability.artist.genre],
     state.visitorBag,
@@ -377,6 +404,7 @@ export function applyArtworkPurchaseToGameState(
   players[availability.playerIndex] = nextPlayer
   const capacityChanged = !availability.playerBoard.gallery.artworkSlots.some(artwork => artwork?.isMasterpiece)
     && isMasterpiece
+  // События следуют порядку эффектов: оплата, билеты, известность, размещение, рынок.
   const events: GameEvent[] = [
     ...paymentEvents,
     ...ticketResult.events,
@@ -419,6 +447,7 @@ export function applyArtworkPurchaseToGameState(
   }, events)
 }
 
+/** Применяет только оплату и перенос посетителей уже разрешённой покупки, без размещения работы. */
 export function applyArtworkPurchasePaymentToGameState(
   state: Readonly<GameState>,
   request: Readonly<ArtworkPurchasePaymentRequest>

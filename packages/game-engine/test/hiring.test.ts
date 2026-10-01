@@ -6,6 +6,7 @@ import {
   type PlayerState,
 } from '../src/index.js'
 
+/** Создаёт тестового игрока с заданными ресурсами и пустым запасом билетов. */
 function createPlayer(coins: number, influence: number): PlayerState {
   return {
     id: 'player-1',
@@ -17,6 +18,7 @@ function createPlayer(coins: number, influence: number): PlayerState {
   }
 }
 
+/** Создаёт тестовую очередь найма с возрастающей стоимостью и билетными наградами. */
 function createQueue(): HireQueueEntry[] {
   return [
     { assistantId: 'assistant-3', cost: 1, reward: null },

@@ -45,12 +45,15 @@ describe('Расчёт промежуточного дохода через calc
     const obj2 = { investors: 0, celebrities: value, collectors: 0 }
     const obj3 = { investors: 0, celebrities: 0, collectors: value }
 
+    /** Откладывает расчёт с первым невалидным набором посетителей для проверки ошибки. */
     const invoke1 = () => calculateIntermediateIncome(
       obj1 as unknown as IntermediateVisitorCounts,
     )
+    /** Откладывает расчёт со вторым невалидным набором посетителей для проверки ошибки. */
     const invoke2 = () => calculateIntermediateIncome(
       obj2 as unknown as IntermediateVisitorCounts,
     )
+    /** Откладывает расчёт с третьим невалидным набором посетителей для проверки ошибки. */
     const invoke3 = () => calculateIntermediateIncome(
       obj3 as unknown as IntermediateVisitorCounts,
     )
@@ -93,12 +96,15 @@ describe('Расчёт промежуточного дохода через calc
     const vis2 = { investors: 2, collectors: 1 }
     const vis3 = { investors: 2, celebrities: 3 }
 
+    /** Откладывает расчёт с первым невалидным значением для проверки ошибки. */
     const res1 = () => calculateIntermediateIncome(
       vis1 as unknown as IntermediateVisitorCounts,
     )
+    /** Откладывает расчёт со вторым невалидным значением для проверки ошибки. */
     const res2 = () => calculateIntermediateIncome(
       vis2 as unknown as IntermediateVisitorCounts,
     )
+    /** Откладывает расчёт с третьим невалидным значением для проверки ошибки. */
     const res3 = () => calculateIntermediateIncome(
       vis3 as unknown as IntermediateVisitorCounts,
     )

@@ -60,6 +60,7 @@ describe('Подготовка рынка произведений через pr
     }[] = []
     const trackingRng: SetupRng = {
       ...rng,
+      /** Записывает порядок вызовов, сохраняя поведение настоящего RNG. */
       shuffle<T>(stageId: string, items: readonly T[]): readonly T[] {
         shuffleCalls.push({ stageId, items })
         return rng.shuffle(stageId, items)
@@ -168,6 +169,7 @@ describe('Подготовка рынка произведений через pr
     let shuffleCallCount = 0
     const trackingRng: SetupRng = {
       ...baseRng,
+      /** Считает обращения к RNG, чтобы проверить отказ до перемешивания. */
       shuffle<T>(stageId: string, items: readonly T[]): readonly T[] {
         shuffleCallCount += 1
         return baseRng.shuffle(stageId, items)

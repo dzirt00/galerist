@@ -45,6 +45,7 @@ export function prepareArtistMarket(
   artists: readonly ArtistDefinition[],
   rng: SetupRng,
 ): PreparedArtistMarket {
+  // Нормализация каталога до перемешивания делает выбор независимым от порядка входа.
   const sortedArtists = [...artists].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
   const shuffledArtists = rng.shuffle('artists', sortedArtists);
   const selectedByPair = new Map<string, ArtistDefinition>();
@@ -59,6 +60,7 @@ export function prepareArtistMarket(
     }
   }
 
+  // Первым открывается синий художник в порядке случайного выбора, а не раскладки клеток.
   const firstBlueArtist = selectedInOrder.find(artist => artist.category === 'blue');
 
   const slots: PreparedArtistSlot[] = [];

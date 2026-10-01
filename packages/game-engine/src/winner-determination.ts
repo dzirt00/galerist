@@ -37,6 +37,7 @@ export function determineWinners(
     }
   }
 
+  // Критерии применяются последовательно: следующий нужен только при равенстве предыдущего.
   const sorted = [...candidates].sort((a, b) => {
     if (b.coins !== a.coins) return b.coins - a.coins
     if (b.acquiredArtworkCount !== a.acquiredArtworkCount) {
@@ -49,6 +50,7 @@ export function determineWinners(
   })
 
   const top = sorted[0]!
+  // Полное равенство сохраняет нескольких победителей в исходном порядке кандидатов.
   const winners = candidates.filter(candidate =>
     candidate.coins === top.coins
     && candidate.acquiredArtworkCount === top.acquiredArtworkCount

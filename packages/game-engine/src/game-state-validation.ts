@@ -3,6 +3,7 @@ import type { GamePhase, GameState, PlayerId } from './types.js'
 
 type UnknownRecord = Record<string, unknown>
 
+/** Рекурсивно сравнивает JSON-подобные значения; порядок ключей объекта не важен. */
 export function deepEqual(a: any, b: any): boolean {
   if (a === b) return true;
 
@@ -32,6 +33,7 @@ function fail(message: string): never {
   throw new Error(`Invalid game state: ${message}`)
 }
 
+/** Требует логическое значение без приведения строк и чисел к boolean. */
 function requireBoolean(value: unknown, name: string): boolean {
   if (typeof value !== 'boolean') {
     return fail(`${name} must be a boolean`)
@@ -153,8 +155,10 @@ function validateCommonCollections(state: UnknownRecord): void {
   })
 }
 
+/** Проверяет планшеты, работы, контракты и уникальность расположения физических подписей. */
 function validatePlayerBoards(state: UnknownRecord, playerIds: ReadonlySet<PlayerId>): void {
   if (!Array.isArray(state.playerBoards)) fail('playerBoards must be an array')
+  // Одна физическая подпись не может одновременно лежать у художника, на работе и в контракте.
   const signatureLocations = new Set<string>()
   const artistSetup = requireRecord(state.artistSetup, 'artistSetup')
   for (const value of artistSetup.slots as unknown[]) {

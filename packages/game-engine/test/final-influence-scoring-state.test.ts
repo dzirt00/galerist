@@ -17,6 +17,7 @@ import {
   startGameAfterSetup,
 } from './helpers.js'
 
+/** Передаёт ходы до достижения финального подсчёта. */
 function advanceToFinalScoring(
   initialState: GameState,
 ): FinalScoringGameState {
@@ -29,6 +30,7 @@ function advanceToFinalScoring(
   return state
 }
 
+/** Проводит тестовую партию через setup и финальные раунды до подсчёта. */
 function createFinalScoringState(): FinalScoringGameState {
   return advanceToFinalScoring(
     triggerGameEnd(

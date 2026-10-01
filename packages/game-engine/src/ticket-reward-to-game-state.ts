@@ -28,10 +28,12 @@ export interface TicketRewardApplicationResult {
 
 const TICKET_COLORS: readonly SetupTicketColor[] = ['B', 'R', 'W']
 
+/** Проверяет принадлежность значения одному из трёх цветов билетов. */
 function isTicketColor(value: unknown): value is SetupTicketColor {
   return TICKET_COLORS.includes(value as SetupTicketColor)
 }
 
+/** Проверяет выбранные цвета и замены до изменения копий запасов. */
 function validateRequest(request: TicketRewardRequest): void {
   if (request === null || typeof request !== 'object') {
     throw new Error('Ticket reward request must be an object')
@@ -58,6 +60,7 @@ function validateRequest(request: TicketRewardRequest): void {
   }
 }
 
+/** Создаёт отдельный запас трёх цветов, считая отсутствующие записи нулевыми. */
 function copyTicketCounts(
   counts: Readonly<Record<string, number>>,
 ): Record<SetupTicketColor, number> {
@@ -139,6 +142,7 @@ export function applyTicketReward(
     playerTicketsByColor[color] += 1
     events.push({ type: 'TicketReceived', playerId: input.playerId, color })
 
+    // Только переход стопки с одного билета на ноль впервые назначает промежуточный подсчёт.
     if(intermediateScoringStatus === 'not_triggered') {
       if(ticketOffice[color] === 0 && ticketOfficeStart === 1) {
         isScoringStatusChange = true
@@ -147,6 +151,7 @@ export function applyTicketReward(
     }
   }
 
+  // Назначение публикуется после всей билетной награды; сам доход здесь не начисляется.
   if(isScoringStatusChange) events.push({type: 'IntermediateScoringTriggered'})
 
   return {

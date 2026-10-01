@@ -9,6 +9,7 @@ import {
 
 const playerIds = ['player-1', 'player-2'] as const
 
+/** Создаёт RNG с фиксированными версиями и seed для воспроизводимых тестов целей. */
 function createRng() {
   return createSetupRng({
     rulesVersion: 'galerist-rules-2026-09-15-v1',
@@ -18,6 +19,7 @@ function createRng() {
   })
 }
 
+/** Создаёт независимые изменяемые копии определений целей. */
 function mutableGoalCopies(goals: readonly GoalCardDefinition[]): GoalCardDefinition[] {
   return structuredClone(goals) as GoalCardDefinition[]
 }

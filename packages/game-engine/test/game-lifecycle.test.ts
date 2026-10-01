@@ -30,6 +30,7 @@ import {
   expectEndingTurns,
 } from './helpers.js'
 
+/** Создаёт тестовую партию с заданными настройками и составом игроков. */
 function createGame(config: GameConfig, players: readonly PlayerConfig[]) {
   return createGameTransition({
     gameId: `game-${config.seed}`,
@@ -38,10 +39,12 @@ function createGame(config: GameConfig, players: readonly PlayerConfig[]) {
   }).state
 }
 
+/** Возвращает состояние запуска, сохраняя требования команды к завершённому setup. */
 function startGameFromSetup(state: SetupGameState) {
   return startGameTransition(state).state
 }
 
+/** При необходимости завершает выбор локаций и возвращает состояние запущенной партии. */
 function startGame(state: GameState) {
   return startGameTransition(
     state.phase === 'setup' && state.setupStage === 'choosing_starting_locations'
@@ -50,6 +53,7 @@ function startGame(state: GameState) {
   ).state
 }
 
+/** Назначает отложенный подсчёт и задаёт посетителей галерей для проверки дохода. */
 function withPendingIntermediateScoring<
   TState extends RegularPlayGameState | EndingSequenceGameState,
 >(state: TState): TState {

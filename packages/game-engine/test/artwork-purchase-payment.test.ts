@@ -8,6 +8,7 @@ import {
   type VisitorInstance,
 } from '../src/index.js'
 
+/** Создаёт тестового игрока с заданными ресурсами и пустым запасом билетов. */
 function createPlayer(coins: number, influence = 10): PlayerState {
   return {
     id: 'player-1',
@@ -19,6 +20,7 @@ function createPlayer(coins: number, influence = 10): PlayerState {
   }
 }
 
+/** Создаёт тестовую работу с двумя посетителями и фиксированной наградой. */
 function createArtwork(): ArtworkDefinition {
   return {
     id: 'WORK-D-01',
@@ -29,6 +31,7 @@ function createArtwork(): ArtworkDefinition {
   }
 }
 
+/** Создаёт тестового посетителя с заданными ID и цветом. */
 function visitor(id: string, type: VisitorInstance['type']): VisitorInstance {
   return { id, type }
 }

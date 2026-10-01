@@ -85,6 +85,7 @@ describe('Расчёт монет за итоговое влияние чере�
     ['symbol', Symbol('4')],
     ['функция', () => 4],
   ] as const)('отклоняет %s', (_description, runtimeValue) => {
+    /** Передаёт значение в обход статического типа для проверки runtime-валидации. */
     const invokeWithRuntimeValue = () => calculateFinalInfluenceCoins(
       runtimeValue as unknown as number,
     )

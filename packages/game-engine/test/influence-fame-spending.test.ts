@@ -27,6 +27,7 @@ describe('Расчёт славы за влияние через calculateAdditi
   ] as const)(
     'отклоняет %s',
     (_description, currentInfluence, targetInfluence) => {
+      /** Откладывает вызов расчёта, чтобы тест мог проверить выбрасываемую ошибку. */
       const invoke = () => calculateAdditionalFameFromInfluenceSpend(
         currentInfluence,
         targetInfluence,
@@ -54,6 +55,7 @@ describe('Расчёт славы за влияние через calculateAdditi
     ['symbol', Symbol('4')],
     ['функция', () => 4],
   ] as const)('отклоняет невалидный currentInfluence: %s', (_description, value) => {
+    /** Откладывает вызов расчёта, чтобы тест мог проверить выбрасываемую ошибку. */
     const invoke = () => calculateAdditionalFameFromInfluenceSpend(
       value as unknown as number,
       0,
@@ -80,6 +82,7 @@ describe('Расчёт славы за влияние через calculateAdditi
     ['symbol', Symbol('4')],
     ['функция', () => 4],
   ] as const)('отклоняет невалидный targetInfluence: %s', (_description, value) => {
+    /** Откладывает вызов расчёта, чтобы тест мог проверить выбрасываемую ошибку. */
     const invoke = () => calculateAdditionalFameFromInfluenceSpend(
       10,
       value as unknown as number,

@@ -15,6 +15,7 @@ import {
 import { twoPlayerConfigs, twoPlayerGameConfig } from './fixtures.js'
 import { createGameState, startGameAfterSetup } from './helpers.js'
 
+/** Передаёт ходы до достижения финального подсчёта. */
 function advanceToFinalScoring(initialState: GameState): FinalScoringGameState {
   let state = initialState
 
@@ -25,6 +26,7 @@ function advanceToFinalScoring(initialState: GameState): FinalScoringGameState {
   return state
 }
 
+/** Подготавливает финальный подсчёт с уже начисленной ценностью влияния. */
 function createScoredFinalState(): FinalScoringGameState {
   const finalScoring = advanceToFinalScoring(
     triggerGameEnd(
@@ -37,6 +39,7 @@ function createScoredFinalState(): FinalScoringGameState {
   return applyFinalInfluenceScoringToGameState(finalScoring).state
 }
 
+/** Собирает кандидатов с актуальными монетами и различными тестовыми показателями ничьей. */
 function createCandidates(
   state: FinalScoringGameState,
 ): readonly WinnerCandidate[] {

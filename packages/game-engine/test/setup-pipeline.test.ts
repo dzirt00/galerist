@@ -14,6 +14,7 @@ import {
   twoPlayerConfigs,
 } from './fixtures.js'
 
+/** Создаёт тестовую партию с заданными настройками и составом игроков. */
 function createGame(
   config: { readonly playerCount: 2 | 3 | 4; readonly seed: number },
   players: readonly PlayerConfig[],
@@ -25,6 +26,7 @@ function createGame(
   })
 }
 
+/** Последовательно выбирает доступные локации до завершения setup. */
 function completeSetup(state: SetupGameState): SetupGameState {
   let current = state
   while (current.setupStage === 'choosing_starting_locations') {

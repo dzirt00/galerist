@@ -6,6 +6,7 @@ import {
   type VisitorInstance,
 } from '../src/index.js'
 
+/** Создаёт тестовую работу с заданным числом посетителей для пополнения рынка. */
 function artwork(
   id: string,
   visitorCount: number,
@@ -19,6 +20,7 @@ function artwork(
   }
 }
 
+/** Создаёт тестового посетителя с заданными ID и цветом. */
 function visitor(id: string, type: VisitorInstance['type']): VisitorInstance {
   return { id, type }
 }

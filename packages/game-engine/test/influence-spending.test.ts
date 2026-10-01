@@ -31,6 +31,7 @@ describe('Расчёт монет за влияние через calculateCoinsF
   ] as const)(
     'отклоняет %s',
     (_description, currentInfluence, targetInfluence) => {
+      /** Откладывает вызов расчёта, чтобы тест мог проверить выбрасываемую ошибку. */
       const invoke = () => calculateCoinsFromInfluenceSpend(
         currentInfluence,
         targetInfluence,
@@ -58,6 +59,7 @@ describe('Расчёт монет за влияние через calculateCoinsF
     ['symbol', Symbol('4')],
     ['функция', () => 4],
   ] as const)('отклоняет невалидный currentInfluence: %s', (_description, value) => {
+    /** Откладывает вызов расчёта, чтобы тест мог проверить выбрасываемую ошибку. */
     const invoke = () => calculateCoinsFromInfluenceSpend(
       value as unknown as number,
       0,
@@ -84,6 +86,7 @@ describe('Расчёт монет за влияние через calculateCoinsF
     ['symbol', Symbol('4')],
     ['функция', () => 4],
   ] as const)('отклоняет невалидный targetInfluence: %s', (_description, value) => {
+    /** Откладывает вызов расчёта, чтобы тест мог проверить выбрасываемую ошибку. */
     const invoke = () => calculateCoinsFromInfluenceSpend(
       10,
       value as unknown as number,

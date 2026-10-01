@@ -11,6 +11,7 @@ import {
 import { createGameState } from './helpers.js'
 import { twoPlayerConfigs, twoPlayerGameConfig } from './fixtures.js'
 
+/** Выбирает допустимые тестовые цвета для фиксированной или альтернативной билетной награды. */
 function colorsForReward(reward: string): readonly SetupTicketColor[] {
   if (reward === '—') return []
   if (reward === 'B' || reward === 'R' || reward === 'W') return [reward]
@@ -21,6 +22,7 @@ function colorsForReward(reward: string): readonly SetupTicketColor[] {
   return ['B']
 }
 
+/** Собирает обычную покупку первого игрока с допустимыми цветами награды. */
 function regularRequest(state: GameState): ArtworkPurchaseRequest {
   const artist = state.artistMarket.slots.find(slot => slot.isOpen)!
   const artwork = state.artworkMarket.openArtworksByGenre[artist.genre]!.artwork
@@ -255,6 +257,7 @@ describe('applyArtworkPurchaseToGameState', () => {
     const artist = baseState.artistMarket.slots.find(slot => slot.isOpen)!
     const artistIndex = baseState.artistMarket.slots.indexOf(artist)
     const open = baseState.artworkMarket.openArtworksByGenre[artist.genre]!
+    /** Создаёт уже выставленную работу другого художника для проверки вместимости галереи. */
     const existing = (artworkId: string, artistId: string, signatureTokenId: string) => ({
       artworkId, artistId, signatureTokenId, saleValue: 5, isMasterpiece: false,
     })

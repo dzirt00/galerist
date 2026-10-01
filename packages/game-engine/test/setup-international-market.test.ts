@@ -14,6 +14,7 @@ const config = {
   playerIds: ['player-1', 'player-2', 'player-3'],
 }
 
+/** Возвращает отдельную копию каталога ID жетонов репутации. */
 const tokens = (): string[] => [...setupComponentCatalog.reputationTokenIds]
 
 describe('SETUP-008: подготовка жетонов репутации', () => {

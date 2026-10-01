@@ -7,6 +7,7 @@ import {
 } from '../src/index.js'
 import { createGameState, startGameAfterSetup } from './helpers.js'
 
+/** Создаёт независимое изменяемое setup-состояние с заданным влиянием игроков. */
 function createMutableSetupState(
   firstInfluence = 12,
   secondInfluence = 34,

@@ -6,6 +6,7 @@ import { deepEqual } from "./game-state-validation.js";
 
 
 
+/** Проверяет итоговых кандидатов, определяет победителей и переводит партию в finished. */
 export function completeFinalScoring(
   state: Readonly<GameState>,
   candidates: readonly WinnerCandidate[],
@@ -19,6 +20,7 @@ export function completeFinalScoring(
     throw new Error( 'Is final_scoring' )
   }
 
+  // Сравниваем ID и монеты независимо от порядка кандидатов; остальные показатели переданы извне.
   const coinsCandidate = candidates.map(candidate => {
     return {
       playersID: candidate.playerId,

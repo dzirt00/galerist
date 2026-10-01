@@ -16,6 +16,7 @@ interface PurchaseStateOptions {
   readonly currentFame?: number
 }
 
+/** Подготавливает независимое состояние с заданными монетами и известностью для проверки оплаты. */
 function createPurchaseState({
   coins = 10,
   initialFame = 3,
@@ -39,6 +40,7 @@ function createPurchaseState({
   }
 }
 
+/** Собирает запрос покупки у открытого художника для указанного способа покупки. */
 function requestForOpenArtist(
   state: SetupGameState,
   purchaseType: ArtworkPurchasePaymentRequest['purchaseType'],

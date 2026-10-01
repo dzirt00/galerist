@@ -10,6 +10,7 @@ export function projectGameForViewer(
     throw new Error('Viewer must be a player or null')
   }
 
+  // До подсчёта видны только собственные цели; наблюдатель не получает ни одной.
   const revealAllGoals = state.phase === 'final_scoring' || state.phase === 'finished'
   const visibleGoals = revealAllGoals
     ? state.privateGoals.goalsByPlayer
@@ -83,6 +84,7 @@ export function projectGameForViewer(
     intermediateScoringStatus: state.intermediateScoringStatus
   }
 
+  // Независимая копия не позволяет проекции ссылаться на изменяемые объекты входного снимка.
   return deepFreeze(structuredClone(projection))
 }
 

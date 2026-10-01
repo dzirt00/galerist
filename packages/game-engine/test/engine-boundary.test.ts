@@ -9,6 +9,7 @@ import {
 import { twoPlayerConfigs } from './fixtures.js'
 import { completeStartingLocationSelection } from './helpers.js'
 
+/** Создаёт детерминированную тестовую партию с заданным внешним ID. */
 function createSetup(gameId = 'game-boundary') {
   return createGame({
     gameId,
