@@ -35,6 +35,92 @@ function regularRequest(state: GameState): ArtworkPurchaseRequest {
 }
 
 describe('applyArtworkPurchaseToGameState', () => {
+  it.each([
+    { name: 'покупает четвёртую работу-шедевр по контракту у суперзвезды', superstar: true, contract: 'matching', purchaseType: 'contract', masterpiece: false, full: false, succeeds: true },
+    { name: 'покупает четвёртую обычную работу при существующем шедевре', superstar: false, contract: 'none', purchaseType: 'regular', masterpiece: true, full: false, succeeds: true },
+    { name: 'отклоняет четвёртую обычную работу без шедевра', superstar: false, contract: 'none', purchaseType: 'regular', masterpiece: false, full: false, succeeds: false },
+    { name: 'отклоняет четвёртую контрактную работу у обычного художника', superstar: false, contract: 'matching', purchaseType: 'contract', masterpiece: false, full: false, succeeds: false },
+    { name: 'отклоняет контракт другого художника при покупке четвёртой работы', superstar: true, contract: 'other', purchaseType: 'contract', masterpiece: false, full: false, succeeds: false },
+    { name: 'отклоняет отсутствие контракта при покупке четвёртой работы', superstar: true, contract: 'none', purchaseType: 'contract', masterpiece: false, full: false, succeeds: false },
+    { name: 'отклоняет обычную покупку у суперзвезды даже с подходящим контрактом', superstar: true, contract: 'matching', purchaseType: 'regular', masterpiece: false, full: false, succeeds: false },
+    { name: 'отклоняет контрактную покупку шедевра в заполненную галерею', superstar: true, contract: 'matching', purchaseType: 'contract', masterpiece: false, full: true, succeeds: false },
+  ] as const)('$name', ({ superstar, contract, purchaseType, masterpiece, full, succeeds }) => {
+    const baseState = createGameState(twoPlayerGameConfig, twoPlayerConfigs)
+    const artist = baseState.artistMarket.slots.find(slot => slot.isOpen)!
+    const open = baseState.artworkMarket.openArtworksByGenre[artist.genre]!
+    const signatureTokenId = baseState.artistSetup.slots.find(slot => slot.artistId === artist.artistId)!
+      .availableSignatureTokenIds[0]!
+    const existing = (index: number) => ({
+      artworkId: `existing-${index}`,
+      artistId: `other-artist-${index}`,
+      signatureTokenId: `other-signature-${index}`,
+      saleValue: 5,
+      isMasterpiece: index === 0 && masterpiece,
+    })
+    const state: GameState = {
+      ...baseState,
+      players: baseState.players.map((player, index) => index === 0 ? { ...player, coins: 30 } : player),
+      artistMarket: {
+        ...baseState.artistMarket,
+        slots: baseState.artistMarket.slots.map(slot => slot.artistId === artist.artistId
+          ? { ...slot, fame: superstar ? 19 : slot.fame, isSuperstar: superstar }
+          : slot),
+      },
+      artworkMarket: {
+        ...baseState.artworkMarket,
+        openArtworksByGenre: {
+          ...baseState.artworkMarket.openArtworksByGenre,
+          [artist.genre]: { ...open, artwork: { ...open.artwork, fameGain: 'X', ticketReward: '—' } },
+        },
+        remainingArtworksByGenre: { ...baseState.artworkMarket.remainingArtworksByGenre, [artist.genre]: [] },
+      },
+      playerBoards: baseState.playerBoards.map((board, index) => index === 0 ? {
+        ...board,
+        contract: contract === 'none' ? null : {
+          artistId: contract === 'matching' ? artist.artistId : 'other-contract-artist',
+          signatureTokenId,
+        },
+        gallery: {
+          ...board.gallery,
+          artworkSlots: [existing(0), existing(1), existing(2), full ? existing(3) : null] as const,
+        },
+      } : board),
+    }
+    const request: ArtworkPurchaseRequest = { playerId: state.players[0]!.id, artistId: artist.artistId, purchaseType }
+    const snapshot = structuredClone(state)
+    const requestSnapshot = structuredClone(request)
+
+    if (!succeeds) {
+      expect(() => applyArtworkPurchaseToGameState(state, request)).toThrow()
+    } else {
+      const transition = applyArtworkPurchaseToGameState(state, request)
+      const board = transition.state.playerBoards[0]!
+      const exhibited = board.gallery.artworkSlots[3]!
+      const paid = purchaseType === 'contract' ? artist.initialFame : artist.fame!
+      expect(board.gallery.artworkSlots.slice(0, 3)).toEqual(state.playerBoards[0]!.gallery.artworkSlots.slice(0, 3))
+      expect(exhibited).toMatchObject({ artworkId: open.artwork.id, artistId: artist.artistId, signatureTokenId, isMasterpiece: superstar })
+      expect(board.contract).toBeNull()
+      expect(transition.state.players[0]!.coins).toBe(30 - paid)
+      expect(transition.events).toEqual([
+        { type: 'ArtworkSelected', playerId: request.playerId, artistId: artist.artistId, artworkId: open.artwork.id },
+        { type: 'CoinsSpent', playerId: request.playerId, paid },
+        ...open.visitors.map(visitor => ({ type: 'VisitorMoved', visitorId: visitor.id, from: 'artwork', to: 'plaza' })),
+        { type: 'ArtworkExhibited', playerId: request.playerId, artistId: artist.artistId, artworkId: open.artwork.id, artworkSlotIndex: 3 },
+        { type: 'SignaturePriceSet', signatureTokenId, saleValue: exhibited.saleValue },
+        ...(superstar ? [{ type: 'ExhibitionCapacityChanged', playerId: request.playerId, capacity: 4 }] : []),
+      ])
+      expect(transition.state.plazaVisitors).toEqual([...state.plazaVisitors, ...open.visitors])
+      expect(transition.state.artworkMarket.openArtworksByGenre[artist.genre]).toBeNull()
+      expect(transition.state.visitorBag).toEqual(state.visitorBag)
+      expect(projectGameForViewer(transition.state, request.playerId).playerBoards[0]!.gallery.artworkSlots[3]).toEqual(exhibited)
+      expect(projectEventsForViewer(transition.events, transition.state, request.playerId)).toEqual(transition.events)
+      expect(Object.isFrozen(transition.state)).toBe(true)
+      expect(Object.isFrozen(exhibited)).toBe(true)
+    }
+    expect(state).toEqual(snapshot)
+    expect(request).toEqual(requestSnapshot)
+  })
+
   it('атомарно покупает, размещает работу, переносит подпись и пополняет рынок', () => {
     const state = createGameState(twoPlayerGameConfig, twoPlayerConfigs)
     const request = regularRequest(state)

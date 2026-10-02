@@ -94,7 +94,7 @@ export function validateArtworkPurchaseAvailability(
     throw new Error("Gallery is completely full");
   }
 
-  if (emptySlotsCount === 1 && !hasMasterpiece) {
+  if (emptySlotsCount === 1 && !hasMasterpiece && !(getBoardPlayer.contract?.artistId === getSlotArtist.artistId && getSlotArtist.isSuperstar)) {
     throw new Error("Last slot can only be filled by a masterpiece");
   }
 
