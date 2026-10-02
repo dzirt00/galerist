@@ -1,3 +1,4 @@
+import { withGameEndConditions } from './helpers.js'
 import { describe, expect, it } from 'vitest'
 import {
   createGame,
@@ -102,7 +103,7 @@ describe('граница игрового движка', () => {
     const regularPlay = startGame(
       completeStartingLocationSelection(setup.state),
     ).state
-    const transition = triggerGameEnd(regularPlay)
+    const transition = triggerGameEnd(withGameEndConditions(regularPlay))
 
     expect(projectEventsForViewer(
       transition.events,

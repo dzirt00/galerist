@@ -240,6 +240,22 @@ export function triggerGameEnd(state: GameState): GameTransition<EndingCurrentRo
   if (state.phase !== 'regular_play') {
     throw new Error('Only regular_play')
   }
+
+  const isEmptyVisitorsBagCount = state.visitorBag.visitors.length === 0
+  const isHaveTwoArtistSuperstar = state.artistMarket.slots.filter(el => el.isSuperstar ).length >= 2
+  let countTickets = 0
+    for(let ticket of Object.values(state.ticketOffice.ticketsByColor)) {
+      countTickets += ticket
+    }
+  const isEmptyTicket = countTickets === 0
+
+  if((!isEmptyTicket && !isEmptyVisitorsBagCount)
+    || (!isEmptyTicket && !isHaveTwoArtistSuperstar)
+    || (!isEmptyVisitorsBagCount && !isHaveTwoArtistSuperstar)
+  ) {
+    throw new Error('Invalid trigger end game')
+  }
+
   const updateState = {
     ...state,
     phase: 'ending_current_round',

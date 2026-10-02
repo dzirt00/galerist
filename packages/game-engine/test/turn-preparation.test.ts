@@ -1,3 +1,4 @@
+import { withGameEndConditions } from './helpers.js'
 import { expect, it } from 'vitest'
 import {
   advanceTurn,
@@ -20,7 +21,7 @@ function createRegularTurnState(): GameState {
 
 /** Доводит тестовую игру до финального раунда. */
 function createFinalRoundTurnState(): GameState {
-  let state: GameState = triggerGameEnd(createRegularTurnState()).state
+  let state: GameState = triggerGameEnd(withGameEndConditions(createRegularTurnState())).state
   state = advanceTurn(state).state
   return advanceTurn(state).state
 }
@@ -126,7 +127,7 @@ it.each([
 
 it.each([
   ['regular_play', createRegularTurnState],
-  ['ending_current_round', () => triggerGameEnd(createRegularTurnState()).state],
+  ['ending_current_round', () => triggerGameEnd(withGameEndConditions(createRegularTurnState())).state],
   ['final_round', createFinalRoundTurnState],
 ] as const)('подготавливает ход в фазе %s', (phase, createState) => {
   const prepared = prepareTurn(createState(), createConfirmedTurn())

@@ -1,3 +1,4 @@
+import { withGameEndConditions } from './helpers.js'
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -29,11 +30,9 @@ function advanceToFinalScoring(initialState: GameState): FinalScoringGameState {
 /** Подготавливает финальный подсчёт с уже начисленной ценностью влияния. */
 function createScoredFinalState(): FinalScoringGameState {
   const finalScoring = advanceToFinalScoring(
-    triggerGameEnd(
-      startGameAfterSetup(
+    triggerGameEnd(withGameEndConditions(startGameAfterSetup(
         createGameState(twoPlayerGameConfig, twoPlayerConfigs),
-      ),
-    ).state,
+      ))).state,
   )
 
   return applyFinalInfluenceScoringToGameState(finalScoring).state
@@ -216,11 +215,9 @@ describe('completeFinalScoring', () => {
 
   it('отклоняет завершение до финальной выплаты и повторное завершение', () => {
     const unscored = advanceToFinalScoring(
-      triggerGameEnd(
-        startGameAfterSetup(
+      triggerGameEnd(withGameEndConditions(startGameAfterSetup(
           createGameState(twoPlayerGameConfig, twoPlayerConfigs),
-        ),
-      ).state,
+        ))).state,
     )
 
     expect(() => completeFinalScoring(

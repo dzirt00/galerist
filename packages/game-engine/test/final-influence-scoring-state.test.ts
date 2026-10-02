@@ -1,3 +1,4 @@
+import { withGameEndConditions } from './helpers.js'
 import { expect, it } from 'vitest'
 import {
   advanceTurn,
@@ -33,11 +34,9 @@ function advanceToFinalScoring(
 /** Проводит тестовую партию через setup и финальные раунды до подсчёта. */
 function createFinalScoringState(): FinalScoringGameState {
   return advanceToFinalScoring(
-    triggerGameEnd(
-      startGameAfterSetup(
+    triggerGameEnd(withGameEndConditions(startGameAfterSetup(
         createGameState(twoPlayerGameConfig, twoPlayerConfigs),
-      ),
-    ).state,
+      ))).state,
   )
 }
 

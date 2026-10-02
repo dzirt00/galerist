@@ -13,6 +13,28 @@ import {
   type TurnDraft,
 } from '../src/index.js'
 
+/** Готовит два индикатора окончания для тестов следующих этапов lifecycle. */
+export function withGameEndConditions<TState extends GameState>(
+  state: TState,
+  preserve?: 'ticketOffice' | 'visitorBag',
+): TState {
+  const superstarMarket = {
+    ...state.artistMarket,
+    slots: state.artistMarket.slots.map((slot, index) => index < 2
+      ? { ...slot, isOpen: true, fame: 19, isSuperstar: true }
+      : slot),
+  }
+  return {
+    ...state,
+    ...(preserve === 'ticketOffice'
+      ? { artistMarket: superstarMarket }
+      : { ticketOffice: { ticketsByColor: { B: 0, R: 0, W: 0 } } }),
+    ...(preserve === 'visitorBag'
+      ? { artistMarket: superstarMarket }
+      : { visitorBag: { visitors: [] } }),
+  }
+}
+
 /** Завершает выбор стартовых локаций первым доступным вариантом для каждого игрока. */
 export function completeStartingLocationSelection(
   initialState: SetupGameState,
