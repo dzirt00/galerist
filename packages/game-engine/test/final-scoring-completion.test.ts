@@ -65,6 +65,10 @@ describe('completeFinalScoring', () => {
       ...initial,
       playerBoards: initial.playerBoards.map((board, index) => ({
         ...board,
+        assistants: {
+          ...board.assistants,
+          office: index === 0 ? firstAssistantCount : secondAssistantCount,
+        },
         gallery: {
           ...board.gallery,
           visitors: Array.from({ length: index === 0 ? firstVisitorCount : secondVisitorCount }, (_, visitorIndex) => ({
@@ -79,7 +83,7 @@ describe('completeFinalScoring', () => {
       coins: player.coins,
       acquiredArtworkCount: 0,
       galleryVisitorCount: index === 0 ? 0 : 99,
-      assistantsInPlayCount: index === 0 ? firstAssistantCount : secondAssistantCount,
+      assistantsInPlayCount: index === 0 ? 99 : 0,
     })).reverse()
     const stateSnapshot = structuredClone(state)
     const candidatesSnapshot = structuredClone(candidates)
@@ -99,6 +103,72 @@ describe('completeFinalScoring', () => {
     expect(Object.isFrozen(state.playerBoards)).toBe(false)
     expect(Object.isFrozen(candidates)).toBe(false)
     expect(Object.isFrozen(transition.state.playerBoards)).toBe(true)
+  })
+
+  it.each([
+    [5, 6, ['player-2']],
+    [0, 1, ['player-2']],
+    [0, 0, ['player-2', 'player-1']],
+    [6, 5, ['player-1']],
+  ] as const)('берёт помощников из офисов (%i/%i), исключая очередь найма', (
+    firstOffice, secondOffice, winnerIds,
+  ) => {
+    const initial = createScoredFinalState()
+    const state = structuredClone({
+      ...initial,
+      playerBoards: initial.playerBoards.map((board, index) => ({
+        ...board,
+        assistants: {
+          office: index === 0 ? firstOffice : secondOffice,
+          hireQueue: index === 0 ? 8 : 0,
+        },
+      })).reverse(),
+    })
+    const candidates = state.players.map((player, index) => ({
+      playerId: player.id,
+      coins: player.coins,
+      acquiredArtworkCount: 0,
+      galleryVisitorCount: 0,
+      assistantsInPlayCount: index === 0 ? 9 : 0,
+    })).reverse()
+    const stateSnapshot = structuredClone(state)
+    const candidatesSnapshot = structuredClone(candidates)
+
+    const transition = completeFinalScoring(state, candidates)
+
+    expect(transition.state).toMatchObject({
+      phase: 'finished', status: 'finished', activePlayerId: null, winnerIds,
+    })
+    expect(transition.events).toEqual([
+      { type: 'WinnerDetermined', winnerIds },
+      { type: 'FinalScoringCompleted', winnerIds },
+      { type: 'GameFinished', gameId: state.id },
+    ])
+    expect(projectGameForViewer(transition.state, null).winnerIds).toEqual(winnerIds)
+    expect(projectEventsForViewer(transition.events, transition.state, null)).toEqual(transition.events)
+    expect(state).toEqual(stateSnapshot)
+    expect(candidates).toEqual(candidatesSnapshot)
+    expect(transition.state.playerBoards).toEqual(state.playerBoards)
+    expect(Object.isFrozen(state.playerBoards)).toBe(false)
+    expect(Object.isFrozen(candidates)).toBe(false)
+    expect(Object.isFrozen(transition.state.playerBoards)).toBe(true)
+  })
+
+  it.each([-1, 1.5, NaN, Infinity])('отклоняет некорректное число помощников в офисе: %s', office => {
+    const initial = createScoredFinalState()
+    const state = structuredClone({
+      ...initial,
+      playerBoards: initial.playerBoards.map((board, index) => index === 0
+        ? { ...board, assistants: { ...board.assistants, office } }
+        : board),
+    })
+    const candidates = createCandidates(state)
+    const stateSnapshot = structuredClone(state)
+    const candidatesSnapshot = structuredClone(candidates)
+
+    expect(() => completeFinalScoring(state, candidates)).toThrow('Invalid metric value:')
+    expect(state).toEqual(stateSnapshot)
+    expect(candidates).toEqual(candidatesSnapshot)
   })
 
   it.each(['missing-first', 'missing-last', 'empty', 'duplicate', 'foreign', 'extra'] as const)(

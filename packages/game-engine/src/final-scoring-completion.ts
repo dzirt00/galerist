@@ -52,10 +52,12 @@ export function completeFinalScoring(
     throw new Error( 'Invalid candidates' )
   }
 
+
   const playerBoards = state.playerBoards.map(player => {
     return {
       playerId: player.playerId,
-      visitorsInGallery: player.gallery.visitors
+      visitorsInGallery: player.gallery.visitors,
+      assistants : player.assistants,
     }
   }).sort((a, b) => {
     if(a.playerId > b.playerId) return 1
@@ -63,7 +65,7 @@ export function completeFinalScoring(
     return 0
   })
 
-  if(!arraysEqual(playerBoards.map(el => el.playerId),coinsPlayers.map(player => player.playersID))) {
+  if(!arraysEqual(playerBoards.map(el => el.playerId), coinsPlayers.map(player => player.playersID))) {
     throw new Error( 'Invalid candidates' )
   }
 
@@ -75,7 +77,8 @@ export function completeFinalScoring(
 
     return {
       ...candidate,
-      galleryVisitorCount: playerBoard.visitorsInGallery.length
+      galleryVisitorCount: playerBoard.visitorsInGallery.length,
+      assistantsInPlayCount: playerBoard.assistants.office
     }
 
   })
