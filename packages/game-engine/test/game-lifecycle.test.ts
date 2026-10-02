@@ -4,11 +4,13 @@ import {
   advanceTurn,
   createGame as createGameTransition,
   projectEventsForViewer,
+  projectGameForViewer,
   setupComponentCatalog,
   startGame as startGameTransition,
   triggerGameEnd,
   type EndingSequenceGameState,
   type FinishedGameState,
+  type FinalRoundGameState,
   type GameConfig,
   type GameState,
   type PlayerConfig,
@@ -30,6 +32,103 @@ import {
   completeStartingLocationSelection,
   expectEndingTurns,
 } from './helpers.js'
+
+/** Доводит публичными переходами партию до начала финального раунда. */
+function prepareFinalRoundForReputationRemoval(
+  config: GameConfig,
+  players: readonly PlayerConfig[],
+): FinalRoundGameState {
+  const started = startGame(createGame(config, players))
+  let state: GameState = triggerGameEnd(withGameEndConditions(started)).state
+  for (let turn = 0; turn < players.length; turn += 1) {
+    state = advanceTurn(state).state
+  }
+  if (state.phase !== 'final_round') throw new Error('Expected final_round')
+  return state
+}
+
+it.each([
+  [2, twoPlayerConfigs],
+  [3, threePlayerConfigs],
+  [4, fourPlayerConfigs],
+] as const)('удаляет стартовые жетоны перегородок только перед подсчётом для %i игроков', (playerCount, players) => {
+  const firstFinalTurn = prepareFinalRoundForReputationRemoval({ playerCount, seed: 1 }, players)
+  expect(firstFinalTurn.playerBoards.every(board => typeof board.thirdPartitionReputationTokenId === 'string')).toBe(true)
+  let lastFinalTurn: GameState = firstFinalTurn
+  for (let turn = 1; turn < playerCount; turn += 1) {
+    lastFinalTurn = advanceTurn(lastFinalTurn).state
+    expect(lastFinalTurn.phase).toBe('final_round')
+    expect(lastFinalTurn.playerBoards).toEqual(firstFinalTurn.playerBoards)
+  }
+  const snapshot = structuredClone(lastFinalTurn)
+  const transition = advanceTurn(lastFinalTurn)
+  expect(transition.state.phase).toBe('final_scoring')
+  expect(transition.state.activePlayerId).toBeNull()
+  expect(transition.state.playerBoards).toEqual(snapshot.playerBoards.map(board => ({
+    ...board,
+    thirdPartitionReputationTokenId: null,
+  })))
+  expect(transition.state.players).toEqual(snapshot.players)
+  expect(transition.state.internationalMarket).toEqual(snapshot.internationalMarket)
+  expect(transition.events).toEqual([
+    { type: 'TurnEnded', playerId: snapshot.activePlayerId },
+    { type: 'RoundEnded', round: snapshot.round },
+    { type: 'FinalScoringStarted' },
+  ])
+  expect(projectGameForViewer(transition.state, null).playerBoards).toEqual(transition.state.playerBoards)
+  expect(projectEventsForViewer(transition.events, transition.state, null)).toEqual(transition.events)
+  expect(lastFinalTurn).toEqual(snapshot)
+  expect(transition.state).not.toBe(lastFinalTurn)
+  expect(Object.isFrozen(transition.state)).toBe(true)
+  expect(Object.isFrozen(transition.state.playerBoards)).toBe(true)
+  expect(transition.state.playerBoards.every(Object.isFrozen)).toBe(true)
+  const completedSnapshot = structuredClone(transition.state)
+  expect(() => advanceTurn(transition.state)).toThrow()
+  expect(transition.state).toEqual(completedSnapshot)
+})
+
+it.each(['все пустые', 'смешанный набор'] as const)(
+  'сохраняет остальные поля планшетов при удалении стартовых жетонов: %s',
+  scenario => {
+    const firstFinalTurn = prepareFinalRoundForReputationRemoval({ playerCount: 3, seed: 1 }, threePlayerConfigs)
+    const state: FinalRoundGameState = {
+      ...structuredClone(firstFinalTurn),
+      playerBoards: firstFinalTurn.playerBoards.map((board, index) => ({
+        ...structuredClone(board),
+        thirdPartitionReputationTokenId: scenario === 'смешанный набор' && index === 1
+          ? board.thirdPartitionReputationTokenId
+          : null,
+        reputationTokenArtworkIds: index === 0 ? { 'REP-ON-ARTWORK': 'WORK-ON-DISPLAY' } : null,
+      })),
+    }
+    const snapshot = structuredClone(state)
+    const second = advanceTurn(state).state
+    const third = advanceTurn(second).state
+    const transition = advanceTurn(third)
+    expect(transition.state.phase).toBe('final_scoring')
+    expect(transition.state.playerBoards).toEqual(snapshot.playerBoards.map(board => ({
+      ...board,
+      thirdPartitionReputationTokenId: null,
+    })))
+    expect(state).toEqual(snapshot)
+  },
+)
+
+it('отклоняет некорректный жетон перегородки без частичного удаления и начисления дохода', () => {
+  const first = prepareFinalRoundForReputationRemoval(twoPlayerGameConfig, twoPlayerConfigs)
+  const last = advanceTurn(first).state
+  if (last.phase !== 'final_round') throw new Error('Expected final_round')
+  const state = withPendingIntermediateScoring(last)
+  const invalidState = {
+    ...state,
+    playerBoards: state.playerBoards.map((board, index) => index === 1
+      ? { ...board, thirdPartitionReputationTokenId: undefined }
+      : board),
+  } as unknown as FinalRoundGameState
+  const snapshot = structuredClone(invalidState)
+  expect(() => advanceTurn(invalidState)).toThrow('thirdPartitionReputationTokenId not define')
+  expect(invalidState).toEqual(snapshot)
+})
 
 /** Создаёт тестовую партию с заданными настройками и составом игроков. */
 function createGame(config: GameConfig, players: readonly PlayerConfig[]) {

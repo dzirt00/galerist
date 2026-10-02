@@ -180,11 +180,24 @@ export function advanceTurn(state: GameState): GameTransition<GameState> {
   // После последнего финального хода следующего TurnStarted уже нет: начинается подсчёт.
   if (state.phase === 'final_round') {
     if (isNewRound) {
+
+      const playerBoards = state.playerBoards.map(board => {
+        if(board.thirdPartitionReputationTokenId !== null && typeof board.thirdPartitionReputationTokenId !== 'string') {
+          throw new Error(`thirdPartitionReputationTokenId not define ${board.playerId}`)
+        }
+
+        return {
+          ...board,
+          thirdPartitionReputationTokenId: null
+        }
+      })
+
       return freezeTransition({
         ...state,
         players: updatePlayers,
         phase: 'final_scoring',
         activePlayerId: null,
+        playerBoards: playerBoards,
         endTriggeredRound: state.endTriggeredRound,
         intermediateScoringStatus: intermediateScoringStatus,
         finalInfluenceScored: false
