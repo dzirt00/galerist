@@ -53,6 +53,81 @@ function createCandidates(
 }
 
 describe('completeFinalScoring', () => {
+  it.each([
+    [3, 1, 0, 0, ['player-1']],
+    [0, 1, 0, 0, ['player-2']],
+    [0, 0, 1, 2, ['player-2']],
+    [1, 1, 2, 2, ['player-2', 'player-1']],
+  ] as const)('берёт посетителей из галерей (%i/%i), сохраняя следующие критерии (%i/%i)', (
+    firstVisitorCount, secondVisitorCount, firstAssistantCount, secondAssistantCount, winnerIds,
+  ) => {
+    const initial = createScoredFinalState()
+    const state: FinalScoringGameState = structuredClone({
+      ...initial,
+      playerBoards: initial.playerBoards.map((board, index) => ({
+        ...board,
+        gallery: {
+          ...board.gallery,
+          visitors: Array.from({ length: index === 0 ? firstVisitorCount : secondVisitorCount }, (_, visitorIndex) => ({
+            id: `gallery-${board.playerId}-${visitorIndex}`,
+            type: 'B' as const,
+          })),
+        },
+      })).reverse(),
+    })
+    const candidates = state.players.map((player, index) => ({
+      playerId: player.id,
+      coins: player.coins,
+      acquiredArtworkCount: 0,
+      galleryVisitorCount: index === 0 ? 0 : 99,
+      assistantsInPlayCount: index === 0 ? firstAssistantCount : secondAssistantCount,
+    })).reverse()
+    const stateSnapshot = structuredClone(state)
+    const candidatesSnapshot = structuredClone(candidates)
+
+    const transition = completeFinalScoring(state, candidates)
+
+    expect(transition.state.winnerIds).toEqual(winnerIds)
+    expect(transition.events).toEqual([
+      { type: 'WinnerDetermined', winnerIds },
+      { type: 'FinalScoringCompleted', winnerIds },
+      { type: 'GameFinished', gameId: state.id },
+    ])
+    expect(projectGameForViewer(transition.state, null).winnerIds).toEqual(winnerIds)
+    expect(transition.state.playerBoards).toEqual(state.playerBoards)
+    expect(state).toEqual(stateSnapshot)
+    expect(candidates).toEqual(candidatesSnapshot)
+    expect(Object.isFrozen(state.playerBoards)).toBe(false)
+    expect(Object.isFrozen(candidates)).toBe(false)
+    expect(Object.isFrozen(transition.state.playerBoards)).toBe(true)
+  })
+
+  it.each(['missing-first', 'missing-last', 'empty', 'duplicate', 'foreign', 'extra'] as const)(
+    'отклоняет некорректный набор планшетов: %s, сохраняя вход', damage => {
+      const initial = createScoredFinalState()
+      const first = initial.playerBoards[0]!
+      const second = initial.playerBoards[1]!
+      const playerBoards = {
+        'missing-first': [second],
+        'missing-last': [first],
+        empty: [],
+        duplicate: [first, first],
+        foreign: [first, { ...second, playerId: 'missing' }],
+        extra: [first, second, { ...second, playerId: 'missing' }],
+      }[damage]
+      const state = structuredClone({ ...initial, playerBoards })
+      const candidates = createCandidates(state)
+      const stateSnapshot = structuredClone(state)
+      const candidatesSnapshot = structuredClone(candidates)
+
+      expect(() => completeFinalScoring(state, candidates)).toThrow('Invalid candidates')
+      expect(state).toEqual(stateSnapshot)
+      expect(candidates).toEqual(candidatesSnapshot)
+      expect(Object.isFrozen(state.playerBoards)).toBe(false)
+      expect(Object.isFrozen(candidates)).toBe(false)
+    },
+  )
+
   it('завершает подсчёт, публикует победителя и сохраняет его в проекции и снимке', () => {
     const state = structuredClone(createScoredFinalState())
     const candidates = createCandidates(state)
