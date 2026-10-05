@@ -27,6 +27,64 @@ function createQueue(): HireQueueEntry[] {
   ]
 }
 
+describe('HIRE-001: доступность найма', () => {
+  it.each([0, 1, 2, 3])('заполняет свободные места при %i помощниках в офисе', (occupied) => {
+    const queue: HireQueueEntry[] = Array.from({ length: 4 }, (_, index) => ({
+      assistantId: `queued-${index}`,
+      cost: index + 1,
+      reward: null,
+    }))
+    const input: HireAssistantsInput = {
+      player: createPlayer(20, 10),
+      officeAssistantIds: Array.from({ length: occupied }, (_, index) => `office-${index}`),
+      queue,
+      count: 4 - occupied,
+      targetInfluence: null,
+    }
+    const snapshot = structuredClone(input)
+
+    const result = hireAssistants(input)
+    const hired = queue.slice(0, input.count)
+    const totalCost = hired.reduce((sum, entry) => sum + entry.cost, 0)
+
+    expect(result.officeAssistantIds).toEqual([
+      ...input.officeAssistantIds,
+      ...hired.map(entry => entry.assistantId),
+    ])
+    expect(result.officeAssistantIds).toHaveLength(4)
+    expect(result.queue).toEqual(queue.slice(input.count))
+    expect(result.hired).toEqual(hired)
+    expect(result.totalCost).toBe(totalCost)
+    expect(result.player).toEqual({ ...input.player, coins: 20 - totalCost })
+    expect(input).toEqual(snapshot)
+    expect(Object.isFrozen(result.officeAssistantIds)).toBe(true)
+  })
+
+  it.each([
+    { scenario: 'переполнение офиса', occupied: 3, count: 2, queue: createQueue() },
+    { scenario: 'полный офис', occupied: 4, count: 1, queue: createQueue() },
+    { scenario: 'пустая очередь', occupied: 0, count: 1, queue: [] },
+    { scenario: 'выбор больше очереди', occupied: 0, count: 2, queue: createQueue().slice(0, 1) },
+  ])('атомарно отклоняет $scenario до оплаты', ({ occupied, count, queue }) => {
+    for (const targetInfluence of [null, 8]) {
+      const input: HireAssistantsInput = {
+        player: createPlayer(20, 10),
+        officeAssistantIds: Array.from({ length: occupied }, (_, index) => `office-${index}`),
+        queue: structuredClone(queue),
+        count,
+        targetInfluence,
+      }
+      const snapshot = structuredClone(input)
+
+      expect(() => hireAssistants(input)).toThrow()
+      expect(input).toEqual(snapshot)
+      expect(Object.isFrozen(input.player)).toBe(false)
+      expect(Object.isFrozen(input.officeAssistantIds)).toBe(false)
+      expect(Object.isFrozen(input.queue)).toBe(false)
+    }
+  })
+})
+
 describe('HIRE-002: найм помощников', () => {
   it('нанимает выбранный префикс очереди, сохраняет порядок и оплачивает общую стоимость', () => {
     const input: HireAssistantsInput = {

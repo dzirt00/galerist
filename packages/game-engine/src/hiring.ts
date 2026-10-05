@@ -57,6 +57,12 @@ export function hireAssistants(
     throw new RangeError( 'Invalid assistant count' )
   }
 
+  if ( input.officeAssistantIds.length + input.count > 4
+    || input.queue.length === 0
+    || input.queue.length < input.count) {
+    throw new Error("invalid queue length")
+  }
+
   const hiredAssistants = remainingQueue.splice( 0, input.count )
   const totalCost = hiredAssistants.reduce( ( acc, cur ) => acc + cur.cost, 0 );
   const hiredAssistantIds = hiredAssistants.reduce( ( acc, cur ) => {
