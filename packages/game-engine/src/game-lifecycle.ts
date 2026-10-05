@@ -208,7 +208,7 @@ export function advanceTurn(state: GameState): GameTransition<GameState> {
         endTriggeredRound: state.endTriggeredRound,
         intermediateScoringStatus: intermediateScoringStatus,
         finalInfluenceScored: false
-      },[ eventTurnEnded, ...addEventsIntermediateIncomeAwardInput, eventRoundEnded, { type: 'FinalScoringStarted'}
+      },[ eventTurnEnded, ...addEventsIntermediateIncomeAwardInput, eventRoundEnded, { type: 'FinalRoundEnded'}, { type: 'FinalScoringStarted'}
       ])
     }
     return freezeTransition({

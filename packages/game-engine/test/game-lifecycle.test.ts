@@ -74,6 +74,7 @@ it.each([
   expect(transition.events).toEqual([
     { type: 'TurnEnded', playerId: snapshot.activePlayerId },
     { type: 'RoundEnded', round: snapshot.round },
+    { type: 'FinalRoundEnded' },
     { type: 'FinalScoringStarted' },
   ])
   expect(projectGameForViewer(transition.state, null).playerBoards).toEqual(transition.state.playerBoards)
@@ -1267,6 +1268,7 @@ it('передаёт ход в финальном раунде', () => {
   expect(transition.events).toEqual([
     { type: 'TurnEnded', playerId: 'player-1' },
     { type: 'RoundEnded', round: 10 },
+    { type: 'FinalRoundEnded' },
     { type: 'FinalScoringStarted' },
   ])
   expect(projectEventsForViewer(transition.events, at, null)).toEqual(transition.events)
@@ -1772,6 +1774,57 @@ it.each([
   expect(Object.isFrozen(rejectedInput)).toBe(false)
 })
 
+it.each([
+  [2, twoPlayerConfigs],
+  [3, threePlayerConfigs],
+  [4, fourPlayerConfigs],
+] as const)('публикует FinalRoundEnded только после последнего финального хода для %i игроков', (playerCount, players) => {
+  let state: GameState = prepareFinalRoundForReputationRemoval({ playerCount, seed: 1 }, players)
+  const finalRound = state.round
+  expect(state.firstPlayerId).toBe(players[1]!.id)
+
+  for (let turn = 0; turn < playerCount; turn += 1) {
+    const input: GameState = structuredClone(state)
+    const snapshot = structuredClone(input)
+    const transition: GameTransition<GameState> = advanceTurn(input)
+    const isLastTurn = turn === playerCount - 1
+
+    expect(transition.state.round).toBe(finalRound)
+    if (isLastTurn) {
+      expect(transition.state).toMatchObject({ phase: 'final_scoring', activePlayerId: null })
+      expect(transition.events).toEqual([
+        { type: 'TurnEnded', playerId: input.activePlayerId },
+        { type: 'RoundEnded', round: finalRound },
+        { type: 'FinalRoundEnded' },
+        { type: 'FinalScoringStarted' },
+      ])
+      for (const viewerId of [null, ...players.map(player => player.id)]) {
+        expect(projectEventsForViewer(transition.events, transition.state, viewerId)).toEqual(transition.events)
+      }
+    } else {
+      expect(transition.state.phase).toBe('final_round')
+      expect(transition.events).toEqual([
+        { type: 'TurnEnded', playerId: input.activePlayerId },
+        { type: 'TurnStarted', playerId: transition.state.activePlayerId },
+      ])
+    }
+    expect(input).toEqual(snapshot)
+    expect(Object.isFrozen(input)).toBe(false)
+    expect(transition.state).not.toBe(input)
+    expect(Object.isFrozen(transition)).toBe(true)
+    expect(Object.isFrozen(transition.state)).toBe(true)
+    expect(Object.isFrozen(transition.events)).toBe(true)
+    expect(transition.events.every(Object.isFrozen)).toBe(true)
+    state = transition.state
+  }
+
+  const rejectedInput = structuredClone(state)
+  const rejectedSnapshot = structuredClone(rejectedInput)
+  expect(() => advanceTurn(rejectedInput)).toThrow('Turns can only be advanced while game is in progress')
+  expect(rejectedInput).toEqual(rejectedSnapshot)
+  expect(Object.isFrozen(rejectedInput)).toBe(false)
+})
+
 it('не публикует FinalRoundStarted внутри доигрываемого раунда', () => {
   const started = startGame(createGame({ playerCount: 3, seed: 1 }, threePlayerConfigs))
   const state = triggerGameEnd(withGameEndConditions({
@@ -1840,6 +1893,7 @@ it('начисляет pending промежуточный доход до пер
       playerId: player.id,
     })),
     { type: 'RoundEnded', round: state.round },
+    { type: 'FinalRoundEnded' },
     { type: 'FinalScoringStarted' },
   ])
   expect(transition.state.phase).toBe('final_scoring')

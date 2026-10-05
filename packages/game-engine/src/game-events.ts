@@ -12,6 +12,7 @@ export type GameEvent =
   | { readonly type: 'ArtworkMarketPrepared' }
   | { readonly type: 'InternationalMarketPrepared' }
   | { readonly type: 'LocationReputationPrepared' }
+  | { readonly type: 'FinalRoundEnded' }
   | { readonly type: 'MasterpieceAuctionPrepared' }
   | { readonly type: 'FinalRoundStarted'}
   | { readonly type: 'IntermediateScoringTriggered' }
