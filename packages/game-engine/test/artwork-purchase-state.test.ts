@@ -64,6 +64,104 @@ function regularRequest(state: GameState): ArtworkPurchaseRequest {
   }
 }
 
+describe('FAME-003: покупка у состоявшейся суперзвезды', () => {
+  function superstarPurchase(contract: 'none' | 'matching' | 'other', fameGain: 'X' | 1 = 1) {
+    const initial = createGameState(twoPlayerGameConfig, twoPlayerConfigs)
+    const artist = initial.artistMarket.slots.find(slot => slot.isOpen)!
+    const contractArtist = contract === 'other'
+      ? initial.artistMarket.slots.find(slot => slot.artistId !== artist.artistId)!
+      : artist
+    const signatureTokenId = initial.artistSetup.slots.find(slot => slot.artistId === contractArtist.artistId)!
+      .availableSignatureTokenIds[0]!
+    const open = initial.artworkMarket.openArtworksByGenre[artist.genre]!
+    const state: GameState = {
+      ...initial,
+      players: initial.players.map((player, index) => index === 0 ? { ...player, coins: 30 } : player),
+      artistMarket: {
+        ...initial.artistMarket,
+        slots: initial.artistMarket.slots.map(slot => slot.artistId === artist.artistId
+          ? { ...slot, fame: 19, isSuperstar: true }
+          : slot),
+      },
+      artistSetup: {
+        ...initial.artistSetup,
+        slots: initial.artistSetup.slots.map(slot => contract !== 'none' && slot.artistId === contractArtist.artistId
+          ? { ...slot, availableSignatureTokenIds: slot.availableSignatureTokenIds.filter(id => id !== signatureTokenId) }
+          : slot),
+      },
+      artworkMarket: {
+        ...initial.artworkMarket,
+        openArtworksByGenre: {
+          ...initial.artworkMarket.openArtworksByGenre,
+          [artist.genre]: { ...open, artwork: { ...open.artwork, fameGain, ticketReward: 'B' } },
+        },
+      },
+      playerBoards: initial.playerBoards.map((board, index) => index === 0 ? {
+        ...board,
+        contract: contract === 'none' ? null : { artistId: contractArtist.artistId, signatureTokenId },
+      } : board),
+    }
+    const request: ArtworkPurchaseRequest = {
+      playerId: state.players[0]!.id,
+      artistId: artist.artistId,
+      purchaseType: 'contract',
+      requestedTicketColors: ['B'],
+    }
+    return { state, request, artist, open, signatureTokenId }
+  }
+
+  it.each([
+    { contract: 'none', purchaseType: 'regular', error: 'isSuperstar' },
+    { contract: 'matching', purchaseType: 'regular', error: 'isSuperstar' },
+    { contract: 'none', purchaseType: 'contract', error: 'requires an active contract' },
+    { contract: 'other', purchaseType: 'contract', error: 'belongs to another artist' },
+  ] as const)('отклоняет $purchaseType с контрактом $contract при свободной галерее', ({ contract, purchaseType, error }) => {
+    const { state, request } = superstarPurchase(contract)
+    const rejectedRequest = { ...request, purchaseType }
+    const before = structuredClone(state)
+    const requestBefore = structuredClone(rejectedRequest)
+
+    expect(() => applyArtworkPurchaseToGameState(state, rejectedRequest)).toThrow(error)
+
+    expect(state).toEqual(before)
+    expect(rejectedRequest).toEqual(requestBefore)
+    expect(Object.isFrozen(state.players[0])).toBe(false)
+  })
+
+  it.each(['X', 1] as const)('покупает шедевр по контракту с fameGain=%s без повторной награды суперзвезды', fameGain => {
+    const { state, request, artist, open, signatureTokenId } = superstarPurchase('matching', fameGain)
+    const before = structuredClone(state)
+    const requestBefore = structuredClone(request)
+
+    const transition = applyArtworkPurchaseToGameState(state, request)
+    const board = transition.state.playerBoards[0]!
+    const exhibited = board.gallery.artworkSlots[0]!
+
+    expect(exhibited).toMatchObject({ artworkId: open.artwork.id, artistId: artist.artistId, signatureTokenId, isMasterpiece: true })
+    expect(board.contract).toBeNull()
+    expect(transition.state.players[0]!.coins).toBe(30 - artist.initialFame)
+    expect(transition.state.players[0]!.ticketsByColor.B).toBe(state.players[0]!.ticketsByColor.B + 1)
+    expect(transition.state.players[0]!.acquiredArtworkCount).toBe(state.players[0]!.acquiredArtworkCount + 1)
+    expect(transition.state.artistMarket.slots.find(slot => slot.artistId === artist.artistId))
+      .toMatchObject({ fame: 19, isSuperstar: true })
+    expect(transition.state.artistSetup).toEqual(state.artistSetup)
+    expect(transition.state.players[1]).toEqual(state.players[1])
+    expect(transition.state.playerBoards[1]).toEqual(state.playerBoards[1])
+    expect(transition.events.map(event => event.type)).toEqual([
+      'ArtworkSelected', 'CoinsSpent', ...open.visitors.map(() => 'VisitorMoved'),
+      'TicketReceived', 'ArtworkExhibited', 'SignaturePriceSet', 'ExhibitionCapacityChanged',
+      'ArtworkMarketRefilled',
+    ])
+    expect(projectGameForViewer(transition.state, null).playerBoards[0]!.gallery.artworkSlots[0]).toEqual(exhibited)
+    expect(projectEventsForViewer(transition.events, transition.state, null)).toEqual(transition.events)
+    expect(restoreGameState(structuredClone(transition.state))).toEqual(transition.state)
+    expect(Object.isFrozen(exhibited)).toBe(true)
+    expect(state).toEqual(before)
+    expect(request).toEqual(requestBefore)
+    expect(Object.isFrozen(state.players[0])).toBe(false)
+  })
+})
+
 describe('applyArtworkPurchaseToGameState', () => {
   it.each([
     { name: 'покупает четвёртую работу-шедевр по контракту у суперзвезды', superstar: true, contract: 'matching', purchaseType: 'contract', masterpiece: false, full: false, succeeds: true },
