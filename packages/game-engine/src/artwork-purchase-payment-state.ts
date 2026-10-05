@@ -1,4 +1,4 @@
-import type { GameState, PlayerId } from "./types.js";
+import type { EndingCurrentRoundGameState, GameState, PlayerId } from "./types.js";
 import { applyArtworkPurchaseCostAndMoveVisitors, type ApplyArtworkPurchaseInput, type ArtworkPurchaseType } from "./artwork-purchase-payment.js";
 import { freezeTransition, type GameEvent, type GameTransition } from "./game-events.js";
 import type { OpenArtworkSlot } from "./setup-artworks.js";
@@ -9,6 +9,7 @@ import { applyTicketReward } from './ticket-reward-to-game-state.js'
 import { calculateArtworkSaleValue } from './artwork-sale-value.js'
 import { refillArtworkMarket } from './artwork-market-refill.js'
 import type { ExhibitedArtwork, PlayerBoard } from './player-boards.js'
+import { canTriggerGameEnd, triggerGameEnd } from "./game-lifecycle.js";
 
 export interface ArtworkPurchasePaymentRequest {
   readonly playerId: PlayerId
@@ -218,7 +219,7 @@ export function applyArtworkPurchaseToGameState(
   state: Readonly<GameState>,
   request: Readonly<ArtworkPurchaseRequest>
 ): GameTransition<Readonly<GameState>> {
-  const availability = validateArtworkPurchaseAvailability(state, request)
+  const availability = validateArtworkPurchaseAvailability( state, request )
   const requestedTicketColors = resolveArtworkTicketColors(
     availability.openArtwork.artwork.ticketReward,
     request.requestedTicketColors,
@@ -226,15 +227,15 @@ export function applyArtworkPurchaseToGameState(
   const targetInfluence = request.targetInfluence
   const inputData: ApplyArtworkPurchaseInput = {
     player: { ...availability.player },
-    openArtwork: {...availability.openArtwork },
+    openArtwork: { ...availability.openArtwork },
     artistInitialFame: availability.artist.initialFame,
     artistCurrentFame: availability.artist.fame!,
     purchaseType: request.purchaseType,
     plazaVisitors: state.plazaVisitors,
-    ...(targetInfluence !== undefined && { targetInfluence })
+    ...( targetInfluence !== undefined && { targetInfluence } )
   }
 
-  const artworkPurchasePaymentResult = applyArtworkPurchaseCostAndMoveVisitors(inputData)
+  const artworkPurchasePaymentResult = applyArtworkPurchaseCostAndMoveVisitors( inputData )
 
   const paymentEvents: GameEvent[] = [
     {
@@ -243,113 +244,113 @@ export function applyArtworkPurchaseToGameState(
       artistId: availability.artist.artistId,
       artworkId: availability.openArtwork.artwork.id,
     },
-    ...(artworkPurchasePaymentResult.spentInfluence > 0 ? [
+    ...( artworkPurchasePaymentResult.spentInfluence > 0 ? [
       { type: 'InfluenceSpent', playerId: availability.player.id, spentInfluence: artworkPurchasePaymentResult.spentInfluence } as const,
       { type: 'CoinsReceived', playerId: availability.player.id, coinsReceived: artworkPurchasePaymentResult.coinsReceived } as const,
-    ] : []),
+    ] : [] ),
     { type: 'CoinsSpent', playerId: availability.player.id, paid: artworkPurchasePaymentResult.paid },
-    ...availability.openArtwork.visitors.map(visitor => ({
+    ...availability.openArtwork.visitors.map( visitor => ( {
       type: 'VisitorMoved' as const,
       visitorId: visitor.id,
       from: 'artwork' as const,
       to: 'plaza' as const,
-    })),
+    } ) ),
   ]
 
   // Работа без билетной награды не вызывает расчёт, требующий хотя бы один цвет.
   const ticketResult = requestedTicketColors.length === 0
     ? {
-        player: artworkPurchasePaymentResult.player,
-        ticketOffice: state.ticketOffice,
-        ticketDiscard: state.ticketDiscard,
-        events: [] as readonly GameEvent[],
-        intermediateScoringStatus: state.intermediateScoringStatus
-      }
-    : applyTicketReward({
-        playerId: availability.player.id,
-        requestedColors: requestedTicketColors,
-        ...(request.replacementColorsByRequestedColor === undefined ? {} : {
-          replacementColorsByRequestedColor: request.replacementColorsByRequestedColor,
-        }),
-        player: artworkPurchasePaymentResult.player,
-        ticketOffice: state.ticketOffice,
-        ticketDiscard: state.ticketDiscard,
-        intermediateScoringStatus: state.intermediateScoringStatus
-      })
+      player: artworkPurchasePaymentResult.player,
+      ticketOffice: state.ticketOffice,
+      ticketDiscard: state.ticketDiscard,
+      events: [] as readonly GameEvent[],
+      intermediateScoringStatus: state.intermediateScoringStatus
+    }
+    : applyTicketReward( {
+      playerId: availability.player.id,
+      requestedColors: requestedTicketColors,
+      ...( request.replacementColorsByRequestedColor === undefined ? {} : {
+        replacementColorsByRequestedColor: request.replacementColorsByRequestedColor,
+      } ),
+      player: artworkPurchasePaymentResult.player,
+      ticketOffice: state.ticketOffice,
+      ticketDiscard: state.ticketDiscard,
+      intermediateScoringStatus: state.intermediateScoringStatus
+    } )
 
   const oldFame = availability.artist.fame!
-  const collectorCount = availability.playerBoard.gallery.visitors.filter(visitor => visitor.type === 'W').length
+  const collectorCount = availability.playerBoard.gallery.visitors.filter( visitor => visitor.type === 'W' ).length
   const baseFameGain = calculateArtworkPurchaseFameGain(
     availability.openArtwork.artwork.fameGain,
     collectorCount,
   )
-  const baseFame = Math.min(19, oldFame + baseFameGain)
+  const baseFame = Math.min( 19, oldFame + baseFameGain )
   let nextPlayer = ticketResult.player
   let nextFame = baseFame
   let additionalFame = 0
   // Дополнительное влияние расходуется после оплаты и базового прироста известности.
-  if (request.fameTargetInfluence !== undefined) {
-    if (baseFameGain === 0) throw new Error('Artwork X blocks additional fame spending')
-    if (baseFame >= 19) throw new Error('Additional fame is unavailable at maximum fame')
-    const fameSpend = applyAdditionalFameSpend({
+  if ( request.fameTargetInfluence !== undefined ) {
+    if ( baseFameGain === 0 ) throw new Error( 'Artwork X blocks additional fame spending' )
+    if ( baseFame >= 19 ) throw new Error( 'Additional fame is unavailable at maximum fame' )
+    const fameSpend = applyAdditionalFameSpend( {
       player: nextPlayer,
       artist: { artistId: availability.artist.artistId, fame: baseFame },
       targetInfluence: request.fameTargetInfluence,
       fameIncrease: { kind: 'eligible', source: 'artwork_purchase', baseFameGain },
-    })
+    } )
     nextPlayer = fameSpend.player
-    nextFame = Math.min(19, fameSpend.artist.fame)
+    nextFame = Math.min( 19, fameSpend.artist.fame )
     additionalFame = nextFame - baseFame
   }
 
   const fameEvents: GameEvent[] = []
-  if (baseFame !== oldFame) {
-    fameEvents.push({ type: 'ArtistFameIncreased', artistId: availability.artist.artistId, previousFame: oldFame, fame: baseFame })
+  if ( baseFame !== oldFame ) {
+    fameEvents.push( { type: 'ArtistFameIncreased', artistId: availability.artist.artistId, previousFame: oldFame, fame: baseFame } )
   }
-  if (additionalFame > 0) {
-    fameEvents.push({ type: 'InfluenceSpent', playerId: availability.player.id, spentInfluence: ticketResult.player.influence - nextPlayer.influence })
-    fameEvents.push({ type: 'ArtistFameIncreased', artistId: availability.artist.artistId, previousFame: baseFame, fame: nextFame })
+  if ( additionalFame > 0 ) {
+    fameEvents.push( { type: 'InfluenceSpent', playerId: availability.player.id, spentInfluence: ticketResult.player.influence - nextPlayer.influence } )
+    fameEvents.push( { type: 'ArtistFameIncreased', artistId: availability.artist.artistId, previousFame: baseFame, fame: nextFame } )
   }
 
-  const previousSaleValue = calculateArtworkSaleValue(availability.artist.artistId, oldFame)
-  const saleValue = calculateArtworkSaleValue(availability.artist.artistId, nextFame)
+  const previousSaleValue = calculateArtworkSaleValue( availability.artist.artistId, oldFame )
+  const saleValue = calculateArtworkSaleValue( availability.artist.artistId, nextFame )
   // Награда выдаётся только при первом достижении статуса, а не при каждой покупке.
   const becameSuperstar = !availability.artist.isSuperstar && nextFame === 19
-  if (becameSuperstar) nextPlayer = { ...nextPlayer, coins: nextPlayer.coins + 5 }
+  if ( becameSuperstar ) nextPlayer = { ...nextPlayer, coins: nextPlayer.coins + 5 }
 
   const saleValueEvents: GameEvent[] = []
   const masterpieceEvents: GameEvent[] = []
   // Рост известности меняет работы этого художника в галереях всех игроков.
-  let playerBoards: readonly PlayerBoard[] = state.playerBoards.map(board => {
-    const artworkSlots = copyArtworkSlots(board)
+  let playerBoards: readonly PlayerBoard[] = state.playerBoards.map( board => {
+    const artworkSlots = copyArtworkSlots( board )
     let changed = false
-    for (let index = 0; index < artworkSlots.length; index += 1) {
-      const artwork = artworkSlots[index]
-      if (artwork?.artistId !== availability.artist.artistId) continue
+    for ( let index = 0; index < artworkSlots.length; index += 1 ) {
+      const artwork = artworkSlots[ index ]
+      if ( artwork?.artistId !== availability.artist.artistId ) continue
       const nextArtwork: ExhibitedArtwork = {
         ...artwork,
         saleValue,
         isMasterpiece: artwork.isMasterpiece || becameSuperstar,
       }
-      if (previousSaleValue !== saleValue) changed = true
-      if (!artwork.isMasterpiece && nextArtwork.isMasterpiece) {
-        masterpieceEvents.push({ type: 'ArtworkBecameMasterpiece', playerId: board.playerId, artworkId: artwork.artworkId })
+      if ( previousSaleValue !== saleValue ) changed = true
+      if ( !artwork.isMasterpiece && nextArtwork.isMasterpiece ) {
+        masterpieceEvents.push( { type: 'ArtworkBecameMasterpiece', playerId: board.playerId, artworkId: artwork.artworkId } )
       }
-      artworkSlots[index] = nextArtwork
+      artworkSlots[ index ] = nextArtwork
     }
-    if (changed && !saleValueEvents.some(event => event.type === 'ArtworkSaleValuesChanged')) {
-      saleValueEvents.push({ type: 'ArtworkSaleValuesChanged', artistId: availability.artist.artistId, saleValue })
+    if ( changed && !saleValueEvents.some( event => event.type === 'ArtworkSaleValuesChanged' ) ) {
+      saleValueEvents.push( { type: 'ArtworkSaleValuesChanged', artistId: availability.artist.artistId, saleValue } )
     }
     return { ...board, gallery: { ...board.gallery, artworkSlots } }
-  })
+  } )
 
   const isMasterpiece = availability.artist.isSuperstar || becameSuperstar
   // Третье произведение-шедевр занимает четвёртую позицию по ARTWORK-005.
   const artworkSlotIndex = availability.occupiedArtworkSlotCount === 2
-    && isMasterpiece
-    && availability.emptyArtworkSlotIndexes.includes(3)
-      ? 3
-      : availability.emptyArtworkSlotIndexes[0]!
+  && isMasterpiece
+  && availability.emptyArtworkSlotIndexes.includes( 3 )
+    ? 3
+    : availability.emptyArtworkSlotIndexes[ 0 ]!
   const exhibitedArtwork: ExhibitedArtwork = {
     artworkId: availability.openArtwork.artwork.id,
     artistId: availability.artist.artistId,
@@ -357,80 +358,79 @@ export function applyArtworkPurchaseToGameState(
     saleValue,
     isMasterpiece,
   }
-  playerBoards = playerBoards.map((board, index) => {
-    if (index !== availability.playerBoardIndex) return board
-    const artworkSlots = copyArtworkSlots(board)
-    artworkSlots[artworkSlotIndex] = exhibitedArtwork
+  playerBoards = playerBoards.map( ( board, index ) => {
+    if ( index !== availability.playerBoardIndex ) return board
+    const artworkSlots = copyArtworkSlots( board )
+    artworkSlots[ artworkSlotIndex ] = exhibitedArtwork
     let updateBoard: PlayerBoard | null = null
     // Считаются работы, а не индекс покупки: шедевр тоже активирует стартовый жетон.
     // Здесь жетон остаётся на работе; получение на клетку в конце хода — отдельный этап.
-    if(artworkSlots.filter(slot => slot !== null).length === 3 && board.thirdPartitionReputationTokenId !== null) {
+    if ( artworkSlots.filter( slot => slot !== null ).length === 3 && board.thirdPartitionReputationTokenId !== null ) {
 
       updateBoard = {
         ...board,
-        reputationTokenArtworkIds: ({
-          [board.thirdPartitionReputationTokenId]: exhibitedArtwork.artworkId
-        }),
+        reputationTokenArtworkIds: ( {
+          [ board.thirdPartitionReputationTokenId ]: exhibitedArtwork.artworkId
+        } ),
         thirdPartitionReputationTokenId: null,
       }
     }
 
-    updateBoard = (updateBoard === null) ? board : updateBoard
+    updateBoard = ( updateBoard === null ) ? board : updateBoard
 
     return {
       ...updateBoard,
       gallery: { ...board.gallery, artworkSlots },
       contract: availability.sourceSignature === 'contract' ? null : board.contract,
     }
-  })
-  const artistSetupSlots = state.artistSetup.slots.map(slot => slot.artistId === availability.artist.artistId
+  } )
+  const artistSetupSlots = state.artistSetup.slots.map( slot => slot.artistId === availability.artist.artistId
     ? {
-        ...slot,
-        availableSignatureTokenIds: availability.sourceSignature === 'artist'
-          ? slot.availableSignatureTokenIds.filter(id => id !== availability.signatureTokenId)
-          : slot.availableSignatureTokenIds,
-      }
-    : slot)
+      ...slot,
+      availableSignatureTokenIds: availability.sourceSignature === 'artist'
+        ? slot.availableSignatureTokenIds.filter( id => id !== availability.signatureTokenId )
+        : slot.availableSignatureTokenIds,
+    }
+    : slot )
 
   // Пополнение не определяет получение стартового жетона: последняя работа тоже его активирует.
   const refill = refillArtworkMarket(
-    state.artworkMarket.remainingArtworksByGenre[availability.artist.genre],
+    state.artworkMarket.remainingArtworksByGenre[ availability.artist.genre ],
     state.visitorBag,
   )
-  const artistSlots = state.artistMarket.slots.map(slot => slot.artistId === availability.artist.artistId
+  const artistSlots = state.artistMarket.slots.map( slot => slot.artistId === availability.artist.artistId
     ? { ...slot, fame: nextFame, isSuperstar: slot.isSuperstar || becameSuperstar }
-    : slot)
-  let players = [...state.players]
-  players[availability.playerIndex] = nextPlayer
+    : slot )
+  let players = [ ...state.players ]
+  players[ availability.playerIndex ] = nextPlayer
 
-  if (players[availability.playerIndex]) {
-    players = players.map((player, index) =>
+  if ( players[ availability.playerIndex ] ) {
+    players = players.map( ( player, index ) =>
       index === availability.playerIndex
         ? { ...player, acquiredArtworkCount: player.acquiredArtworkCount + 1 }
         : player
     );
   }
 
-  const capacityChanged = !availability.playerBoard.gallery.artworkSlots.some(artwork => artwork?.isMasterpiece)
+  const capacityChanged = !availability.playerBoard.gallery.artworkSlots.some( artwork => artwork?.isMasterpiece )
     && isMasterpiece
   // События следуют порядку эффектов: оплата, билеты, известность, размещение, рынок.
-  const events: GameEvent[] = [
+  let events: GameEvent[] = [
     ...paymentEvents,
     ...ticketResult.events,
     ...fameEvents,
     ...saleValueEvents,
-    ...(becameSuperstar ? [
+    ...( becameSuperstar ? [
       { type: 'ArtistBecameSuperstar', artistId: availability.artist.artistId } as const,
       { type: 'CoinsReceived', playerId: availability.player.id, coinsReceived: 5 } as const,
-    ] : []),
+    ] : [] ),
     ...masterpieceEvents,
     { type: 'ArtworkExhibited', playerId: availability.player.id, artistId: availability.artist.artistId, artworkId: exhibitedArtwork.artworkId, artworkSlotIndex },
     { type: 'SignaturePriceSet', signatureTokenId: availability.signatureTokenId, saleValue },
-    ...(capacityChanged ? [{ type: 'ExhibitionCapacityChanged', playerId: availability.player.id, capacity: 4 } as const] : []),
-    ...(refill.openArtwork === null ? [] : [{ type: 'ArtworkMarketRefilled', genre: availability.artist.genre, artworkId: refill.openArtwork.artwork.id } as const]),
+    ...( capacityChanged ? [ { type: 'ExhibitionCapacityChanged', playerId: availability.player.id, capacity: 4 } as const ] : [] ),
+    ...( refill.openArtwork === null ? [] : [ { type: 'ArtworkMarketRefilled', genre: availability.artist.genre, artworkId: refill.openArtwork.artwork.id } as const ] ),
   ]
-
-  return freezeTransition({
+  let updateState: GameState = {
     ...state,
     players,
     playerBoards,
@@ -444,18 +444,29 @@ export function applyArtworkPurchaseToGameState(
       ...state.artworkMarket,
       openArtworksByGenre: {
         ...state.artworkMarket.openArtworksByGenre,
-        [availability.artist.genre]: refill.openArtwork,
+        [ availability.artist.genre ]: refill.openArtwork,
       },
       remainingArtworksByGenre: {
         ...state.artworkMarket.remainingArtworksByGenre,
-        [availability.artist.genre]: refill.remainingArtworks,
+        [ availability.artist.genre ]: refill.remainingArtworks,
       },
       remainingVisitorBag: refill.remainingVisitorBag,
     },
     intermediateScoringStatus: ticketResult.intermediateScoringStatus
-  }, events)
-}
+  }
 
+  let updateGameTransition: GameTransition<EndingCurrentRoundGameState> | null = null
+
+  if ( state.phase === 'regular_play'  && canTriggerGameEnd( updateState )) {
+    updateGameTransition = triggerGameEnd( updateState )
+  }
+
+  updateState = ( updateGameTransition !== null ) ? updateGameTransition.state : updateState
+
+  if(updateGameTransition !== null) events.push(...updateGameTransition.events)
+
+  return freezeTransition( updateState, events )
+}
 /** Применяет только оплату и перенос посетителей уже разрешённой покупки, без размещения работы. */
 export function applyArtworkPurchasePaymentToGameState(
   state: Readonly<GameState>,
