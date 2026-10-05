@@ -132,7 +132,7 @@ export function advanceTurn(state: GameState): GameTransition<GameState> {
     && state.phase !== 'ending_current_round'
     && state.phase !== 'regular_play'
   ) {
-    throw new Error('Turns can only be advanced while game is in progress')
+      throw new Error('Turns can only be advanced while game is in progress')
   }
 
   const currentIndex = state.players.findIndex(player => player.id === state.activePlayerId)
@@ -170,12 +170,19 @@ export function advanceTurn(state: GameState): GameTransition<GameState> {
   const nextRoundNumber = isNewRound ? state.round + 1 : state.round
   const eventTurnEnded = { type: 'TurnEnded', playerId: state.activePlayerId } satisfies GameEvent
   const eventTurnStarted = { type: 'TurnStarted', playerId: nextPlayer } satisfies GameEvent
+  const eventFinalRoundStarted = { type: 'FinalRoundStarted'} satisfies GameEvent
   const eventRoundEnded =  { type: 'RoundEnded', round: state.round } satisfies GameEvent
   const eventRoundStarted =  { type: 'RoundStarted', round: nextRoundNumber } satisfies GameEvent
   // Отложенный доход следует за TurnEnded, но предшествует границе раунда и следующему ходу.
-  const events = (isNewRound)
-    ? [eventTurnEnded, ...addEventsIntermediateIncomeAwardInput,eventRoundEnded, eventRoundStarted, eventTurnStarted]
-    : [eventTurnEnded, ...addEventsIntermediateIncomeAwardInput, eventTurnStarted]
+  let events: GameEvent[] = []
+
+  if(isNewRound && state.phase === 'ending_current_round') {
+    events = [eventTurnEnded, ...addEventsIntermediateIncomeAwardInput,eventRoundEnded, eventRoundStarted, eventFinalRoundStarted, eventTurnStarted]
+  } else if(isNewRound) {
+    events = [eventTurnEnded, ...addEventsIntermediateIncomeAwardInput,eventRoundEnded, eventRoundStarted, eventTurnStarted]
+  } else {
+    events = [eventTurnEnded, ...addEventsIntermediateIncomeAwardInput, eventTurnStarted]
+  }
 
   // После последнего финального хода следующего TurnStarted уже нет: начинается подсчёт.
   if (state.phase === 'final_round') {

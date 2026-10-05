@@ -13,6 +13,7 @@ export type GameEvent =
   | { readonly type: 'InternationalMarketPrepared' }
   | { readonly type: 'LocationReputationPrepared' }
   | { readonly type: 'MasterpieceAuctionPrepared' }
+  | { readonly type: 'FinalRoundStarted'}
   | { readonly type: 'IntermediateScoringTriggered' }
   | { readonly type: 'InitialVisitorsPlaced' }
   | { readonly type: 'FirstPlayerSelected'; readonly playerId: PlayerId }

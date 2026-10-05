@@ -13,6 +13,7 @@ import {
   type FinalRoundGameState,
   type GameConfig,
   type GameState,
+  type GameTransition,
   type PlayerConfig,
   type PlayerState,
   type RegularPlayGameState,
@@ -905,6 +906,7 @@ it('завершает прежний и начинает новый ход пр
     { type: 'TurnEnded', playerId: 'player-2' },
     { type: 'RoundEnded', round: 1 },
     { type: 'RoundStarted', round: 2 },
+    { type: 'FinalRoundStarted' },
     { type: 'TurnStarted', playerId: 'player-1' },
   ])
   expect(projectEventsForViewer(transition.events, transition.state, null)).toEqual(
@@ -1704,6 +1706,117 @@ it('начисляет промежуточный доход до событий
   ])
   expect(transition.state.round).toBe(state.round + 1)
   expect(transition.state.intermediateScoringStatus).toBe('completed')
+})
+
+it.each([
+  [2, twoPlayerConfigs],
+  [3, threePlayerConfigs],
+  [4, fourPlayerConfigs],
+] as const)('публикует FinalRoundStarted один раз на границе доигрывания для %i игроков', (playerCount, players) => {
+  const firstPlayerId = players[1]!.id
+  const lastPlayerId = players[0]!.id
+  const started = startGame(createGame({ playerCount, seed: 1 }, players))
+  const ending = triggerGameEnd(withGameEndConditions({
+    ...started,
+    firstPlayerId,
+    activePlayerId: lastPlayerId,
+    round: 4,
+  })).state
+  const state = structuredClone(ending)
+  const snapshot = structuredClone(state)
+
+  const transition = advanceTurn(state)
+
+  expect(transition.state).toMatchObject({
+    phase: 'final_round',
+    round: 5,
+    firstPlayerId,
+    activePlayerId: firstPlayerId,
+    endTriggeredRound: 4,
+  })
+  expect(transition.state.players).toEqual(snapshot.players)
+  expect(transition.events).toEqual([
+    { type: 'TurnEnded', playerId: lastPlayerId },
+    { type: 'RoundEnded', round: 4 },
+    { type: 'RoundStarted', round: 5 },
+    { type: 'FinalRoundStarted' },
+    { type: 'TurnStarted', playerId: firstPlayerId },
+  ])
+  for (const viewerId of [null, ...players.map(player => player.id)]) {
+    expect(projectEventsForViewer(transition.events, transition.state, viewerId)).toEqual(transition.events)
+    expect(projectGameForViewer(transition.state, viewerId)).toMatchObject({
+      phase: 'final_round', round: 5, activePlayerId: firstPlayerId,
+    })
+  }
+  expect(state).toEqual(snapshot)
+  expect(Object.isFrozen(state)).toBe(false)
+  expect(transition.state).not.toBe(state)
+  expect(Object.isFrozen(transition)).toBe(true)
+  expect(Object.isFrozen(transition.state)).toBe(true)
+  expect(Object.isFrozen(transition.state.players)).toBe(true)
+  expect(transition.state.players.every(Object.isFrozen)).toBe(true)
+  expect(Object.isFrozen(transition.events)).toBe(true)
+  expect(transition.events.every(Object.isFrozen)).toBe(true)
+
+  let finalState: GameState = transition.state
+  for (let turn = 0; turn < playerCount; turn += 1) {
+    const next: GameTransition<GameState> = advanceTurn(finalState)
+    expect(next.events.some(event => event.type === 'FinalRoundStarted')).toBe(false)
+    finalState = next.state
+  }
+  expect(finalState.phase).toBe('final_scoring')
+  const rejectedInput = structuredClone(finalState)
+  const rejectedSnapshot = structuredClone(rejectedInput)
+  expect(() => advanceTurn(rejectedInput)).toThrow('Turns can only be advanced while game is in progress')
+  expect(rejectedInput).toEqual(rejectedSnapshot)
+  expect(Object.isFrozen(rejectedInput)).toBe(false)
+})
+
+it('не публикует FinalRoundStarted внутри доигрываемого раунда', () => {
+  const started = startGame(createGame({ playerCount: 3, seed: 1 }, threePlayerConfigs))
+  const state = triggerGameEnd(withGameEndConditions({
+    ...started,
+    firstPlayerId: 'player-2',
+    activePlayerId: 'player-2',
+  })).state
+  const transition = advanceTurn(state)
+  expect(transition.state).toMatchObject({
+    phase: 'ending_current_round', round: state.round, activePlayerId: 'player-3',
+  })
+  expect(transition.events).toEqual([
+    { type: 'TurnEnded', playerId: 'player-2' },
+    { type: 'TurnStarted', playerId: 'player-3' },
+  ])
+})
+
+it('начисляет промежуточный доход перед FinalRoundStarted без повторного начисления', () => {
+  const started = startGame(createGame(twoPlayerGameConfig, twoPlayerConfigs))
+  const ending = triggerGameEnd(withGameEndConditions(started)).state
+  const lastEndingTurn = advanceTurn(ending).state
+  const state = withPendingIntermediateScoring(lastEndingTurn)
+  const snapshot = structuredClone(state)
+
+  const transition = advanceTurn(state)
+
+  expect(transition.events).toEqual([
+    { type: 'TurnEnded', playerId: state.activePlayerId },
+    ...state.players.map(player => ({
+      type: 'IntermediateIncomeAwarded' as const,
+      playerId: player.id,
+    })),
+    { type: 'RoundEnded', round: state.round },
+    { type: 'RoundStarted', round: state.round + 1 },
+    { type: 'FinalRoundStarted' },
+    { type: 'TurnStarted', playerId: state.firstPlayerId },
+  ])
+  expect(transition.state.phase).toBe('final_round')
+  expect(transition.state.intermediateScoringStatus).toBe('completed')
+  expect(transition.state.players[0]).toMatchObject({ coins: 14, influence: 12 })
+  expect(transition.state.players[1]).toMatchObject({ coins: 11, influence: 11 })
+  expect(state).toEqual(snapshot)
+  const next = advanceTurn(transition.state)
+  expect(next.state.players).toEqual(transition.state.players)
+  expect(next.events.some(event => event.type === 'IntermediateIncomeAwarded' || event.type === 'FinalRoundStarted')).toBe(false)
 })
 
 it('начисляет pending промежуточный доход до перехода в final_scoring', () => {
