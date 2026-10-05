@@ -150,5 +150,5 @@ export const setupComponentCatalog: Readonly<SetupComponentCatalog> = deepFreeze
   boardOrderCells: [['BOARD-ORDER-1', 1, 'TICKET-B'], ['BOARD-ORDER-2', 2, 'TICKET-R'], ['BOARD-ORDER-3', 3, 'TICKET-ANY']].map(([id, position, reward]) => ({ id: id as string, position: position as 1 | 2 | 3, reward: reward as RewardId })),
   assistantsPerPlayer: { office: 2, hireQueue: 8 },
   promotionTokens: [[1, 'TICKET-ANY'], [2, 'INFLUENCE'], [3, 'TICKET-DIFF2'], [4, 'COINS'], [5, 'VISITOR-ANY']].flatMap(([level, reward]) => Array.from({ length: 4 }, (_, index) => ({ id: `PROMOTION-${level}-${index + 1}`, level: level as 1 | 2 | 3 | 4 | 5, influenceCost: level as 1 | 2 | 3 | 4 | 5, reward: reward as RewardId }))),
-  superstarTokenIds: Array.from({ length: 5 }, (_, index) => `SUPERSTAR-${index + 1}`),
+  superstarTokenIds: Array.from({ length: 8 }, (_, index) => `SUPERSTAR-${index + 1}`),
 })

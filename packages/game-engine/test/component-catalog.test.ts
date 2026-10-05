@@ -119,7 +119,7 @@ describe('Каталог компонентов setupComponentCatalog', () => {
     expect(new Set(setupComponentCatalog.promotionTokens.map(token => token.id)).size).toBe(20)
     expect(setupComponentCatalog.promotionTokens.filter(token => token.level === 1).map(token => token.reward)).toEqual(['TICKET-ANY', 'TICKET-ANY', 'TICKET-ANY', 'TICKET-ANY'])
     expect(setupComponentCatalog.promotionTokens.filter(token => token.level === 5).map(token => token.reward)).toEqual(['VISITOR-ANY', 'VISITOR-ANY', 'VISITOR-ANY', 'VISITOR-ANY'])
-    expect(setupComponentCatalog.superstarTokenIds).toEqual(['SUPERSTAR-1', 'SUPERSTAR-2', 'SUPERSTAR-3', 'SUPERSTAR-4', 'SUPERSTAR-5'])
+    expect(setupComponentCatalog.superstarTokenIds).toEqual(['SUPERSTAR-1', 'SUPERSTAR-2', 'SUPERSTAR-3', 'SUPERSTAR-4', 'SUPERSTAR-5', 'SUPERSTAR-6', 'SUPERSTAR-7', 'SUPERSTAR-8'])
     expect(Object.isFrozen(setupComponentCatalog.promotionTokens[0])).toBe(true)
     expect(Object.isFrozen(setupComponentCatalog.superstarTokenIds)).toBe(true)
   })
