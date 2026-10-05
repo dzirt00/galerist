@@ -1,7 +1,8 @@
 import type { SetupTicketColor } from './component-catalog.js'
 import { freezeTransition, type GameEvent, type GameTransition } from './game-events.js'
 import { replaceUnavailableTicket } from './ticket-replacement.js'
-import type { GameState, IntermediateScoringStatus, PlayerId } from './types.js'
+import type { EndingCurrentRoundGameState, GameState, IntermediateScoringStatus, PlayerId } from './types.js'
+import { canTriggerGameEnd, triggerGameEnd } from "./game-lifecycle.js";
 
 export interface TicketRewardRequest {
   readonly playerId: PlayerId
@@ -87,15 +88,33 @@ export function applyTicketRewardToGameState(
   const players = [...state.players]
   players[playerIndex] = result.player
 
+  let updateState = {
+    ...state,
+    players: [
+    ...players,
+    ],
+    ticketDiscard: result.ticketDiscard,
+    ticketOffice: result.ticketOffice,
+    intermediateScoringStatus: result.intermediateScoringStatus
+  }
+
+  let updateGameTransition:  GameTransition<EndingCurrentRoundGameState> | null = null
+
+  if(updateState.phase === 'regular_play' && canTriggerGameEnd(updateState)) {
+    updateGameTransition = triggerGameEnd(updateState)
+  }
+
+  const events = (updateGameTransition !== null) ? [...result.events, ...updateGameTransition.events]  : result.events
+  updateState = (updateGameTransition !== null)
+    ? {
+      ...updateGameTransition.state,
+      players: [...updateGameTransition.state.players]
+    }
+    : updateState;
+
   return freezeTransition(
-    {
-      ...state,
-      players,
-      ticketDiscard: result.ticketDiscard,
-      ticketOffice: result.ticketOffice,
-      intermediateScoringStatus: result.intermediateScoringStatus
-    },
-    result.events,
+    updateState,
+    events,
   )
 }
 
