@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   applyArtworkPurchaseToGameState,
+  applyArtworkPurchasePaymentToGameState,
   projectEventsForViewer,
   projectGameForViewer,
   restoreGameState,
@@ -12,6 +13,35 @@ import { createGameState } from './helpers.js'
 import { twoPlayerConfigs, twoPlayerGameConfig } from './fixtures.js'
 
 /** Выбирает допустимые тестовые цвета для фиксированной или альтернативной билетной награды. */
+describe('acquiredArtworkCount purchase contract', () => {
+  it.each([0, 2, Number.MAX_SAFE_INTEGER - 1])('increments only the buyer from %i', count => {
+    const initial = createGameState(twoPlayerGameConfig, twoPlayerConfigs)
+    const state: GameState = { ...initial, players: initial.players.map((player, index) => ({
+      ...player, acquiredArtworkCount: index === 0 ? count : 5,
+    })) }
+    const before = structuredClone(state)
+    const request = regularRequest(state)
+    const payment = applyArtworkPurchasePaymentToGameState(state, request)
+    expect(payment.state.players.map(player => player.acquiredArtworkCount)).toEqual([count, 5])
+    const transition = applyArtworkPurchaseToGameState(state, request)
+    expect(transition.state.players.map(player => player.acquiredArtworkCount)).toEqual([count + 1, 5])
+    expect(projectGameForViewer(transition.state, null).players[0]!.acquiredArtworkCount).toBe(count + 1)
+    expect(restoreGameState(transition.state)).toEqual(transition.state)
+    expect(Object.isFrozen(transition.state.players[0])).toBe(true)
+    expect(state).toEqual(before)
+  })
+
+  it('leaves counts and state untouched when payment fails', () => {
+    const initial = createGameState(twoPlayerGameConfig, twoPlayerConfigs)
+    const state: GameState = { ...initial, players: initial.players.map(player => ({
+      ...player, coins: 0, acquiredArtworkCount: 2,
+    })) }
+    const before = structuredClone(state)
+    expect(() => applyArtworkPurchaseToGameState(state, regularRequest(state))).toThrow()
+    expect(state).toEqual(before)
+  })
+})
+
 function colorsForReward(reward: string): readonly SetupTicketColor[] {
   if (reward === '—') return []
   if (reward === 'B' || reward === 'R' || reward === 'W') return [reward]
@@ -96,6 +126,7 @@ describe('applyArtworkPurchaseToGameState', () => {
       const transition = applyArtworkPurchaseToGameState(state, request)
       const board = transition.state.playerBoards[0]!
       const exhibited = board.gallery.artworkSlots[3]!
+      expect(transition.state.players.map(player => player.acquiredArtworkCount)).toEqual([1, 0])
       const paid = purchaseType === 'contract' ? artist.initialFame : artist.fame!
       expect(board.gallery.artworkSlots.slice(0, 3)).toEqual(state.playerBoards[0]!.gallery.artworkSlots.slice(0, 3))
       expect(exhibited).toMatchObject({ artworkId: open.artwork.id, artistId: artist.artistId, signatureTokenId, isMasterpiece: superstar })

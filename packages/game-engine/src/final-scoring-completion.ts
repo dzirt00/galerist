@@ -71,14 +71,20 @@ export function completeFinalScoring(
 
   const updatedCandidates = candidates.map(candidate => {
     const playerBoard = playerBoards.find(pb => pb.playerId === candidate.playerId)
+    const player = state.players.find(player => player.id === candidate.playerId)
     if(playerBoard === undefined) {
       throw new Error('Invalid candidate')
+    }
+
+    if(player === undefined) {
+      throw new Error('Invalid player')
     }
 
     return {
       ...candidate,
       galleryVisitorCount: playerBoard.visitorsInGallery.length,
-      assistantsInPlayCount: playerBoard.assistants.office
+      assistantsInPlayCount: playerBoard.assistants.office,
+      acquiredArtworkCount: player.acquiredArtworkCount
     }
 
   })

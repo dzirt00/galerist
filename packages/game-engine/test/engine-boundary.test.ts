@@ -11,6 +11,38 @@ import { twoPlayerConfigs } from './fixtures.js'
 import { completeStartingLocationSelection } from './helpers.js'
 
 /** Создаёт детерминированную тестовую партию с заданным внешним ID. */
+describe('acquiredArtworkCount snapshot contract', () => {
+  it('initializes counts and preserves them in schema 7', () => {
+    const setup = createSetup().state
+    expect(setup.stateSchemaVersion).toBe(7)
+    expect(setup.players.map(player => player.acquiredArtworkCount)).toEqual([0, 0])
+    const source = {
+      ...structuredClone(setup),
+      players: setup.players.map((player, index) => ({ ...player, acquiredArtworkCount: index + 5 })),
+    }
+    const restored = restoreGameState(source)
+    expect(restored.players.map(player => player.acquiredArtworkCount)).toEqual([5, 6])
+    expect(restored).toEqual(source)
+    expect(Object.isFrozen(restored.players[0])).toBe(true)
+  })
+
+  it.each([undefined, null, -1, 1.5, '2', Number.MAX_SAFE_INTEGER + 1])(
+    'rejects an invalid acquired count: %s', count => {
+      const source = structuredClone(createSetup().state)
+      const player = source.players[0]! as unknown as Record<string, unknown>
+      if (count === undefined) delete player.acquiredArtworkCount
+      else player.acquiredArtworkCount = count
+      const before = structuredClone(source)
+      expect(() => restoreGameState(source)).toThrow('Invalid game state:')
+      expect(source).toEqual(before)
+    },
+  )
+
+  it('rejects schema 6', () => {
+    expect(() => restoreGameState({ ...createSetup().state, stateSchemaVersion: 6 })).toThrow('Invalid game state:')
+  })
+})
+
 function createSetup(gameId = 'game-boundary') {
   return createGame({
     gameId,
@@ -46,7 +78,7 @@ describe('граница игрового движка', () => {
   })
 
   it.each([
-    ['неизвестная версия схемы', { stateSchemaVersion: 7 }],
+    ['неизвестная версия схемы', { stateSchemaVersion: 8 }],
     ['неизвестный статус промежуточного подсчёта', { intermediateScoringStatus: 'unknown' }],
     ['несогласованная фаза', { phase: 'regular_play' }],
     ['неизвестный активный игрок', {

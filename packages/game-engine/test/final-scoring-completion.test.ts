@@ -39,6 +39,34 @@ function createScoredFinalState(): FinalScoringGameState {
 }
 
 /** Собирает кандидатов с актуальными монетами и различными тестовыми показателями ничьей. */
+describe('acquiredArtworkCount final scoring contract', () => {
+  it.each([
+    [6, 5, ['player-1']],
+    [5, 6, ['player-2']],
+    [6, 6, ['player-2', 'player-1']],
+  ] as const)('uses saved counts %i/%i instead of supplied counts', (firstCount, secondCount, winners) => {
+    const initial = createScoredFinalState()
+    const state: FinalScoringGameState = {
+      ...initial,
+      players: initial.players.map((player, index) => ({
+        ...player, coins: 20, acquiredArtworkCount: index === 0 ? firstCount : secondCount,
+      })),
+    }
+    const candidates = [...createCandidates(state)].reverse().map(candidate => ({
+      ...candidate, acquiredArtworkCount: candidate.playerId === 'player-1' ? 0 : 100,
+    }))
+    const before = structuredClone(state)
+    const candidateSnapshot = structuredClone(candidates)
+    const transition = completeFinalScoring(state, candidates)
+    expect(transition.state.winnerIds).toEqual(winners)
+    expect(transition.events[0]).toEqual({ type: 'WinnerDetermined', winnerIds: winners })
+    expect(projectGameForViewer(transition.state, null).players).toEqual(state.players)
+    expect(restoreGameState(transition.state)).toEqual(transition.state)
+    expect(state).toEqual(before)
+    expect(candidates).toEqual(candidateSnapshot)
+  })
+})
+
 function createCandidates(
   state: FinalScoringGameState,
 ): readonly WinnerCandidate[] {
@@ -200,6 +228,7 @@ describe('completeFinalScoring', () => {
   it('завершает подсчёт, публикует победителя и сохраняет его в проекции и снимке', () => {
     const state = structuredClone(createScoredFinalState())
     const candidates = createCandidates(state)
+    Object.assign(state.players[1]!, { acquiredArtworkCount: 1 })
     const stateSnapshot = structuredClone(state)
     const candidatesSnapshot = structuredClone(candidates)
 

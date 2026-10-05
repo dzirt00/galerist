@@ -218,6 +218,11 @@ function validatePlayers(state: UnknownRecord): ReadonlySet<PlayerId> {
     if (player.kind !== 'human' && player.kind !== 'bot') {
       fail(`players[${index}].kind must be human or bot`)
     }
+
+    if (value.acquiredArtworkCount < 0 || !Number.isSafeInteger(value.acquiredArtworkCount)) {
+      return fail('acquiredArtworkCount must be an array')
+    }
+
     const coins = requireSafeInteger(player.coins, `players[${index}].coins`)
     const influence = requireSafeInteger(player.influence, `players[${index}].influence`)
     if (coins < 0) {
@@ -353,7 +358,7 @@ function validatePhase(
 /** Проверяет JSON-снимок по ADR-001/ADR-002 и возвращает независимый замороженный GameState. */
 export function restoreGameState(input: unknown): GameState {
   const state = requireRecord(input, 'state')
-  if (state.stateSchemaVersion !== 6) {
+  if (state.stateSchemaVersion !== 7) {
     fail('stateSchemaVersion must equal 6')
   }
   requireNonEmptyString(state.id, 'id')

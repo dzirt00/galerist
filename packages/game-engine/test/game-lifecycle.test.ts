@@ -203,8 +203,8 @@ it('отклоняет запуск завершённой игры без из�
     id: 'game-1',
     config: twoPlayerGameConfig,
     players: [
-      { id: 'player-1', name: 'Алина', kind: 'human', coins: 10, influence: 10, ticketsByColor: { B: 0, R: 0, W: 0 } },
-      { id: 'player-2', name: 'Алина', kind: 'human', coins: 10, influence: 10, ticketsByColor: { B: 0, R: 0, W: 0 } },
+      { id: 'player-1', name: 'Алина', kind: 'human', coins: 10, influence: 10, acquiredArtworkCount: 0, ticketsByColor: { B: 0, R: 0, W: 0 } },
+      { id: 'player-2', name: 'Алина', kind: 'human', coins: 10, influence: 10, acquiredArtworkCount: 0, ticketsByColor: { B: 0, R: 0, W: 0 } },
     ],
     phase: 'finished',
     status: 'finished',
@@ -767,7 +767,7 @@ it( 'запрещает изменение списка игроков в сос
     kind: 'human',
     coins: 10,
     influence: 10,
-    ticketsByColor: { B: 0, R: 0, W: 0 },
+    acquiredArtworkCount: 0, ticketsByColor: { B: 0, R: 0, W: 0 },
   }
   const state = createGame( { playerCount: 2, seed: 42 }, twoPlayerConfigs )
 

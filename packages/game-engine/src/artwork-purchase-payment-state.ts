@@ -400,8 +400,17 @@ export function applyArtworkPurchaseToGameState(
   const artistSlots = state.artistMarket.slots.map(slot => slot.artistId === availability.artist.artistId
     ? { ...slot, fame: nextFame, isSuperstar: slot.isSuperstar || becameSuperstar }
     : slot)
-  const players = [...state.players]
+  let players = [...state.players]
   players[availability.playerIndex] = nextPlayer
+
+  if (players[availability.playerIndex]) {
+    players = players.map((player, index) =>
+      index === availability.playerIndex
+        ? { ...player, acquiredArtworkCount: player.acquiredArtworkCount + 1 }
+        : player
+    );
+  }
+
   const capacityChanged = !availability.playerBoard.gallery.artworkSlots.some(artwork => artwork?.isMasterpiece)
     && isMasterpiece
   // События следуют порядку эффектов: оплата, билеты, известность, размещение, рынок.
