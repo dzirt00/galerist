@@ -14,7 +14,6 @@ function arraysEqual  (a: string[], b: string[]): boolean {
 
 export function completeFinalScoring(
   state: Readonly<GameState>,
-  candidates: readonly WinnerCandidate[],
 ): GameTransition<Readonly<FinishedGameState>> {
 
   if ( state.phase !== 'final_scoring' ) {
@@ -24,18 +23,6 @@ export function completeFinalScoring(
   if ( !state.finalInfluenceScored ) {
     throw new Error( 'Is final_scoring' )
   }
-
-  // Сравниваем ID и монеты независимо от порядка кандидатов; остальные показатели переданы извне.
-  const coinsCandidate = candidates.map(candidate => {
-    return {
-      playersID: candidate.playerId,
-      coins: candidate.coins
-    }
-  }).sort((a, b) => {
-    if(a.playersID > b.playersID) return 1
-    if(a.playersID < b.playersID) return -1
-    return 0
-  })
 
   const coinsPlayers = state.players.map(player => {
     return {
@@ -47,11 +34,6 @@ export function completeFinalScoring(
     if(a.playersID < b.playersID) return -1
     return 0
   })
-
-  if(!deepEqual(coinsPlayers,coinsCandidate)) {
-    throw new Error( 'Invalid candidates' )
-  }
-
 
   const playerBoards = state.playerBoards.map(player => {
     return {
@@ -69,27 +51,27 @@ export function completeFinalScoring(
     throw new Error( 'Invalid candidates' )
   }
 
-  const updatedCandidates = candidates.map(candidate => {
-    const playerBoard = playerBoards.find(pb => pb.playerId === candidate.playerId)
-    const player = state.players.find(player => player.id === candidate.playerId)
+  const candidates = state.players.map(playerState => {
+    const playerBoard = playerBoards.find(pb => pb.playerId === playerState.id)
     if(playerBoard === undefined) {
       throw new Error('Invalid candidate')
     }
 
-    if(player === undefined) {
+    if(playerState === undefined) {
       throw new Error('Invalid player')
     }
 
     return {
-      ...candidate,
+      playerId: playerState.id,
+      coins: playerState.coins,
       galleryVisitorCount: playerBoard.visitorsInGallery.length,
       assistantsInPlayCount: playerBoard.assistants.office,
-      acquiredArtworkCount: player.acquiredArtworkCount
+      acquiredArtworkCount: playerState.acquiredArtworkCount
     }
 
   })
 
-  const winnersIds = deepFreeze(determineWinners(updatedCandidates))
+  const winnersIds = deepFreeze(determineWinners(candidates))
 
 
   return freezeTransition({

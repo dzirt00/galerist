@@ -11,7 +11,6 @@ import {
   triggerGameEnd,
   type FinalScoringGameState,
   type GameState,
-  type WinnerCandidate,
 } from '../src/index.js'
 import { twoPlayerConfigs, twoPlayerGameConfig } from './fixtures.js'
 import { createGameState, startGameAfterSetup } from './helpers.js'
@@ -38,13 +37,12 @@ function createScoredFinalState(): FinalScoringGameState {
   return applyFinalInfluenceScoringToGameState(finalScoring).state
 }
 
-/** Собирает кандидатов с актуальными монетами и различными тестовыми показателями ничьей. */
 describe('acquiredArtworkCount final scoring contract', () => {
   it.each([
     [6, 5, ['player-1']],
     [5, 6, ['player-2']],
-    [6, 6, ['player-2', 'player-1']],
-  ] as const)('uses saved counts %i/%i instead of supplied counts', (firstCount, secondCount, winners) => {
+    [6, 6, ['player-1', 'player-2']],
+  ] as const)('uses saved counts %i/%i', (firstCount, secondCount, winners) => {
     const initial = createScoredFinalState()
     const state: FinalScoringGameState = {
       ...initial,
@@ -52,39 +50,41 @@ describe('acquiredArtworkCount final scoring contract', () => {
         ...player, coins: 20, acquiredArtworkCount: index === 0 ? firstCount : secondCount,
       })),
     }
-    const candidates = [...createCandidates(state)].reverse().map(candidate => ({
-      ...candidate, acquiredArtworkCount: candidate.playerId === 'player-1' ? 0 : 100,
-    }))
     const before = structuredClone(state)
-    const candidateSnapshot = structuredClone(candidates)
-    const transition = completeFinalScoring(state, candidates)
+    const transition = completeFinalScoring(state)
     expect(transition.state.winnerIds).toEqual(winners)
     expect(transition.events[0]).toEqual({ type: 'WinnerDetermined', winnerIds: winners })
     expect(projectGameForViewer(transition.state, null).players).toEqual(state.players)
     expect(restoreGameState(transition.state)).toEqual(transition.state)
     expect(state).toEqual(before)
-    expect(candidates).toEqual(candidateSnapshot)
   })
 })
 
-function createCandidates(
-  state: FinalScoringGameState,
-): readonly WinnerCandidate[] {
-  return state.players.map((player, index) => ({
-    playerId: player.id,
-    coins: player.coins,
-    acquiredArtworkCount: index,
-    galleryVisitorCount: 0,
-    assistantsInPlayCount: 0,
-  }))
-}
-
 describe('completeFinalScoring', () => {
+  it('берёт монеты из состояния и сохраняет их приоритет над критериями ничьей', () => {
+    const initial = createScoredFinalState()
+    const state = structuredClone({
+      ...initial,
+      players: initial.players.map((player, index) => ({
+        ...player,
+        coins: index === 0 ? 10 : 11,
+        acquiredArtworkCount: index === 0 ? 10 : 0,
+      })),
+    })
+    const before = structuredClone(state)
+
+    const transition = completeFinalScoring(state)
+
+    expect(transition.state.winnerIds).toEqual(['player-2'])
+    expect(transition.state.players).toEqual(state.players)
+    expect(state).toEqual(before)
+  })
+
   it.each([
     [3, 1, 0, 0, ['player-1']],
     [0, 1, 0, 0, ['player-2']],
     [0, 0, 1, 2, ['player-2']],
-    [1, 1, 2, 2, ['player-2', 'player-1']],
+    [1, 1, 2, 2, ['player-1', 'player-2']],
   ] as const)('берёт посетителей из галерей (%i/%i), сохраняя следующие критерии (%i/%i)', (
     firstVisitorCount, secondVisitorCount, firstAssistantCount, secondAssistantCount, winnerIds,
   ) => {
@@ -106,17 +106,9 @@ describe('completeFinalScoring', () => {
         },
       })).reverse(),
     })
-    const candidates = state.players.map((player, index) => ({
-      playerId: player.id,
-      coins: player.coins,
-      acquiredArtworkCount: 0,
-      galleryVisitorCount: index === 0 ? 0 : 99,
-      assistantsInPlayCount: index === 0 ? 99 : 0,
-    })).reverse()
     const stateSnapshot = structuredClone(state)
-    const candidatesSnapshot = structuredClone(candidates)
 
-    const transition = completeFinalScoring(state, candidates)
+    const transition = completeFinalScoring(state)
 
     expect(transition.state.winnerIds).toEqual(winnerIds)
     expect(transition.events).toEqual([
@@ -127,16 +119,15 @@ describe('completeFinalScoring', () => {
     expect(projectGameForViewer(transition.state, null).winnerIds).toEqual(winnerIds)
     expect(transition.state.playerBoards).toEqual(state.playerBoards)
     expect(state).toEqual(stateSnapshot)
-    expect(candidates).toEqual(candidatesSnapshot)
     expect(Object.isFrozen(state.playerBoards)).toBe(false)
-    expect(Object.isFrozen(candidates)).toBe(false)
     expect(Object.isFrozen(transition.state.playerBoards)).toBe(true)
   })
 
   it.each([
     [5, 6, ['player-2']],
     [0, 1, ['player-2']],
-    [0, 0, ['player-2', 'player-1']],
+    [0, 0, ['player-1', 'player-2']],
+    [2, 3, ['player-2']],
     [6, 5, ['player-1']],
   ] as const)('берёт помощников из офисов (%i/%i), исключая очередь найма', (
     firstOffice, secondOffice, winnerIds,
@@ -152,17 +143,9 @@ describe('completeFinalScoring', () => {
         },
       })).reverse(),
     })
-    const candidates = state.players.map((player, index) => ({
-      playerId: player.id,
-      coins: player.coins,
-      acquiredArtworkCount: 0,
-      galleryVisitorCount: 0,
-      assistantsInPlayCount: index === 0 ? 9 : 0,
-    })).reverse()
     const stateSnapshot = structuredClone(state)
-    const candidatesSnapshot = structuredClone(candidates)
 
-    const transition = completeFinalScoring(state, candidates)
+    const transition = completeFinalScoring(state)
 
     expect(transition.state).toMatchObject({
       phase: 'finished', status: 'finished', activePlayerId: null, winnerIds,
@@ -175,10 +158,8 @@ describe('completeFinalScoring', () => {
     expect(projectGameForViewer(transition.state, null).winnerIds).toEqual(winnerIds)
     expect(projectEventsForViewer(transition.events, transition.state, null)).toEqual(transition.events)
     expect(state).toEqual(stateSnapshot)
-    expect(candidates).toEqual(candidatesSnapshot)
     expect(transition.state.playerBoards).toEqual(state.playerBoards)
     expect(Object.isFrozen(state.playerBoards)).toBe(false)
-    expect(Object.isFrozen(candidates)).toBe(false)
     expect(Object.isFrozen(transition.state.playerBoards)).toBe(true)
   })
 
@@ -190,13 +171,10 @@ describe('completeFinalScoring', () => {
         ? { ...board, assistants: { ...board.assistants, office } }
         : board),
     })
-    const candidates = createCandidates(state)
     const stateSnapshot = structuredClone(state)
-    const candidatesSnapshot = structuredClone(candidates)
 
-    expect(() => completeFinalScoring(state, candidates)).toThrow('Invalid metric value:')
+    expect(() => completeFinalScoring(state)).toThrow('Invalid metric value:')
     expect(state).toEqual(stateSnapshot)
-    expect(candidates).toEqual(candidatesSnapshot)
   })
 
   it.each(['missing-first', 'missing-last', 'empty', 'duplicate', 'foreign', 'extra'] as const)(
@@ -213,26 +191,20 @@ describe('completeFinalScoring', () => {
         extra: [first, second, { ...second, playerId: 'missing' }],
       }[damage]
       const state = structuredClone({ ...initial, playerBoards })
-      const candidates = createCandidates(state)
       const stateSnapshot = structuredClone(state)
-      const candidatesSnapshot = structuredClone(candidates)
 
-      expect(() => completeFinalScoring(state, candidates)).toThrow('Invalid candidates')
+      expect(() => completeFinalScoring(state)).toThrow('Invalid candidates')
       expect(state).toEqual(stateSnapshot)
-      expect(candidates).toEqual(candidatesSnapshot)
       expect(Object.isFrozen(state.playerBoards)).toBe(false)
-      expect(Object.isFrozen(candidates)).toBe(false)
     },
   )
 
   it('завершает подсчёт, публикует победителя и сохраняет его в проекции и снимке', () => {
     const state = structuredClone(createScoredFinalState())
-    const candidates = createCandidates(state)
     Object.assign(state.players[1]!, { acquiredArtworkCount: 1 })
     const stateSnapshot = structuredClone(state)
-    const candidatesSnapshot = structuredClone(candidates)
 
-    const transition = completeFinalScoring(state, candidates)
+    const transition = completeFinalScoring(state)
 
     expect(transition.state).toMatchObject({
       phase: 'finished',
@@ -266,50 +238,39 @@ describe('completeFinalScoring', () => {
     expect(Object.isFrozen(transition.events)).toBe(true)
     expect(transition.events.every(Object.isFrozen)).toBe(true)
     expect(state).toEqual(stateSnapshot)
-    expect(candidates).toEqual(candidatesSnapshot)
     expect(Object.isFrozen(state)).toBe(false)
     expect(Object.isFrozen(state.players)).toBe(false)
     expect(state.players.every(player => !Object.isFrozen(player))).toBe(true)
   })
 
-  it('сохраняет порядок игроков при полной ничьей', () => {
-    const state = createScoredFinalState()
-    const candidates = state.players.map(player => ({
-      playerId: player.id,
-      coins: player.coins,
-      acquiredArtworkCount: 0,
-      galleryVisitorCount: 0,
-      assistantsInPlayCount: 0,
-    }))
+  it.each([false, true])('сохраняет порядок state.players при полной ничьей, обратный порядок: %s', reverse => {
+    const initial = createScoredFinalState()
+    const state = {
+      ...initial,
+      players: reverse ? [...initial.players].reverse() : initial.players,
+    }
 
-    const transition = completeFinalScoring(state, candidates)
+    const transition = completeFinalScoring(state)
 
-    expect(transition.state.winnerIds).toEqual(['player-1', 'player-2'])
+    expect(transition.state.winnerIds).toEqual(reverse
+      ? ['player-2', 'player-1']
+      : ['player-1', 'player-2'])
   })
 
-  it.each([
-    ['пропущенного игрока', (state: FinalScoringGameState) => createCandidates(state).slice(0, 1)],
-    ['чужого игрока', (state: FinalScoringGameState) => [
-      createCandidates(state)[0]!,
-      { ...createCandidates(state)[1]!, playerId: 'missing' },
-    ]],
-    ['несовпадающие монеты', (state: FinalScoringGameState) => [
-      { ...createCandidates(state)[0]!, coins: state.players[0]!.coins + 1 },
-      createCandidates(state)[1]!,
-    ]],
-  ] as const)('отклоняет %s без изменения входа', (_case, prepareCandidates) => {
-    const state = structuredClone(createScoredFinalState())
-    const candidates = prepareCandidates(state)
+  it.each([-1, 1.5, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1])(
+    'отклоняет некорректные монеты из состояния: %s без изменения входа', coins => {
+    const initial = createScoredFinalState()
+    const state = structuredClone({
+      ...initial,
+      players: initial.players.map((player, index) => index === 0 ? { ...player, coins } : player),
+    })
     const stateSnapshot = structuredClone(state)
-    const candidatesSnapshot = structuredClone(candidates)
 
-    expect(() => completeFinalScoring(state, candidates)).toThrow(
-      'Invalid candidates',
+    expect(() => completeFinalScoring(state)).toThrow(
+      'Invalid metric value:',
     )
     expect(state).toEqual(stateSnapshot)
-    expect(candidates).toEqual(candidatesSnapshot)
     expect(Object.isFrozen(state)).toBe(false)
-    expect(Object.isFrozen(candidates)).toBe(false)
   })
 
   it('отклоняет завершение до финальной выплаты и повторное завершение', () => {
@@ -319,14 +280,11 @@ describe('completeFinalScoring', () => {
         ))).state,
     )
 
-    expect(() => completeFinalScoring(
-      unscored,
-      createCandidates({ ...unscored, finalInfluenceScored: true }),
-    )).toThrow('Is final_scoring')
+    expect(() => completeFinalScoring(unscored)).toThrow('Is final_scoring')
 
     const scored = createScoredFinalState()
-    const finished = completeFinalScoring(scored, createCandidates(scored)).state
-    expect(() => completeFinalScoring(finished, createCandidates(scored))).toThrow(
+    const finished = completeFinalScoring(scored).state
+    expect(() => completeFinalScoring(finished)).toThrow(
       'Is final_scoring',
     )
   })
@@ -340,7 +298,7 @@ describe('completeFinalScoring', () => {
     ['чужой ID', (state: Record<string, unknown>) => { state.winnerIds = ['missing'] }],
   ] as const)('отклоняет finished-снимок: %s', (_case, damage) => {
     const scored = createScoredFinalState()
-    const finished = completeFinalScoring(scored, createCandidates(scored)).state
+    const finished = completeFinalScoring(scored).state
     const damaged = structuredClone(finished) as unknown as Record<string, unknown>
     damage(damaged)
 
