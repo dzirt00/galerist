@@ -39,6 +39,7 @@ export function advertisingArtist(
   if (!Number.isSafeInteger(player.soldArtworkCount) || player.soldArtworkCount < 0) {
     throw new Error('Invalid soldArtworkCount')
   }
+
   const nextLevel = (artist.promotionLevel + 1) as 1 | 2 | 3 | 4 | 5
   const tokenIdsByLevel = { ...state.promotionSupply.tokenIdsByLevel }
   const selectedTokenId = tokenIdsByLevel[nextLevel][0]
