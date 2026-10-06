@@ -12,7 +12,7 @@ import {
   type ManagementTiming,
 } from '../src/index.js'
 import { twoPlayerConfigs, twoPlayerGameConfig } from './fixtures.js'
-import { createGameState, startGameAfterSetup } from './helpers.js'
+import { createGameState, expectPreparedTurnFrozen, startGameAfterSetup } from './helpers.js'
 
 /** Создаёт состояние обычного хода для тестов. */
 function createRegularTurnState(): GameState {
@@ -49,15 +49,6 @@ function createConfirmedTurn(
       },
     }),
   }
-}
-
-/** Проверяет заморозку плана хода и всех его шагов. */
-function expectPreparedTurnFrozen(
-  prepared: ReturnType<typeof prepareTurn>,
-) {
-  expect(Object.isFrozen(prepared)).toBe(true)
-  expect(Object.isFrozen(prepared.steps)).toBe(true)
-  prepared.steps.forEach(step => expect(Object.isFrozen(step)).toBe(true))
 }
 
 /** Сохраняет признаки заморозки входного состояния и команды. */

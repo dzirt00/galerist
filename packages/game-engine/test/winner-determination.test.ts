@@ -4,7 +4,7 @@ import {
   type PlayerId,
   type WinnerCandidate,
 } from '../src/index.js'
-import { acquiredArtworkCountWin, allWin, assistantsInPlayCountWin, galleryVisitorCountWin, nextWin, onePlayer, player10, player7, player8, player9, soleLeaderCoins } from './fixtures.js'
+import { acquiredArtworkCountWin, allWin, assistantsInPlayCountWin, galleryVisitorCountWin, nextWin, onePlayer, soleLeaderCoins } from './fixtures.js'
 it('выбирает единственного лидера по монетам',() => {
   const dw = determineWinners(soleLeaderCoins)
   expect(dw).toStrictEqual(['player-4'])
@@ -99,8 +99,8 @@ describe('determineWinners — отклонение невалидных вхо�
 
   describe('1. Валидация структуры и размера массива candidates', () => {
     it.each([
-      { title: 'null вместо массива', input: null as any, error: 'Turn cannot determine a winner' },
-      { title: 'undefined вместо массива', input: undefined as any, error: 'Turn cannot determine a winner' },
+      { title: 'null вместо массива', input: null as unknown as readonly WinnerCandidate[], error: 'Turn cannot determine a winner' },
+      { title: 'undefined вместо массива', input: undefined as unknown as readonly WinnerCandidate[], error: 'Turn cannot determine a winner' },
       { title: 'пустой массив (0 игроков)', input: [], error: 'Turn cannot determine a winner' },
       {
         title: 'слишком много участников (5 игроков)',
@@ -138,9 +138,9 @@ describe('determineWinners — отклонение невалидных вхо�
 
       // Не числовые типы (NaN, строки, булевы значения, null)
       { prop: 'coins', value: NaN, desc: 'NaN монеты' },
-      { prop: 'acquiredArtworkCount', value: '3' as any, desc: 'строка вместо картин' },
-      { prop: 'galleryVisitorCount', value: true as any, desc: 'boolean вместо посетителей' },
-      { prop: 'assistantsInPlayCount', value: null as any, desc: 'null вместо ассистентов' },
+      { prop: 'acquiredArtworkCount', value: '3', desc: 'строка вместо картин' },
+      { prop: 'galleryVisitorCount', value: true, desc: 'boolean вместо посетителей' },
+      { prop: 'assistantsInPlayCount', value: null, desc: 'null вместо ассистентов' },
 
       // Превышение безопасного максимума
       { prop: 'coins', value: Number.MAX_SAFE_INTEGER + 1, desc: 'значение больше MAX_SAFE_INTEGER' },
@@ -186,7 +186,7 @@ describe('determineWinners — иммутабельность входных д�
 
       // Дополнительный тест: можем ли мы по-прежнему модифицировать исходный массив?
       expect(() => {
-        (candidates as any).push({ playerId: 'player_C' });
+        candidates.push({ playerId: 'player_C', coins: 0, acquiredArtworkCount: 0, galleryVisitorCount: 0, assistantsInPlayCount: 0 });
       }).not.toThrow();
     });
   });

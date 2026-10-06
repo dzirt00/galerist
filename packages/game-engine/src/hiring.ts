@@ -47,7 +47,7 @@ export function hireAssistants(
 ): Readonly<HireAssistantsResult> {
 
   // splice и последующая заморозка затрагивают только независимые копии очереди и её записей.
-  let remainingQueue = [ ...input.queue.map( item => ( { ...item } ) ) ]
+  const remainingQueue = [ ...input.queue.map( item => ( { ...item } ) ) ]
 
   if (
     !Number.isSafeInteger( input.count )
@@ -70,7 +70,7 @@ export function hireAssistants(
     return acc
   }, [] as string[] );
 
-  let updatedPlayer = { ...input.player }
+  let updatedPlayer: typeof input.player
   if ( input.targetInfluence === null ) {
     if ( input.player.coins < totalCost ) {
       throw new RangeError( 'Insufficient funds' )

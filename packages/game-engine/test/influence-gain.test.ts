@@ -61,7 +61,7 @@ it.each([
   expect(() => calculateInfluenceAfterGain(2, value as unknown as number)).toThrow(`gainedInfluence must be a non-negative safe integer`)
 })
 
-it('динаковый результат повторных вызовов', () => {
+it('одинаковый результат повторных вызовов', () => {
   const dw1 = calculateInfluenceAfterGain(1,1)
   const dw2 = calculateInfluenceAfterGain(1,1)
 

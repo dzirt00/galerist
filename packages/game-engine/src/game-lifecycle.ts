@@ -174,7 +174,7 @@ export function advanceTurn(state: GameState): GameTransition<GameState> {
   const eventRoundEnded =  { type: 'RoundEnded', round: state.round } satisfies GameEvent
   const eventRoundStarted =  { type: 'RoundStarted', round: nextRoundNumber } satisfies GameEvent
   // Отложенный доход следует за TurnEnded, но предшествует границе раунда и следующему ходу.
-  let events: GameEvent[] = []
+  let events: GameEvent[]
 
   if(isNewRound && state.phase === 'ending_current_round') {
     events = [eventTurnEnded, ...addEventsIntermediateIncomeAwardInput,eventRoundEnded, eventRoundStarted, eventFinalRoundStarted, eventTurnStarted]
@@ -260,7 +260,7 @@ export function canTriggerGameEnd(state: GameState): boolean  {
   const isEmptyVisitorsBagCount = state.visitorBag.visitors.length === 0
   const isHaveTwoArtistSuperstar = state.artistMarket.slots.filter(el => el.isSuperstar ).length >= 2
   let countTickets = 0
-  for(let ticket of Object.values(state.ticketOffice.ticketsByColor)) {
+  for(const ticket of Object.values(state.ticketOffice.ticketsByColor)) {
     countTickets += ticket
   }
   const isEmptyTicket = countTickets === 0

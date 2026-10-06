@@ -1,8 +1,7 @@
-import type { FinishedGameState, GameState, WinnerCandidate } from "./types.js";
+import type { FinishedGameState, GameState } from "./types.js";
 import { freezeTransition, type GameTransition } from "./game-events.js";
 import { determineWinners } from "./winner-determination.js";
 import { deepFreeze } from "./component-catalog.js";
-import { deepEqual } from "./game-state-validation.js";
 
 
 

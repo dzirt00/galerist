@@ -51,8 +51,7 @@ export function updateTurnDraft(draft: TurnDraft, edit: TurnDraftEdit): TurnDraf
         },
       })
     case 'clear_management_action': {
-      const updated = { ...draft }
-      delete updated.management
+      const { management: _management, ...updated } = draft
       return copyFrozenTurnDraft(updated)
     }
   }

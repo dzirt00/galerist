@@ -4,7 +4,7 @@ import type { GamePhase, GameState, PlayerId } from './types.js'
 type UnknownRecord = Record<string, unknown>
 
 /** Рекурсивно сравнивает JSON-подобные значения; порядок ключей объекта не важен. */
-export function deepEqual(a: any, b: any): boolean {
+export function deepEqual(a: unknown, b: unknown): boolean {
   if (a === b) return true;
 
   if (a && b && typeof a === 'object' && typeof b === 'object') {
@@ -17,7 +17,7 @@ export function deepEqual(a: any, b: any): boolean {
     const keysB = Object.keys(b);
 
     if (keysA.length !== keysB.length) return false;
-    return keysA.every(key => keysB.includes(key) && deepEqual(a[key], b[key]));
+    return keysA.every(key => keysB.includes(key) && deepEqual((a as UnknownRecord)[key], (b as UnknownRecord)[key]));
   }
 
   return false;

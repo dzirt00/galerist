@@ -63,8 +63,8 @@ export function applyArtworkPurchaseCostAndMoveVisitors(
 
   // Каждый вложенный объект копируется до deepFreeze, иначе заморозка результата
   // могла бы затронуть переданные вызывающей стороной работу и посетителей.
-  let artworkVisitors = [ ...input.openArtwork.visitors.map( item => ( { ...item } ) ) ]
-  let plazaVisitorsCopy = [ ...input.plazaVisitors ].map( item => ( { ...item } ) )
+  const artworkVisitors = [ ...input.openArtwork.visitors.map( item => ( { ...item } ) ) ]
+  const plazaVisitorsCopy = [ ...input.plazaVisitors ].map( item => ( { ...item } ) )
   // Новые посетители добавляются после уже находящихся на площади, сохраняя
   // исходный порядок посетителей на купленной работе.
   plazaVisitorsCopy.push( ...artworkVisitors )

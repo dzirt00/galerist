@@ -122,7 +122,7 @@ export function applyTicketRewardToGameState(
     updateGameTransition = triggerGameEnd(updateState)
   }
 
-  let events = (updateGameTransition !== null)
+  const events = (updateGameTransition !== null)
     ? (eventEndConditionReached !== null)
       ? [...result.events, eventEndConditionReached, ...updateGameTransition.events]
       : [...result.events,...updateGameTransition.events]

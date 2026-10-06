@@ -65,7 +65,7 @@ function isValidArtwork(artwork: unknown): artwork is ArtworkDefinition {
   return (
     typeof candidate.id === 'string'
     && candidate.id.length > 0
-    && /^[\x00-\x7F]+$/.test(candidate.id)
+    && /^\p{ASCII}+$/u.test(candidate.id)
     && setupComponentCatalog.genreOrder.includes(candidate.genre as ArtworkGenre)
     && (
       candidate.fameGain === 'X'
@@ -87,7 +87,7 @@ function isValidVisitor(visitor: unknown): visitor is VisitorInstance {
   return (
     typeof candidate.id === 'string'
     && candidate.id.length > 0
-    && /^[\x00-\x7F]+$/.test(candidate.id)
+    && /^\p{ASCII}+$/u.test(candidate.id)
     && setupComponentCatalog.ticketColors.includes(candidate.type as VisitorInstance['type'])
   )
 }

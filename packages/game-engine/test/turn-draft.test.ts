@@ -1,4 +1,5 @@
 import { expect, it } from 'vitest'
+import { expectDraftFrozen } from './helpers.js'
 import {
   confirmTurnDraft,
   createTurnDraft,
@@ -163,14 +164,6 @@ function createCompleteMutableTurnDraftFixture() {
       timing: 'before_location' as ManagementTiming,
       command: { category: 'management_action' as const, testId: 'original management' },
     },
-  }
-}
-
-/** Проверяет заморозку черновика и вложенных действий. */
-function expectDraftFrozen(draft: TurnDraft, frozen: boolean) {
-  const objects = [draft, draft.movement, draft.locationAction, draft.management, draft.management?.command]
-  for (const object of objects) {
-    if (object !== undefined) expect(Object.isFrozen(object)).toBe(frozen)
   }
 }
 

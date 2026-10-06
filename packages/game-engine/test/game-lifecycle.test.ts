@@ -830,7 +830,7 @@ it('запрещает изменение объектов игроков в с�
   const game = createGame(conf, players)
 
   expect( () => {
-    ( game.players[ 0 ] as any ).name = 'Алина3'
+    ( game.players[ 0 ] as { name: string } ).name = 'Алина3'
   } ).toThrow( Error )
   expect(game.players[0]!.name).toBe('Алина1')
 })
@@ -841,7 +841,7 @@ it('запрещает изменение номера раунда извне',
   const game = createGame( conf, twoPlayerConfigs )
 
   expect( () => {
-    ( game.round as any ) = 1
+    ( game as unknown as { round: number } ).round = 1
   } ).toThrow( Error )
   expect(game.round).toBe(0)
 })
@@ -863,7 +863,7 @@ it('начинает игру без изменения исходного со�
   expect(startedGame.activePlayerId).toBe('player-1')
 
   expect(() => {
-    (startedGame as any).round = 2
+    (startedGame as unknown as { round: number }).round = 2
   }).toThrow()
 
   expect(startedGame.round).toBe(1)
@@ -943,7 +943,7 @@ it('начинает новый раунд с первого игрока', () =
   )
   expect(transition.events.every(Object.isFrozen)).toBe(true)
   expect( () => {
-    ( nextStep2 as any ).round = 3;
+    ( nextStep2 as unknown as { round: number } ).round = 3;
   } ).toThrow();
 
   expect(nextStep2.round).toBe(2);

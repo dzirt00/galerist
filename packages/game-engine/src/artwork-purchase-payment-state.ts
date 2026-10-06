@@ -415,7 +415,7 @@ export function applyArtworkPurchaseToGameState(
   const capacityChanged = !availability.playerBoard.gallery.artworkSlots.some( artwork => artwork?.isMasterpiece )
     && isMasterpiece
   // События следуют порядку эффектов: оплата, билеты, известность, размещение, рынок.
-  let events: GameEvent[] = [
+  const events: GameEvent[] = [
     ...paymentEvents,
     ...ticketResult.events,
     ...fameEvents,
@@ -458,11 +458,11 @@ export function applyArtworkPurchaseToGameState(
   let updateGameTransition: GameTransition<EndingCurrentRoundGameState> | null = null
 
   let ticketState = 0
-  for ( let val of Object.values(state.ticketOffice.ticketsByColor) ) {
+  for ( const val of Object.values(state.ticketOffice.ticketsByColor) ) {
     ticketState += val
   }
   let updateTicketState = 0
-  for ( let val of Object.values(updateState.ticketOffice.ticketsByColor) ) {
+  for ( const val of Object.values(updateState.ticketOffice.ticketsByColor) ) {
     updateTicketState += val
   }
   let endConditionReachedEvent: GameEvent | null = null
