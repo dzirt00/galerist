@@ -395,7 +395,7 @@ export function restoreGameState(input: unknown): GameState {
     fail('stateSchemaVersion must equal 8')
   }
   requireNonEmptyString(state.id, 'id')
-
+  requireBoolean(state.ticketOfficeEmptyReached,'ticketOfficeEmptyReached')
   const config = requireRecord(state.config, 'config')
   if (config.playerCount !== 2 && config.playerCount !== 3 && config.playerCount !== 4) {
     fail('config.playerCount must be 2, 3, or 4')

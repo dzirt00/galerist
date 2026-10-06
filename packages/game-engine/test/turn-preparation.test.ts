@@ -236,6 +236,53 @@ it.each(invalidConfirmedTurnMutationCases)('отклоняет подтверж�
   )
 })
 
+it.each([
+  ['неизвестное время', 'invalid'],
+  ['неопределённое время', undefined],
+  ['пустое время', null],
+] as const)('отклоняет управление: %s', (_case, timing) => {
+  const command = {
+    ...createConfirmedTurn(),
+    management: { timing, command: { category: 'management_action' } },
+  } as unknown as ConfirmedTurnCommand
+
+  expectPreparationRejectedWithoutChangingInputs(
+    createRegularTurnState(), command, 'Unknown command',
+  )
+})
+
+it('отклоняет управление без поля timing', () => {
+  const command = {
+    ...createConfirmedTurn(),
+    management: { command: { category: 'management_action' } },
+  } as unknown as ConfirmedTurnCommand
+
+  expectPreparationRejectedWithoutChangingInputs(
+    createRegularTurnState(), command, 'Unknown command',
+  )
+})
+
+it.each(['before_location', 'after_location'] as const)(
+  'отклоняет отсутствующую команду управления при %s без изменения входов', timing => {
+    const state = createRegularTurnState()
+    const invalidManagementCases = [
+      { timing },
+      { timing, command: undefined },
+      { timing, command: null },
+    ]
+
+    for (const management of invalidManagementCases) {
+      const command = {
+        ...createConfirmedTurn(), management,
+      } as unknown as ConfirmedTurnCommand
+
+      expectPreparationRejectedWithoutChangingInputs(
+        state, command, 'Missing command command',
+      )
+    }
+  },
+)
+
 it('возвращает новый замороженный план, независимый от изменяемых входов', () => {
   const state = structuredClone(createRegularTurnState())
   const command = structuredClone(createConfirmedTurn('before_location'))

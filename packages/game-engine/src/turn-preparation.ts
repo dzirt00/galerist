@@ -42,18 +42,24 @@ export function prepareTurn(
   const locationAction = Object.freeze({ ...command.locationAction })
   let steps: TurnExecutionSteps
 
-  switch (command.management?.timing) {
-    // Единственное действие управления сохраняет выбранный timing относительно локации.
-    case 'before_location':
-      steps = [movement, Object.freeze({ ...command.management.command }), locationAction]
-      break
-    case 'after_location':
-      steps = [movement, locationAction, Object.freeze({ ...command.management.command })]
-      break
-    default:
-      steps = [movement, locationAction]
+  if(command.management === undefined) {
+    steps = [movement, locationAction]
+  } else {
+    if(command.management.command === undefined || command.management.command === null) {
+      throw new Error('Missing command command')
+    }
+    switch (command.management?.timing) {
+      // Единственное действие управления сохраняет выбранный timing относительно локации.
+      case 'before_location':
+        steps = [movement, Object.freeze({ ...command.management.command }), locationAction]
+        break
+      case 'after_location':
+        steps = [movement, locationAction, Object.freeze({ ...command.management.command })]
+        break
+      default:
+        throw new Error('Unknown command')
+    }
   }
-
   return Object.freeze({
     playerId: command.playerId,
     steps: Object.freeze(steps),
