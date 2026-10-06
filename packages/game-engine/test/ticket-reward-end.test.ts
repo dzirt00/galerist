@@ -58,11 +58,14 @@ it.each([
   expect(transition.state.ticketDiscard).toEqual(state.ticketDiscard)
   expect(transition.events).toEqual([
     { type: 'TicketReceived', playerId: request.playerId, color: 'B' },
+    ...(emptyTickets ? [{ type: 'EndConditionReached' }] : []),
     ...(ends ? [{ type: 'GameEndTriggered' }] : []),
   ])
+  expect(transition.state.ticketOfficeEmptyReached).toBe(emptyTickets)
   for (const viewerId of [null, ...state.players.map(player => player.id)]) {
     expect(projectEventsForViewer(transition.events, transition.state, viewerId)).toEqual(transition.events)
     expect(projectGameForViewer(transition.state, viewerId).phase).toBe(transition.state.phase)
+    expect(projectGameForViewer(transition.state, viewerId).ticketOfficeEmptyReached).toBe(emptyTickets)
   }
   expect(state).toEqual(snapshot)
   expect(request).toEqual(requestSnapshot)
@@ -74,6 +77,39 @@ it.each([
   expect(Object.isFrozen(transition.state.ticketOffice.ticketsByColor)).toBe(true)
   expect(Object.isFrozen(transition.events)).toBe(true)
   expect(transition.events.every(Object.isFrozen)).toBe(true)
+})
+
+it('END-001: повторная награда после опустошения кассы не повторяет событие', () => {
+  const base = regularState()
+  expect(base.ticketOfficeEmptyReached).toBe(false)
+  const first = applyTicketRewardToGameState({
+    ...base,
+    ticketOffice: { ticketsByColor: { B: 1, R: 0, W: 0 } },
+  }, { playerId: base.activePlayerId, requestedColors: ['B'] })
+  expect(first.state.phase).toBe('regular_play')
+  expect(first.state.ticketOfficeEmptyReached).toBe(true)
+  const snapshot = structuredClone(first.state)
+  const second = applyTicketRewardToGameState(first.state, {
+    playerId: base.activePlayerId, requestedColors: ['B'],
+  })
+  expect(second.events).toEqual([])
+  expect(second.state.ticketOfficeEmptyReached).toBe(true)
+  expect(first.state).toEqual(snapshot)
+})
+
+it('END-001: сохранённое достижение запрещает событие при новом опустошении', () => {
+  const state = {
+    ...regularState(),
+    ticketOfficeEmptyReached: true,
+    ticketOffice: { ticketsByColor: { B: 1, R: 0, W: 0 } },
+  }
+  const transition = applyTicketRewardToGameState(state, {
+    playerId: state.activePlayerId, requestedColors: ['B'],
+  })
+  expect(transition.state.ticketOfficeEmptyReached).toBe(true)
+  expect(transition.events).toEqual([
+    { type: 'TicketReceived', playerId: state.activePlayerId, color: 'B' },
+  ])
 })
 
 it('оценивает завершение после всей награды и события промежуточного подсчёта', () => {
@@ -92,6 +128,7 @@ it('оценивает завершение после всей награды �
     { type: 'TicketReceived', playerId: state.activePlayerId, color: 'B' },
     { type: 'TicketReceived', playerId: state.activePlayerId, color: 'R' },
     { type: 'IntermediateScoringTriggered' },
+    { type: 'EndConditionReached' },
     { type: 'GameEndTriggered' },
   ])
 })
@@ -112,6 +149,7 @@ it('запускает завершение после обмена послед
   expect(transition.events).toEqual([
     { type: 'TicketExchanged', playerId: state.activePlayerId, discardedColor: 'R', receivedColor: 'B' },
     { type: 'TicketReceived', playerId: state.activePlayerId, color: 'B' },
+    { type: 'EndConditionReached' },
     { type: 'GameEndTriggered' },
   ])
 })
@@ -132,7 +170,10 @@ it.each(['ending_current_round', 'final_round'] as const)('не запускае
   const transition = applyTicketRewardToGameState(state, { playerId: base.activePlayerId, requestedColors: ['R'] })
   expect(transition.state).toMatchObject({ phase, round: state.round, endTriggeredRound: 7, activePlayerId: state.activePlayerId })
   expect(transition.state.ticketOffice.ticketsByColor).toEqual({ B: 0, R: 0, W: 0 })
-  expect(transition.events).toEqual([{ type: 'TicketReceived', playerId: base.activePlayerId, color: 'R' }])
+  expect(transition.events).toEqual([
+    { type: 'TicketReceived', playerId: base.activePlayerId, color: 'R' },
+    { type: 'EndConditionReached' },
+  ])
   expect(state).toEqual(snapshot)
 })
 

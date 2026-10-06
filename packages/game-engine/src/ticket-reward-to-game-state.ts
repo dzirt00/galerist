@@ -100,11 +100,36 @@ export function applyTicketRewardToGameState(
 
   let updateGameTransition:  GameTransition<EndingCurrentRoundGameState> | null = null
 
+  let countTicketPreperad = 0
+  let countTicketCurrent = 0
+  for (const ticket of Object.values(state.ticketOffice.ticketsByColor)) {
+    countTicketPreperad += ticket
+  }
+  for (const ticket of Object.values(updateState.ticketOffice.ticketsByColor)) {
+    countTicketCurrent += ticket
+  }
+  let eventEndConditionReached: GameEvent | null = null
+
+    if(countTicketPreperad !== 0 && countTicketCurrent === 0 && !state.ticketOfficeEmptyReached) {
+      eventEndConditionReached = { type: 'EndConditionReached' }
+      updateState = {
+        ...updateState,
+        ticketOfficeEmptyReached: true
+      }
+    }
+
   if(updateState.phase === 'regular_play' && canTriggerGameEnd(updateState)) {
     updateGameTransition = triggerGameEnd(updateState)
   }
 
-  const events = (updateGameTransition !== null) ? [...result.events, ...updateGameTransition.events]  : result.events
+  let events = (updateGameTransition !== null)
+    ? (eventEndConditionReached !== null)
+      ? [...result.events, eventEndConditionReached, ...updateGameTransition.events]
+      : [...result.events,...updateGameTransition.events]
+    : (eventEndConditionReached !== null)
+      ? [...result.events,eventEndConditionReached]
+      : [...result.events]
+
   updateState = (updateGameTransition !== null)
     ? {
       ...updateGameTransition.state,

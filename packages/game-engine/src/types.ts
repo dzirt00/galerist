@@ -130,6 +130,7 @@ export interface GameStateBase {
   }
   readonly ticketDiscard: Readonly<Record<SetupTicketColor, number>>
   readonly intermediateScoringStatus: IntermediateScoringStatus
+  readonly ticketOfficeEmptyReached: boolean
 }
 
 export interface RegularPlayGameState extends GameStateBase {

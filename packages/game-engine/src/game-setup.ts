@@ -135,6 +135,7 @@ export function createGame(
     internationalMarket,
     artworkMarket,
     setupVersions,
+    ticketOfficeEmptyReached: false,
     masterpieceAuction,
     plazaVisitors: initialVisitors.plazaVisitors,
     vestibuleVisitors: initialVisitors.vestibuleVisitors,
