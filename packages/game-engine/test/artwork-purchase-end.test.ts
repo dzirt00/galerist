@@ -78,6 +78,11 @@ describe('END-002: automatic game end after artwork purchase', () => {
         .gallery.artworkSlots.some(slot => slot?.artistId === artist.artistId)).toBe(true)
       expect(transition.events.filter(event => event.type === 'GameEndTriggered')).toEqual([{ type: 'GameEndTriggered' }])
       expect(transition.events.at(-1)).toEqual({ type: 'GameEndTriggered' })
+      const emptiesTickets = scenario !== 'bag_and_superstars'
+      expect(transition.state.ticketOfficeEmptyReached).toBe(emptiesTickets)
+      expect(transition.events.filter(event => event.type === 'EndConditionReached'))
+        .toEqual(emptiesTickets ? [{ type: 'EndConditionReached' }] : [])
+      if (emptiesTickets) expect(transition.events.at(-2)).toEqual({ type: 'EndConditionReached' })
       expect(transition.events.findIndex(event => event.type === 'ArtworkExhibited')).toBeLessThan(transition.events.length - 1)
       if (scenario === 'bag_and_superstars') {
         expect(transition.state.visitorBag.visitors).toEqual([])
@@ -86,6 +91,10 @@ describe('END-002: automatic game end after artwork purchase', () => {
       for (const viewer of [null, request.playerId]) {
         expect(projectEventsForViewer(transition.events, transition.state, viewer).at(-1)).toEqual({ type: 'GameEndTriggered' })
         expect(projectGameForViewer(transition.state, viewer)).toMatchObject({ phase: 'ending_current_round', endTriggeredRound: 3 })
+        expect(projectGameForViewer(transition.state, viewer).ticketOfficeEmptyReached).toBe(emptiesTickets)
+        expect(projectEventsForViewer(transition.events, transition.state, viewer)
+          .filter(event => event.type === 'EndConditionReached'))
+          .toEqual(emptiesTickets ? [{ type: 'EndConditionReached' }] : [])
       }
       expect(restoreGameState(transition.state)).toEqual(transition.state)
       expect(Object.isFrozen(transition)).toBe(true)
@@ -105,6 +114,11 @@ describe('END-002: automatic game end after artwork purchase', () => {
     const transition = applyArtworkPurchaseToGameState(state, request)
     expect(transition.state.ticketOffice.ticketsByColor).toEqual({ B: 0, R: 0, W: 0 })
     expect(transition.state.phase).toBe('regular_play')
+    expect(transition.state.ticketOfficeEmptyReached).toBe(true)
+    expect(transition.events.at(-1)).toEqual({ type: 'EndConditionReached' })
+    expect(transition.events.filter(event => event.type === 'EndConditionReached')).toHaveLength(1)
+    expect(transition.events.findIndex(event => event.type === 'IntermediateScoringTriggered'))
+      .toBeLessThan(transition.events.length - 1)
     expect(transition.state).not.toHaveProperty('endTriggeredRound')
     expect(transition.events.some(event => event.type === 'GameEndTriggered')).toBe(false)
   })
@@ -114,6 +128,8 @@ describe('END-002: automatic game end after artwork purchase', () => {
     const state: RegularPlayGameState = { ...base, ticketOffice: { ticketsByColor: { B: 1, R: 1, W: 0 } } }
     const transition = applyArtworkPurchaseToGameState(state, request)
     expect(transition.state.ticketOffice.ticketsByColor).toEqual({ B: 0, R: 1, W: 0 })
+    expect(transition.state.ticketOfficeEmptyReached).toBe(false)
+    expect(transition.events.some(event => event.type === 'EndConditionReached')).toBe(false)
     expect(transition.state.phase).toBe('regular_play')
     expect(transition.events.some(event => event.type === 'GameEndTriggered')).toBe(false)
   })
@@ -125,6 +141,9 @@ describe('END-002: automatic game end after artwork purchase', () => {
       const before = structuredClone(state)
       const transition = applyArtworkPurchaseToGameState(state, request)
       expect(transition.state).toMatchObject({ phase, endTriggeredRound: 2 })
+      expect(transition.state.ticketOfficeEmptyReached).toBe(true)
+      expect(transition.events.at(-1)).toEqual({ type: 'EndConditionReached' })
+      expect(transition.events.filter(event => event.type === 'EndConditionReached')).toHaveLength(1)
       expect(transition.state.players.find(player => player.id === request.playerId)!.acquiredArtworkCount).toBe(1)
       expect(transition.events.some(event => event.type === 'ArtworkExhibited')).toBe(true)
       expect(transition.events.some(event => event.type === 'GameEndTriggered')).toBe(false)
@@ -139,6 +158,33 @@ describe('END-002: automatic game end after artwork purchase', () => {
     expect(() => applyArtworkPurchaseToGameState(state, request)).toThrow()
     expect(state).toEqual(before)
     expect(state.phase).toBe('regular_play')
+    expect(state.ticketOfficeEmptyReached).toBe(false)
     expect(Object.isFrozen(state)).toBe(false)
+  })
+
+  it.each(['regular_play', 'ending_current_round', 'final_round'] as const)(
+    'does not announce a saved ticket indicator again in %s', phase => {
+      const { state: base, request } = purchaseScenario('one')
+      const state: GameState = phase === 'regular_play'
+        ? { ...base, ticketOfficeEmptyReached: true }
+        : { ...base, phase, endTriggeredRound: 2, ticketOfficeEmptyReached: true }
+      const before = structuredClone(state)
+      const transition = applyArtworkPurchaseToGameState(state, request)
+      expect(transition.state.ticketOffice.ticketsByColor).toEqual({ B: 0, R: 0, W: 0 })
+      expect(transition.state.ticketOfficeEmptyReached).toBe(true)
+      expect(transition.events.some(event => event.type === 'EndConditionReached')).toBe(false)
+      expect(transition.events.some(event => event.type === 'GameEndTriggered')).toBe(false)
+      expect(state).toEqual(before)
+    },
+  )
+
+  it('does not announce an office that was already empty before purchase', () => {
+    const { state: base, request } = purchaseScenario('one')
+    const state: RegularPlayGameState = {
+      ...base, ticketOffice: { ticketsByColor: { B: 0, R: 0, W: 0 } },
+    }
+    const transition = applyArtworkPurchaseToGameState(state, request)
+    expect(transition.state.ticketOfficeEmptyReached).toBe(false)
+    expect(transition.events.some(event => event.type === 'EndConditionReached')).toBe(false)
   })
 })

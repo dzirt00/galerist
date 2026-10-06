@@ -457,6 +457,28 @@ export function applyArtworkPurchaseToGameState(
 
   let updateGameTransition: GameTransition<EndingCurrentRoundGameState> | null = null
 
+  let ticketState = 0
+  for ( let val of Object.values(state.ticketOffice.ticketsByColor) ) {
+    ticketState += val
+  }
+  let updateTicketState = 0
+  for ( let val of Object.values(updateState.ticketOffice.ticketsByColor) ) {
+    updateTicketState += val
+  }
+  let endConditionReachedEvent: GameEvent | null = null
+  if(!state.ticketOfficeEmptyReached && updateTicketState === 0 && ticketState !== 0) {
+
+    updateState = {
+      ...updateState,
+      ticketOfficeEmptyReached: true
+    }
+    endConditionReachedEvent = {type: 'EndConditionReached'}
+  }
+
+  if(endConditionReachedEvent !== null) {
+    events.push(endConditionReachedEvent)
+  }
+
   if ( state.phase === 'regular_play'  && canTriggerGameEnd( updateState )) {
     updateGameTransition = triggerGameEnd( updateState )
   }
