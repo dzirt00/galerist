@@ -102,10 +102,11 @@ export interface PlayerState {
   readonly influence: number
   readonly ticketsByColor: Readonly<Record<SetupTicketColor, number>>
   readonly acquiredArtworkCount: number
+  readonly soldArtworkCount: number
 }
 
 export interface GameStateBase {
-  readonly stateSchemaVersion: 7
+  readonly stateSchemaVersion: 8
   readonly id: GameId
   readonly config: Readonly<GameConfig>
   readonly players: readonly PlayerState[]

@@ -1,4 +1,5 @@
 export * from './types.js'
+export { advertisingArtist, type AdvertisingArtistRequest } from './advertising-artist.js'
 export {
   type GameEvent,
   type GameTransition,

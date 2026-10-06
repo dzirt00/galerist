@@ -1,4 +1,4 @@
-import { deepFreeze } from './component-catalog.js'
+import { deepFreeze, setupComponentCatalog } from './component-catalog.js'
 import type { GamePhase, GameState, PlayerId } from './types.js'
 
 type UnknownRecord = Record<string, unknown>
@@ -139,6 +139,37 @@ function validateCommonCollections(state: UnknownRecord): void {
     requireBoolean(slot.isSuperstar, `artistMarket.slots[${index}].isSuperstar`)
   })
 
+  // Каждый физический рекламный жетон находится либо в запасе, либо на художнике.
+  const tokens = new Map(setupComponentCatalog.promotionTokens.map(token => [token.id, token]))
+  const locatedTokens = new Set<string>()
+  const locateToken = (value: unknown, level: number): void => {
+    const id = requireNonEmptyString(value, 'promotionTokenId')
+    if (tokens.get(id)?.level !== level) fail('promotion token must match its level')
+    if (locatedTokens.has(id)) fail('promotionTokenId must have one location')
+    locatedTokens.add(id)
+  }
+  const promotionSupply = requireRecord(state.promotionSupply, 'promotionSupply')
+  const tokenIdsByLevel = requireRecord(promotionSupply.tokenIdsByLevel, 'promotionSupply.tokenIdsByLevel')
+  if (Object.keys(tokenIdsByLevel).length !== 5) fail('promotion supply must contain exactly five levels')
+  for (const level of [1, 2, 3, 4, 5]) {
+    const ids = tokenIdsByLevel[level]
+    if (!Array.isArray(ids)) fail('promotion token IDs must be an array')
+    ids.forEach(id => locateToken(id, level))
+  }
+  artistMarket.slots.forEach(value => {
+    const slot = requireRecord(value, 'artist slot')
+    const initial = requireSafeInteger(slot.initialPromotion, 'initialPromotion')
+    const level = requireSafeInteger(slot.promotionLevel, 'promotionLevel')
+    if (initial < 0 || initial > 3 || level < initial || level > 5) fail('Invalid promotionLevel')
+    if (slot.promotionTokenId === null) {
+      if (level !== initial) fail('Promoted artist must have a promotion token')
+    } else {
+      if (level <= initial) fail('Initial promotion must not use a supply token')
+      locateToken(slot.promotionTokenId, level)
+    }
+  })
+  if (locatedTokens.size !== tokens.size) fail('All promotion tokens must have one location')
+
   const artistSetup = requireRecord(state.artistSetup, 'artistSetup')
   if (!Array.isArray(artistSetup.slots)) fail('artistSetup.slots must be an array')
   artistSetup.slots.forEach((value, index) => {
@@ -232,6 +263,8 @@ function validatePlayers(state: UnknownRecord): ReadonlySet<PlayerId> {
       fail(`players[${index}].influence must be from 0 to 35`)
     }
     requireTicketCounts(player.ticketsByColor, `players[${index}].ticketsByColor`)
+    const soldArtworkCount = requireSafeInteger(player.soldArtworkCount, `players[${index}].soldArtworkCount`)
+    if (soldArtworkCount < 0) fail('soldArtworkCount must be non-negative')
     if (playerIds.has(playerId)) {
       fail('players must have unique IDs')
     }
@@ -358,8 +391,8 @@ function validatePhase(
 /** Проверяет JSON-снимок по ADR-001/ADR-002 и возвращает независимый замороженный GameState. */
 export function restoreGameState(input: unknown): GameState {
   const state = requireRecord(input, 'state')
-  if (state.stateSchemaVersion !== 7) {
-    fail('stateSchemaVersion must equal 6')
+  if (state.stateSchemaVersion !== 8) {
+    fail('stateSchemaVersion must equal 8')
   }
   requireNonEmptyString(state.id, 'id')
 

@@ -19,7 +19,7 @@ it.each([
       kind: kind,
       influence: influence,
       coins: coins,
-      acquiredArtworkCount: 0, ticketsByColor: { B: 0, R: 0, W: 0 },
+      acquiredArtworkCount: 0, soldArtworkCount: 0, ticketsByColor: { B: 0, R: 0, W: 0 },
     })
 
     const playerStateRes: PlayerState = Object.freeze({
@@ -28,7 +28,7 @@ it.each([
       kind: kind,
       influence: influenceRes,
       coins: coinsRes,
-      acquiredArtworkCount: 0, ticketsByColor: { B: 0, R: 0, W: 0 },
+      acquiredArtworkCount: 0, soldArtworkCount: 0, ticketsByColor: { B: 0, R: 0, W: 0 },
     })
 
     const visitor: IntermediateVisitorCounts = {
@@ -60,7 +60,7 @@ it.each([
       kind,
       influence,
       coins,
-      acquiredArtworkCount: 0, ticketsByColor: { B: 0, R: 0, W: 0 },
+      acquiredArtworkCount: 0, soldArtworkCount: 0, ticketsByColor: { B: 0, R: 0, W: 0 },
     })
 
     const visitor: IntermediateVisitorCounts = {
@@ -75,7 +75,7 @@ it.each([
       kind,
       influence: influenceRes,
       coins: coinsRes,
-      acquiredArtworkCount: 0, ticketsByColor: { B: 0, R: 0, W: 0 },
+      acquiredArtworkCount: 0, soldArtworkCount: 0, ticketsByColor: { B: 0, R: 0, W: 0 },
     }
 
     const updatedPlayer = applyIntermediateIncomeToPlayer(playerState, visitor)

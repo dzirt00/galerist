@@ -25,6 +25,7 @@ export type GameEvent =
   | { readonly type: 'InfluenceSpent', readonly playerId: PlayerId, readonly spentInfluence: number }
   | { readonly type: 'CoinsReceived', readonly playerId: PlayerId, readonly coinsReceived: number }
   | { readonly type: 'RoundEnded'; readonly round: number }
+  | { readonly type: 'ArtistPromoted'; readonly playerId: PlayerId; readonly artistId: string; readonly previousPromotionLevel: number; readonly promotionLevel: number; readonly promotionTokenId: string }
   | { readonly type: 'GameFinished'; readonly gameId: string }
   | { readonly type: 'IntermediateIncomeAwarded'; readonly playerId: PlayerId }
   | { readonly type: 'TurnEnded'; readonly playerId: PlayerId }
@@ -36,6 +37,7 @@ export type GameEvent =
     }
   | { readonly type: 'CoinsSpent'; readonly playerId: PlayerId, paid: number }
   | { readonly type: 'VisitorMoved'; readonly visitorId: string, from: 'artwork', to: 'plaza'}
+  | { readonly type: 'VisitorMoved'; readonly visitorId: string; readonly from: 'plaza' | 'visitorBag'; readonly to: 'gallery'; readonly playerId: PlayerId }
   | { readonly type: 'ArtistFameIncreased'; readonly artistId: string; readonly previousFame: number; readonly fame: number }
   | { readonly type: 'ArtworkSaleValuesChanged'; readonly artistId: string; readonly saleValue: number }
   | { readonly type: 'ArtistBecameSuperstar'; readonly artistId: string }
