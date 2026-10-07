@@ -10,6 +10,13 @@ export type StartingLocationId =
   | 'LOC-INTERNATIONAL_MARKET'
   | 'LOC-SALES_OFFICE'
 
+export interface HireQueue {
+  readonly id: string;
+  readonly position: number;
+  readonly cost: number;
+  readonly reward: RewardId | null
+}
+
 export interface ArtworkDefinition {
   readonly id: string;
   readonly genre: ArtworkGenre;
@@ -60,10 +67,10 @@ export interface SetupComponentCatalog {
   readonly marketBidCells: readonly { readonly id: string; readonly column: MarketColumn; readonly bid: 1 | 3 | 6; readonly reward: RewardId }[]
   readonly marketReputationCells: readonly { readonly id: string; readonly column: MarketColumn; readonly genre: ArtworkGenre; readonly playerCounts: readonly (2 | 3 | 4)[] }[]
   readonly marketReputationPlacementOrder: readonly string[]
-  readonly hireQueue: readonly { readonly id: string; readonly position: number; readonly cost: number; readonly reward: RewardId | null }[]
+  readonly hireQueue: readonly HireQueue[]
   readonly boardReputationCells: readonly { readonly id: string; readonly row: 1 | 2 | 3; readonly side: 'L' | 'R'; readonly reward: RewardId }[]
   readonly boardOrderCells: readonly { readonly id: string; readonly position: 1 | 2 | 3; readonly reward: RewardId }[]
-  readonly assistantsPerPlayer: { readonly office: 2; readonly hireQueue: 8 }
+  readonly assistantsPerPlayer: { readonly office: 2; readonly hireQueue: 8,  readonly assistantOfficeIds: readonly string[], readonly assistantHireQueueIds: readonly string[]; }
   readonly promotionTokens: readonly Readonly<PromotionTokenDefinition>[]
   readonly superstarTokenIds: readonly string[]
   readonly componentsVersion: string
@@ -148,7 +155,12 @@ export const setupComponentCatalog: Readonly<SetupComponentCatalog> = deepFreeze
     ['BOARD-REP-R3-L', 3, 'L', 'INFLUENCE'], ['BOARD-REP-R3-R', 3, 'R', 'VISITOR-ANY'],
   ].map(([id, row, side, reward]) => ({ id: id as string, row: row as 1 | 2 | 3, side: side as 'L' | 'R', reward: reward as RewardId })),
   boardOrderCells: [['BOARD-ORDER-1', 1, 'TICKET-B'], ['BOARD-ORDER-2', 2, 'TICKET-R'], ['BOARD-ORDER-3', 3, 'TICKET-ANY']].map(([id, position, reward]) => ({ id: id as string, position: position as 1 | 2 | 3, reward: reward as RewardId })),
-  assistantsPerPlayer: { office: 2, hireQueue: 8 },
+  assistantsPerPlayer: {
+    office: 2,
+    hireQueue: 8,
+    assistantOfficeIds: ['ASSISTANT-1','ASSISTANT-2'],
+    assistantHireQueueIds: ['ASSISTANT-3','ASSISTANT-4','ASSISTANT-5','ASSISTANT-6','ASSISTANT-7','ASSISTANT-8','ASSISTANT-9','ASSISTANT-10']
+  },
   promotionTokens: [[1, 'TICKET-ANY'], [2, 'INFLUENCE'], [3, 'TICKET-DIFF2'], [4, 'COINS'], [5, 'VISITOR-ANY']].flatMap(([level, reward]) => Array.from({ length: 4 }, (_, index) => ({ id: `PROMOTION-${level}-${index + 1}`, level: level as 1 | 2 | 3 | 4 | 5, influenceCost: level as 1 | 2 | 3 | 4 | 5, reward: reward as RewardId }))),
   superstarTokenIds: Array.from({ length: 8 }, (_, index) => `SUPERSTAR-${index + 1}`),
 })

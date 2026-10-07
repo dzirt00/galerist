@@ -1,10 +1,10 @@
 import { expect, it } from 'vitest'
-import { preparePlayerBoards } from '../src/index.js'
+import { preparePlayerBoards, setupComponentCatalog } from '../src/index.js'
 
 it('готовит планшеты в порядке игроков с двумя помощниками в офисе и восемью в очереди', () => {
   const result = preparePlayerBoards(
     ['player-2', 'player-1'],
-    { office: 2, hireQueue: 8 },
+    setupComponentCatalog.assistantsPerPlayer,
   )
 
   expect(result.map(board => board.playerId)).toEqual(['player-2', 'player-1'])
@@ -17,11 +17,15 @@ it('готовит планшеты в порядке игроков с двум
 })
 
 it('глубоко замораживает результат, не замораживая входной запас', () => {
-  const assistants = { office: 2, hireQueue: 8 } as const
+  const assistants = structuredClone(setupComponentCatalog.assistantsPerPlayer)
   const result = preparePlayerBoards(['player-1', 'player-2'], assistants)
 
   expect(Object.isFrozen(result)).toBe(true)
   expect(result.every(Object.isFrozen)).toBe(true)
   expect(result.every(board => Object.isFrozen(board.assistants))).toBe(true)
   expect(Object.isFrozen(assistants)).toBe(false)
+  expect(Object.isFrozen(assistants.assistantOfficeIds)).toBe(false)
+  expect(Object.isFrozen(assistants.assistantHireQueueIds)).toBe(false)
+  expect(result[0]!.assistants.assistantOfficeIds).not.toBe(assistants.assistantOfficeIds)
+  expect(result[0]!.assistants.assistantHireQueueIds).not.toBe(result[1]!.assistants.assistantHireQueueIds)
 })

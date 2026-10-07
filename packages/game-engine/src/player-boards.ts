@@ -28,6 +28,8 @@ export interface PlayerBoard {
   readonly assistants: {
     readonly office: number,
     readonly hireQueue: number
+    readonly assistantOfficeIds: readonly string[]
+    readonly assistantHireQueueIds: readonly string[]
   },
   readonly startingLocationId: StartingLocationId | null,
   readonly thirdPartitionReputationTokenId: string | null
@@ -38,13 +40,15 @@ export interface PlayerBoard {
 /** Подготавливает личные планшеты игроков по SETUP-012 в порядке мест. */
 export function preparePlayerBoards(
   playerIds: readonly string[],
-  assistantsPerPlayer: { readonly office: 2; readonly hireQueue: 8 }
+  assistantsPerPlayer: { readonly office: 2; readonly hireQueue: 8, assistantOfficeIds: readonly string[], assistantHireQueueIds: readonly string[] }
 ): readonly PlayerBoard[] {
   const playerBoards = playerIds.map(playerId => {
     return {
       playerId,
       assistants: {
-        ...assistantsPerPlayer
+        ...assistantsPerPlayer,
+        assistantOfficeIds: [...assistantsPerPlayer.assistantOfficeIds],
+        assistantHireQueueIds: [...assistantsPerPlayer.assistantHireQueueIds],
       },
       startingLocationId: null,
       thirdPartitionReputationTokenId: null,

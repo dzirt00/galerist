@@ -109,7 +109,11 @@ describe('Каталог компонентов setupComponentCatalog', () => {
     ])
     expect(setupComponentCatalog.boardReputationCells).toHaveLength(6)
     expect(setupComponentCatalog.boardOrderCells.map(cell => cell.reward)).toEqual(['TICKET-B', 'TICKET-R', 'TICKET-ANY'])
-    expect(setupComponentCatalog.assistantsPerPlayer).toEqual({ office: 2, hireQueue: 8 })
+    expect(setupComponentCatalog.assistantsPerPlayer).toEqual({
+      office: 2, hireQueue: 8,
+      assistantOfficeIds: ['ASSISTANT-1', 'ASSISTANT-2'],
+      assistantHireQueueIds: ['ASSISTANT-3', 'ASSISTANT-4', 'ASSISTANT-5', 'ASSISTANT-6', 'ASSISTANT-7', 'ASSISTANT-8', 'ASSISTANT-9', 'ASSISTANT-10'],
+    })
     expect(Object.isFrozen(setupComponentCatalog.hireQueue[0])).toBe(true)
     expect(Object.isFrozen(setupComponentCatalog.assistantsPerPlayer)).toBe(true)
   })

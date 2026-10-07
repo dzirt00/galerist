@@ -203,6 +203,23 @@ function validatePlayerBoards(state: UnknownRecord, playerIds: ReadonlySet<Playe
 
   state.playerBoards.forEach((value, index) => {
     const board = requireRecord(value, `playerBoards[${index}]`)
+    const assistants = requireRecord(board.assistants, 'assistants')
+    const office = requireSafeInteger(assistants.office, 'office')
+    const hireQueue = requireSafeInteger(assistants.hireQueue, 'hireQueue')
+    const assistantOfficeIds = assistants.assistantOfficeIds
+    const assistantHireQueueIds = assistants.assistantHireQueueIds
+    if (!Array.isArray(assistantOfficeIds)) fail('artistSetup.slots must be an array')
+    if (!Array.isArray(assistantHireQueueIds)) fail('artistSetup.slots must be an array')
+    assistantOfficeIds.forEach(el => requireNonEmptyString(el,'string'))
+    assistantHireQueueIds.forEach(el => requireNonEmptyString(el,'string'))
+    if(office !== assistantOfficeIds.length || hireQueue !== assistantHireQueueIds.length) fail('error length')
+    if((new Set([...assistantOfficeIds,...assistantHireQueueIds])).size !== assistantHireQueueIds.length + assistantOfficeIds.length) fail('error length')
+    if(assistantHireQueueIds.length < 0
+      || assistantHireQueueIds.length > 8
+      || assistantOfficeIds.length < 0
+      || assistantOfficeIds.length > 4
+    ) fail('error length')
+
     requirePlayerReference(board.playerId, playerIds, `playerBoards[${index}].playerId`)
     const gallery = requireRecord(board.gallery, `playerBoards[${index}].gallery`)
     if (!Array.isArray(gallery.artworkSlots) || gallery.artworkSlots.length !== 4) {

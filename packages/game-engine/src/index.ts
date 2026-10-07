@@ -43,6 +43,7 @@ export {
   type PlayerContract,
   type PlayerBoard,
 } from './player-boards.js'
+export {applyAssistantHiringToGameState, type ApplyAssistantHiringToGameStateRequest} from './apply-assistant-hiring-to-game-state.js'
 export {completeFinalScoring} from './final-scoring-completion.js'
 export {
   applyArtworkPurchasePaymentToGameState,

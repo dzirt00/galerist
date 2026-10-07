@@ -140,6 +140,8 @@ describe('completeFinalScoring', () => {
         assistants: {
           office: index === 0 ? firstOffice : secondOffice,
           hireQueue: index === 0 ? 8 : 0,
+          assistantOfficeIds: Array.from({ length: index === 0 ? firstOffice : secondOffice }, (_, position) => `OFFICE-${position}`),
+          assistantHireQueueIds: index === 0 ? board.assistants.assistantHireQueueIds : [],
         },
       })).reverse(),
     })
