@@ -36,6 +36,7 @@ export {
 } from './setup-goals.js'
 export { applyFinalInfluenceScoringToGameState } from './final-influence-scoring-state.js'
 export { determineWinners } from './winner-determination.js'
+export { refreshOrderMarket } from './refresh-order-market.js'
 export {
   preparePlayerBoards,
   type ExhibitedArtwork,

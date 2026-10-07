@@ -118,7 +118,7 @@ export function createGame(
   const startingLocationSelectionOrder = Object.freeze([...regularTurnOrder].reverse())
 
   const state: SetupGameState = {
-    stateSchemaVersion: 8,
+    stateSchemaVersion: 9,
     id: gameId,
     status: 'setup',
     round: 0,

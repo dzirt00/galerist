@@ -404,12 +404,47 @@ function validatePhase(
     requireSafeInteger(state.endTriggeredRound, 'endTriggeredRound')
   }
 }
+function validateOrderMarket(orderMarket: unknown) {
 
+  const orderMarketR =  requireRecord(orderMarket, 'orderMarket')
+  const requiredVisibleOrders = requireRecord(orderMarketR.visibleOrders, 'visibleOrders')
+  const  requiredVisibleOrdersKeys = Object.keys(requiredVisibleOrders)
+  if(!requiredVisibleOrdersKeys.includes('1')
+    || !requiredVisibleOrdersKeys.includes('2')
+    || !requiredVisibleOrdersKeys.includes('3')
+    || !requiredVisibleOrdersKeys.includes('4')
+    || requiredVisibleOrdersKeys.length !== 4) {
+    fail('requiredVisibleOrdersKeys')
+  }
+  const requiredOrderMarket = requireRecord(orderMarketR.orderMarket, 'orderMarket')
+  const  requiredOrderMarketKeys = Object.keys(requiredOrderMarket)
+  if(!requiredOrderMarketKeys.includes('1')
+    || !requiredOrderMarketKeys.includes('2')
+    || !requiredOrderMarketKeys.includes('3')
+    || !requiredOrderMarketKeys.includes('4')
+    || requiredOrderMarketKeys.length !== 4) {
+    fail('requiredVisibleOrdersKeys')
+  }
+  const orderDiscard = orderMarketR.orderDiscard
+  const remainingOrderIds = orderMarketR.remainingOrderIds
+  if(!Array.isArray(orderDiscard)) fail('orderDiscard must be an array')
+  if(!Array.isArray(remainingOrderIds)) fail('remainingOrderIds must be an array')
+  orderDiscard.forEach(el => requireNonEmptyString(el,'string'))
+  remainingOrderIds.forEach(el => requireNonEmptyString(el,'string'))
+  for (const val of Object.values(requiredVisibleOrders)) {
+    if(val !== null) requireNonEmptyString(val,'string')
+  }
+  for (const val of Object.values(requiredOrderMarket)) {
+    if(!Array.isArray(val)) fail('requiredOrderMarket must be an array')
+      val.forEach((el) => requireNonEmptyString(el,'string'))
+  }
+
+}
 /** Проверяет JSON-снимок по ADR-001/ADR-002 и возвращает независимый замороженный GameState. */
 export function restoreGameState(input: unknown): GameState {
   const state = requireRecord(input, 'state')
-  if (state.stateSchemaVersion !== 8) {
-    fail('stateSchemaVersion must equal 8')
+  if (state.stateSchemaVersion !== 9) {
+    fail('stateSchemaVersion must equal 9')
   }
   requireNonEmptyString(state.id, 'id')
   requireBoolean(state.ticketOfficeEmptyReached,'ticketOfficeEmptyReached')
@@ -429,6 +464,6 @@ export function restoreGameState(input: unknown): GameState {
   if(state.intermediateScoringStatus !== 'not_triggered' && state.intermediateScoringStatus !== 'pending' && state.intermediateScoringStatus !== 'completed') {
     fail('intermediateScoringStatus invalid')
   }
-
+  validateOrderMarket(state.orderMarket)
   return deepFreeze(structuredClone(state)) as unknown as GameState
 }

@@ -13,6 +13,7 @@ export type GameEvent =
   | { readonly type: 'InternationalMarketPrepared' }
   | { readonly type: 'LocationReputationPrepared' }
   | { readonly type: 'FinalRoundEnded' }
+  | { readonly type: 'OrderMarketRefreshed', readonly playerId: PlayerId }
   | { readonly type: 'AssistantsHired', countHiredAssistants: number }
   | { readonly type: 'MasterpieceAuctionPrepared' }
   | { readonly type: 'FinalRoundStarted'}
