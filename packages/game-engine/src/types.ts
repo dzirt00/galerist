@@ -104,10 +104,16 @@ export interface PlayerState {
   readonly acquiredArtworkCount: number
   readonly soldArtworkCount: number
 }
-
+export interface RuntimeRngState {
+  readonly runtimeRngVersion: 'runtime-rng-v1'
+  readonly runtimeRngCounters: {
+    readonly 'orders/recycle': number
+  }
+}
 export interface GameStateBase {
-  readonly stateSchemaVersion: 9
+  readonly stateSchemaVersion: 10
   readonly id: GameId
+  readonly runtimeRng: RuntimeRngState
   readonly config: Readonly<GameConfig>
   readonly players: readonly PlayerState[]
   readonly orderMarket: Readonly<PreparedOrderMarket>

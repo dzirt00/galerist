@@ -443,9 +443,20 @@ function validateOrderMarket(orderMarket: unknown) {
 /** Проверяет JSON-снимок по ADR-001/ADR-002 и возвращает независимый замороженный GameState. */
 export function restoreGameState(input: unknown): GameState {
   const state = requireRecord(input, 'state')
-  if (state.stateSchemaVersion !== 9) {
-    fail('stateSchemaVersion must equal 9')
+  if (state.stateSchemaVersion !== 10) {
+    fail('stateSchemaVersion must equal 10')
   }
+  const runtimeRng =requireRecord(state.runtimeRng,'runtimeRng')
+  const runtimeRngCounters = requireRecord(runtimeRng.runtimeRngCounters,'runtimeRngCounters')
+  const orderRecycle = requireSafeInteger(runtimeRngCounters['orders/recycle'], 'orders/recycle')
+  if(orderRecycle< 0) fail('orderRecycle < 0')
+  for (let el of Object.values(runtimeRngCounters) ){
+    const num = requireSafeInteger(el,'number')
+    if(num< 0) fail('runtimeRngCounters < 0')
+  }
+  if(runtimeRng.runtimeRngVersion !== 'runtime-rng-v1') fail('Invalid runtimeRngVersion')
+
+
   requireNonEmptyString(state.id, 'id')
   requireBoolean(state.ticketOfficeEmptyReached,'ticketOfficeEmptyReached')
   const config = requireRecord(state.config, 'config')

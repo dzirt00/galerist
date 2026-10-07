@@ -9,6 +9,7 @@ export type GameEvent =
   | { readonly type: 'ArtistsPrepared' }
   | { readonly type: 'ArtistOpened'; readonly artistId: string }
   | { readonly type: 'PromotionSupplyPrepared' }
+  | { readonly type: 'OrderDeckRecycled', readonly playerId: PlayerId }
   | { readonly type: 'ArtworkMarketPrepared' }
   | { readonly type: 'InternationalMarketPrepared' }
   | { readonly type: 'LocationReputationPrepared' }

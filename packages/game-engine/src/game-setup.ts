@@ -118,7 +118,13 @@ export function createGame(
   const startingLocationSelectionOrder = Object.freeze([...regularTurnOrder].reverse())
 
   const state: SetupGameState = {
-    stateSchemaVersion: 9,
+    stateSchemaVersion: 10,
+    runtimeRng: {
+      runtimeRngVersion: 'runtime-rng-v1',
+      runtimeRngCounters: {
+        'orders/recycle': 0
+      },
+    },
     id: gameId,
     status: 'setup',
     round: 0,

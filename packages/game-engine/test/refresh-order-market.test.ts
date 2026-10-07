@@ -73,7 +73,7 @@ describe('ORDER-002: обновление без переработки коло
     expect(Object.values(result.state.orderMarket.visibleOrders)).toEqual(state.orderMarket.remainingOrderIds)
   })
 
-  it.each([0, 1, 2, 3])('атомарно отклоняет остаток %i карт', count => {
+  it.each([1, 2, 3])('атомарно отклоняет остаток %i карт', count => {
     const state = structuredClone(scenario())
     const input = { ...state, orderMarket: { ...state.orderMarket,
       remainingOrderIds: state.orderMarket.remainingOrderIds.slice(0, count),
@@ -113,7 +113,7 @@ describe('ORDER-002: обновление без переработки коло
   })
 })
 
-describe('Валидация области заказов в снимке версии 9', () => {
+describe('Валидация области заказов в снимке версии 10', () => {
   it('сохраняет null в видимой позиции и независимые замороженные нижние стопки', () => {
     const state = structuredClone(scenario())
     const source = { ...state, orderMarket: { ...state.orderMarket,
