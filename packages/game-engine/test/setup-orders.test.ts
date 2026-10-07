@@ -19,12 +19,14 @@ describe('Подготовка рынка заказов через prepareOrder
     const expectedOrder = createSetupRng(config).shuffle('orders', orderIds)
     const result = prepareOrderMarket(orderIds, createSetupRng(config))
 
-    expect(result.visibleOrders).toEqual(expectedOrder.slice(0, 4))
+    expect(Object.values(result.visibleOrders)).toEqual(expectedOrder.slice(0, 4))
     expect(result.remainingOrderIds).toEqual(expectedOrder.slice(4))
-    expect(result.visibleOrders).toHaveLength(4)
+    expect(Object.keys(result.visibleOrders)).toHaveLength(4)
     expect(result.remainingOrderIds).toHaveLength(16)
-    expect([...result.visibleOrders, ...result.remainingOrderIds].sort()).toEqual([...orderIds].sort())
-    expect(new Set([...result.visibleOrders, ...result.remainingOrderIds]).size).toBe(orderIds.length)
+    expect([...Object.values(result.visibleOrders), ...result.remainingOrderIds].sort()).toEqual([...orderIds].sort())
+    expect(new Set([...Object.values(result.visibleOrders), ...result.remainingOrderIds]).size).toBe(orderIds.length)
+    expect(result.orderMarket).toEqual({ 1: [], 2: [], 3: [], 4: [] })
+    expect(result.orderDiscard).toEqual([])
   })
 
   it('не изменяет и не замораживает вход, а результат глубоко заморожен', () => {
@@ -43,7 +45,7 @@ describe('Подготовка рынка заказов через prepareOrder
     const input = orderIds.slice(0, 4)
     const result = prepareOrderMarket(input, createSetupRng(config))
 
-    expect(result.visibleOrders).toHaveLength(4)
+    expect(Object.keys(result.visibleOrders)).toHaveLength(4)
     expect(result.remainingOrderIds).toEqual([])
     expect(Object.isFrozen(result.remainingOrderIds)).toBe(true)
   })

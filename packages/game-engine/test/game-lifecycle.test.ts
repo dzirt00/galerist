@@ -239,11 +239,11 @@ it('включает в GameState все карты заказов без пот
   const catalogOrderIds = setupComponentCatalog.orders.map(order => order.id)
   const state = createGame(twoPlayerGameConfig, twoPlayerConfigs)
   const allPreparedOrderIds = [
-    ...state.orderMarket.visibleOrders,
+    ...Object.values(state.orderMarket.visibleOrders),
     ...state.orderMarket.remainingOrderIds,
   ]
 
-  expect(state.orderMarket.visibleOrders).toHaveLength(4)
+  expect(Object.keys(state.orderMarket.visibleOrders)).toHaveLength(4)
   expect(state.orderMarket.remainingOrderIds).toHaveLength(16)
   expect(new Set(allPreparedOrderIds).size).toBe(20)
   expect([...allPreparedOrderIds].sort()).toEqual([...catalogOrderIds].sort())
@@ -260,7 +260,7 @@ it('детерминированно готовит и глубоко замор
   expect(Object.isFrozen(first.orderMarket.visibleOrders)).toBe(true)
   expect(Object.isFrozen(first.orderMarket.remainingOrderIds)).toBe(true)
   expect(() => {
-    (first.orderMarket.visibleOrders as string[]).push('ORDER-UNKNOWN')
+    (first.orderMarket.visibleOrders as Record<1 | 2 | 3 | 4, string | null>)[1] = 'ORDER-UNKNOWN'
   }).toThrow()
 })
 

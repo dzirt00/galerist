@@ -166,7 +166,7 @@ describe('полный setup-пайплайн', () => {
     (playerCount, players, expected) => {
       const state = createGame({ playerCount, seed: -42 }, players).state
       expect({
-        orders: state.orderMarket.visibleOrders,
+        orders: Object.values(state.orderMarket.visibleOrders),
         artists: state.artistMarket.slots.map(slot => slot.artistId),
         plaza: state.plazaVisitors.map(visitor => visitor.id),
         locationReputationTokens: state.internationalMarket.locationReputationTokens.map(token => token.tokenId),
