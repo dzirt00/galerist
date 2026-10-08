@@ -5,6 +5,7 @@ import {
 } from '../src/index.js'
 import { createGameState, startGameAfterSetup } from './helpers.js'
 import { twoPlayerConfigs, twoPlayerGameConfig } from './fixtures.js'
+import { createRuntimeRng } from '../src/runtime-rng.js'
 
 function scenario() {
   const state = startGameAfterSetup(createGameState(twoPlayerGameConfig, twoPlayerConfigs))
@@ -122,6 +123,124 @@ describe('ORDER-002 / ADR-008: переработка изначально пу�
   )
 })
 
+describe('ORDER-002 / ADR-008: предварительная переработка при остатке 1–3 карты', () => {
+  function partialDeck(count: number) {
+    const state = startGameAfterSetup(createGameState(twoPlayerGameConfig, twoPlayerConfigs))
+    const ids = [...Object.values(state.orderMarket.visibleOrders), ...state.orderMarket.remainingOrderIds]
+      .filter((id): id is string => id !== null)
+    return { ...state, orderMarket: {
+      visibleOrders: { 1: ids[0]!, 2: null, 3: ids[1]!, 4: ids[2]! },
+      orderMarket: { 1: [ids[3]!, ids[4]!], 2: [ids[5]!], 3: [], 4: [ids[6]!] },
+      orderDiscard: [ids[7]!, ids[8]!],
+      remainingOrderIds: ids.slice(9, 9 + count),
+    } }
+  }
+
+  it.each([1, 2, 3])('с остатком %i собирает набор в согласованном порядке и сохраняет все карты', count => {
+    const input = structuredClone(partialDeck(count))
+    const before = structuredClone(input)
+    // Порядок входа RNG — часть контракта предварительной переработки.
+    const market = input.orderMarket
+    const expected = createRuntimeRng({
+      runtimeRng: input.runtimeRng,
+      rulesVersion: input.setupVersions.rulesVersion,
+      componentsVersion: input.setupVersions.componentsVersion,
+      seedString: String(input.config.seed),
+      playerIds: input.players.map(player => player.id),
+      streamId: 'orders/recycle',
+      orderMarket: [
+        ...market.orderDiscard,
+        market.visibleOrders[1]!, market.visibleOrders[3]!, market.visibleOrders[4]!,
+        ...market.orderMarket[1], ...market.orderMarket[2], ...market.orderMarket[4],
+        ...market.remainingOrderIds,
+      ],
+    })
+    const result = refreshOrderMarket(input, input.activePlayerId)
+    expect(Object.values(result.state.orderMarket.visibleOrders)).toEqual(expected.orderMarket.slice(0, 4))
+    expect(result.state.orderMarket.remainingOrderIds).toEqual(expected.orderMarket.slice(4))
+    expect(result.state.runtimeRng).toEqual(expected.runtimeRng)
+    expect(result.state.runtimeRng.runtimeRngCounters['orders/recycle']).toBeGreaterThan(0)
+    expect(result.state.orderMarket.orderDiscard).toEqual([])
+    expect(Object.values(result.state.orderMarket.orderMarket)).toEqual([[], [], [], []])
+    expect(allOrders(result.state)).toEqual(allOrders(input))
+    expect(new Set(allOrders(result.state)).size).toBe(9 + count)
+    expect(result.state).toEqual({ ...input, orderMarket: result.state.orderMarket, runtimeRng: expected.runtimeRng })
+    expect(result.events).toEqual([
+      { type: 'OrderDeckRecycled', playerId: input.activePlayerId },
+      { type: 'OrderMarketRefreshed', playerId: input.activePlayerId },
+    ])
+    expect(projectEventsForViewer(result.events, result.state, null)).toEqual(result.events)
+    expect(input).toEqual(before)
+    expect(Object.isFrozen(input.orderMarket.remainingOrderIds)).toBe(false)
+    expect(Object.isFrozen(input.orderMarket.orderMarket[1])).toBe(false)
+    expect(Object.isFrozen(input.runtimeRng.runtimeRngCounters)).toBe(false)
+    expect(Object.isFrozen(result.state.orderMarket.remainingOrderIds)).toBe(true)
+    expect(Object.isFrozen(result.state.runtimeRng.runtimeRngCounters)).toBe(true)
+    expect(refreshOrderMarket(input, input.activePlayerId)).toEqual(result)
+    expect(refreshOrderMarket(restoreGameState(JSON.parse(JSON.stringify(input))), input.activePlayerId)).toEqual(result)
+    for (const viewerId of [null, ...input.players.map(player => player.id)]) {
+      const projection = projectGameForViewer(result.state, viewerId)
+      expect(projection).not.toHaveProperty('runtimeRng')
+      expect(projection.orderMarket).toEqual({
+        visibleOrders: result.state.orderMarket.visibleOrders, remainingOrderCount: 5 + count,
+      })
+    }
+    let current = result.state
+    let recycles = 1
+    for (let step = 0; step < 4; step++) {
+      const restored = restoreGameState(JSON.parse(JSON.stringify(current)))
+      const next = refreshOrderMarket(current, input.activePlayerId)
+      expect(refreshOrderMarket(restored, input.activePlayerId)).toEqual(next)
+      expect(allOrders(next.state)).toEqual(allOrders(input))
+      recycles += next.events.filter(event => event.type === 'OrderDeckRecycled').length
+      current = next.state
+    }
+    expect(recycles).toBeGreaterThan(1)
+  })
+
+  it.each([1, 2, 3])('при остатке %i и ровно четырёх картах всего заполняет область и оставляет пустую колоду', count => {
+    const initial = partialDeck(count)
+    const ids = allOrders(initial).slice(0, 4)
+    const input = { ...initial, orderMarket: {
+      visibleOrders: { 1: null, 2: null, 3: null, 4: null },
+      orderMarket: { 1: [], 2: [], 3: [], 4: [] },
+      orderDiscard: ids.slice(count), remainingOrderIds: ids.slice(0, count),
+    } }
+    const result = refreshOrderMarket(input, input.activePlayerId)
+    expect(Object.values(result.state.orderMarket.visibleOrders)).not.toContain(null)
+    expect(result.state.orderMarket.remainingOrderIds).toEqual([])
+    expect(allOrders(result.state)).toEqual(ids)
+    expect(result.events.map(event => event.type)).toEqual(['OrderDeckRecycled', 'OrderMarketRefreshed'])
+  })
+
+  it.each([1, 2, 3])('при остатке %i и трёх картах всего отказывает до RNG', count => {
+    const initial = partialDeck(count)
+    const ids = allOrders(initial).slice(0, 3)
+    const input = structuredClone({ ...initial,
+      runtimeRng: { ...initial.runtimeRng, runtimeRngCounters: { 'orders/recycle': Number.MAX_SAFE_INTEGER } },
+      orderMarket: {
+        visibleOrders: { 1: null, 2: null, 3: null, 4: null },
+        orderMarket: { 1: [], 2: [], 3: [], 4: [] },
+        orderDiscard: ids.slice(count), remainingOrderIds: ids.slice(0, count),
+      },
+    })
+    const before = structuredClone(input)
+    expect(() => refreshOrderMarket(input, input.activePlayerId)).toThrow('Invalid order for shuffle 3')
+    expect(input).toEqual(before)
+    expect(Object.isFrozen(input.runtimeRng.runtimeRngCounters)).toBe(false)
+  })
+
+  it.each([1, 2, 3])('при остатке %i атомарно отклоняет переполнение после начала перемешивания', count => {
+    const initial = partialDeck(count)
+    const input = structuredClone({ ...initial, runtimeRng: { ...initial.runtimeRng,
+      runtimeRngCounters: { 'orders/recycle': Number.MAX_SAFE_INTEGER - 1 },
+    } })
+    const before = structuredClone(input)
+    expect(() => refreshOrderMarket(input, input.activePlayerId)).toThrow('invalid counter')
+    expect(input).toEqual(before)
+    expect(Object.isFrozen(input.runtimeRng.runtimeRngCounters)).toBe(false)
+  })
+})
 describe('ADR-008: валидация runtime-RNG в схеме 10', () => {
   it('инициализирует RNG и отклоняет старую схему', () => {
     const state = createGameState(twoPlayerGameConfig, twoPlayerConfigs)

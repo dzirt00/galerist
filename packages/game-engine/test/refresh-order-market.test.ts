@@ -73,16 +73,6 @@ describe('ORDER-002: обновление без переработки коло
     expect(Object.values(result.state.orderMarket.visibleOrders)).toEqual(state.orderMarket.remainingOrderIds)
   })
 
-  it.each([1, 2, 3])('атомарно отклоняет остаток %i карт', count => {
-    const state = structuredClone(scenario())
-    const input = { ...state, orderMarket: { ...state.orderMarket,
-      remainingOrderIds: state.orderMarket.remainingOrderIds.slice(0, count),
-    } }
-    const before = structuredClone(input)
-    expect(() => refreshOrderMarket(input, state.activePlayerId)).toThrow()
-    expect(input).toEqual(before)
-  })
-
   it('отклоняет отсутствующего игрока и setup до переноса карт', () => {
     const state = scenario()
     expect(() => refreshOrderMarket(state, 'missing')).toThrow('Invalid player')
