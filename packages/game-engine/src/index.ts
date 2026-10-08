@@ -1,6 +1,4 @@
 export * from './types.js'
-export {changeStatusPlayer} from './change-status-player.js'
-export {actionOrderMarket} from './action-order-market.js'
 export {createRuntimeRng, type RngRuntimeConfig} from './runtime-rng.js'
 export { advertisingArtist, type AdvertisingArtistRequest } from './advertising-artist.js'
 export {
@@ -20,6 +18,7 @@ export {
 } from './game-projection.js'
 export { projectEventsForViewer } from './game-event-projection.js'
 export { restoreGameState } from './game-state-validation.js'
+export { receiveOrder } from './receive-order.js'
 export {
   confirmTurnDraft,
   createTurnDraft,
@@ -39,7 +38,6 @@ export {
 } from './setup-goals.js'
 export { applyFinalInfluenceScoringToGameState } from './final-influence-scoring-state.js'
 export { determineWinners } from './winner-determination.js'
-export { refreshOrderMarket } from './refresh-order-market.js'
 export {
   preparePlayerBoards,
   type ExhibitedArtwork,

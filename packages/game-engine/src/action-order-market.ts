@@ -2,7 +2,8 @@ import type { GameState, PlayerId } from "./types.js";
 import { refreshOrderMarket } from "./refresh-order-market.js";
 import { freezeTransition, type GameEvent } from "./game-events.js";
 
-type TypeActionOrderMarket = 'REFRESH' | 'DECLINE' | 'ACCEPT_ORDER'
+export type TypeActionOrderMarket = 'REFRESH' | 'DECLINE' | 'ACCEPT_ORDER'
+
 export function actionOrderMarket(
   state: GameState,
   playerId: PlayerId,

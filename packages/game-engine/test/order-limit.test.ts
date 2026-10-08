@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { changeStatusPlayer, restoreGameState, projectGameForViewer } from '../src/index.js'
+import { restoreGameState, projectGameForViewer } from '../src/index.js'
+import { changeStatusPlayer } from '../src/change-status-player.js'
 import { createGameState, startGameAfterSetup } from './helpers.js'
 import { twoPlayerConfigs, twoPlayerGameConfig } from './fixtures.js'
 
@@ -23,7 +24,7 @@ function scenario(statuses: readonly [Status, Status, Status] = [null, null, nul
   }
 }
 
-describe('ORDER-001: лимит через публичную команду начала действия', () => {
+describe('ORDER-001: регрессия внутренней проверки лимита и снимка', () => {
   it.each([
     [null, null, null],
     ['unfulfilled', null, null],

@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
-  refreshOrderMarket, restoreGameState, projectGameForViewer, projectEventsForViewer,
+  restoreGameState, projectGameForViewer, projectEventsForViewer,
   type GameState,
 } from '../src/index.js'
+import { refreshOrderMarket } from '../src/refresh-order-market.js'
 import { createGameState, startGameAfterSetup } from './helpers.js'
 import { twoPlayerConfigs, twoPlayerGameConfig } from './fixtures.js'
 import { createRuntimeRng } from '../src/runtime-rng.js'

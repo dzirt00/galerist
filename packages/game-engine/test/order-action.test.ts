@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
-  actionOrderMarket, changeStatusPlayer, restoreGameState, projectGameForViewer,
+  restoreGameState, projectGameForViewer,
 } from '../src/index.js'
+import { actionOrderMarket } from '../src/action-order-market.js'
+import { changeStatusPlayer } from '../src/change-status-player.js'
 import { createGameState, startGameAfterSetup } from './helpers.js'
 import { twoPlayerConfigs, twoPlayerGameConfig } from './fixtures.js'
 
@@ -9,7 +11,7 @@ function scenario() {
   return startGameAfterSetup(createGameState(twoPlayerGameConfig, twoPlayerConfigs))
 }
 
-describe('ORDER-002: начало, обновление и отказ через публичные команды', () => {
+describe('ORDER-002: регрессия внутренних переходов начала, обновления и отказа', () => {
   it('сохраняет обновление после отказа и блокирует повторное начало и обновление', () => {
     const input = scenario()
     const before = structuredClone(input)
