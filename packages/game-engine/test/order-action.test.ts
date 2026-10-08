@@ -48,10 +48,10 @@ describe('ORDER-002: начало, обновление и отказ через
     if ('activePlayerId' in declined.state) expect(declined.state.activePlayerId).toBe(playerId)
   })
 
-  it('продолжает обновление и отказ из снимка схемы 11', () => {
+  it('продолжает обновление и отказ из снимка схемы 12', () => {
     const input = scenario()
     const playerId = input.activePlayerId
-    expect(input.stateSchemaVersion).toBe(11)
+    expect(input.stateSchemaVersion).toBe(12)
     expect(restoreGameState(JSON.parse(JSON.stringify(input)))).toEqual(input)
     expect(() => restoreGameState({ ...input, stateSchemaVersion: 10 })).toThrow()
     const begun = changeStatusPlayer(input, playerId).state

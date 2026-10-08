@@ -22,7 +22,21 @@ export interface PlayerContract {
   readonly artistId: string
   readonly signatureTokenId: string
 }
-
+export type OrderStatus = 'completed' | 'unfulfilled'
+export interface BoardOrders {
+  readonly 1: {
+    readonly orderId: string | null
+    readonly orderStatus: OrderStatus | null
+  }
+  readonly 2: {
+    readonly orderId: string | null
+    readonly orderStatus: OrderStatus | null
+  }
+  readonly 3: {
+    readonly orderId: string | null
+    readonly orderStatus: OrderStatus | null
+  }
+}
 export interface PlayerBoard {
   readonly playerId: string,
   readonly assistants: {
@@ -31,6 +45,7 @@ export interface PlayerBoard {
     readonly assistantOfficeIds: readonly string[]
     readonly assistantHireQueueIds: readonly string[]
   },
+  readonly boardOrders: BoardOrders
   readonly startingLocationId: StartingLocationId | null,
   readonly thirdPartitionReputationTokenId: string | null
   readonly gallery: Gallery
@@ -57,7 +72,21 @@ export function preparePlayerBoards(
         visitors: [],
       },
       contract: null,
-      reputationTokenArtworkIds: null
+      reputationTokenArtworkIds: null,
+      boardOrders: {
+        1: {
+          orderId: null,
+          orderStatus: null
+        },
+        2: {
+          orderId: null,
+          orderStatus:  null
+        },
+        3: {
+          orderId: null,
+          orderStatus: null
+        }
+      }
     }
   });
   return deepFreeze(playerBoards)

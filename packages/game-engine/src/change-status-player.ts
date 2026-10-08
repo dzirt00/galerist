@@ -18,6 +18,25 @@ export function changeStatusPlayer(
     throw new Error( 'Invalid status' )
   }
   if ( player.status === 'WAITING' ) {
+
+    const playerBoardIndex = state.playerBoards.findIndex( board => board.playerId === playerId )
+    const playerBoard = structuredClone(state.playerBoards[ playerBoardIndex ])
+    if( playerBoard === undefined ) {
+      throw new Error( `invalid board` );
+    }
+    let slotsCount = 0
+    for(let el of Object.values(playerBoard.boardOrders)) {
+      if((el.orderId === null && el.orderStatus !== null) || (el.orderId !== null && el.orderStatus === null)) {
+        throw new Error( `invalid boardOrders` );
+      }
+      if(el.orderId !== null && el.orderStatus === 'unfulfilled') {
+        slotsCount++
+      }
+    }
+    if(slotsCount > 2) {
+      throw new Error( `invalid slots` );
+    }
+
     player = {
       ...player,
       status: 'PENDING'

@@ -249,6 +249,27 @@ function validatePlayerBoards(state: UnknownRecord, playerIds: ReadonlySet<Playe
       if (signatureLocations.has(signatureTokenId)) fail('signatureTokenId must have one location')
       signatureLocations.add(signatureTokenId)
     }
+
+    const orders = requireRecord(board.boardOrders, `boardOrders`)
+    let orderKeys: string[] = []
+    for (const key of Object.keys(orders)) {
+      orderKeys.push(key)
+    }
+    const setOrderKeys = new Set(orderKeys)
+    if(!setOrderKeys.has('1') || !setOrderKeys.has('2') || !setOrderKeys.has('3') || setOrderKeys.size !== 3) {
+      fail('Invalid order keys')
+    }
+    for(let el of Object.values(orders)) {
+      const order = requireRecord(el, 'order')
+      if((order.orderId !== null && order.orderStatus === null) || (order.orderId === null && order.orderStatus !== null)) {
+        fail(`invalid orderId`)
+      }
+      if(order.orderId !== null) requireNonEmptyString(order.orderId, 'orderId')
+      if(order.orderStatus !== null) {
+        const orderStatus =requireNonEmptyString( order.orderStatus, 'typeOrder' )
+        if(orderStatus !== 'completed' && orderStatus !== 'unfulfilled') fail('typeOrder')
+      }
+    }
   })
 }
 
@@ -448,8 +469,8 @@ function validateOrderMarket(orderMarket: unknown) {
 /** Проверяет JSON-снимок по ADR-001/ADR-002 и возвращает независимый замороженный GameState. */
 export function restoreGameState(input: unknown): GameState {
   const state = requireRecord(input, 'state')
-  if (state.stateSchemaVersion !== 11) {
-    fail('stateSchemaVersion must equal 11')
+  if (state.stateSchemaVersion !== 12) {
+    fail('stateSchemaVersion must equal 12')
   }
   const runtimeRng =requireRecord(state.runtimeRng,'runtimeRng')
   const runtimeRngCounters = requireRecord(runtimeRng.runtimeRngCounters,'runtimeRngCounters')
