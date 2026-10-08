@@ -1,4 +1,6 @@
 export * from './types.js'
+export {changeStatusPlayer} from './change-status-player.js'
+export {actionOrderMarket} from './action-order-market.js'
 export {createRuntimeRng, type RngRuntimeConfig} from './runtime-rng.js'
 export { advertisingArtist, type AdvertisingArtistRequest } from './advertising-artist.js'
 export {

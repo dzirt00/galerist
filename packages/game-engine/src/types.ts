@@ -9,7 +9,7 @@ import type { PreparedMasterpieceAuction } from "./setup-masterpieces.js";
 import type { PreparedPrivateGoals } from './setup-goals.js'
 import type { PlayerBoard } from "./player-boards.js";
 import type { SetupTicketColor, StartingLocationId } from "./component-catalog.js";
-
+export type StatusPlayer = 'PENDING' | 'REFRESH' | 'REFUSAL' | 'SUCCESS' | 'WAITING'
 export type GameId = string
 export type PlayerId = string
 export type IntermediateScoringStatus = 'not_triggered' | 'pending' | 'completed'
@@ -103,6 +103,7 @@ export interface PlayerState {
   readonly ticketsByColor: Readonly<Record<SetupTicketColor, number>>
   readonly acquiredArtworkCount: number
   readonly soldArtworkCount: number
+  readonly status: StatusPlayer
 }
 export interface RuntimeRngState {
   readonly runtimeRngVersion: 'runtime-rng-v1'
@@ -111,7 +112,7 @@ export interface RuntimeRngState {
   }
 }
 export interface GameStateBase {
-  readonly stateSchemaVersion: 10
+  readonly stateSchemaVersion: 11
   readonly id: GameId
   readonly runtimeRng: RuntimeRngState
   readonly config: Readonly<GameConfig>

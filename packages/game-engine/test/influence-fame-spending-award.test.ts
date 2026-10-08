@@ -14,7 +14,7 @@ function createPlayer(influence: number): PlayerState {
     kind: 'human',
     coins: 7,
     influence,
-    acquiredArtworkCount: 0, soldArtworkCount: 0, ticketsByColor: { B: 0, R: 0, W: 0 },
+    acquiredArtworkCount: 0, soldArtworkCount: 0, status: 'WAITING', ticketsByColor: { B: 0, R: 0, W: 0 },
   }
 }
 

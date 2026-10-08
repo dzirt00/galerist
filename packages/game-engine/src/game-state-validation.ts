@@ -270,6 +270,11 @@ function validatePlayers(state: UnknownRecord): ReadonlySet<PlayerId> {
     if (value.acquiredArtworkCount < 0 || !Number.isSafeInteger(value.acquiredArtworkCount)) {
       return fail('acquiredArtworkCount must be an array')
     }
+    const playerStatus = requireNonEmptyString(player.status, `string`)
+
+    if(playerStatus !== 'PENDING' && playerStatus !== 'REFRESH' && playerStatus !== 'REFUSAL' && playerStatus !== 'SUCCESS' && playerStatus !== 'WAITING') {
+      return fail('Invalid status player')
+    }
 
     const coins = requireSafeInteger(player.coins, `players[${index}].coins`)
     const influence = requireSafeInteger(player.influence, `players[${index}].influence`)
@@ -443,8 +448,8 @@ function validateOrderMarket(orderMarket: unknown) {
 /** Проверяет JSON-снимок по ADR-001/ADR-002 и возвращает независимый замороженный GameState. */
 export function restoreGameState(input: unknown): GameState {
   const state = requireRecord(input, 'state')
-  if (state.stateSchemaVersion !== 10) {
-    fail('stateSchemaVersion must equal 10')
+  if (state.stateSchemaVersion !== 11) {
+    fail('stateSchemaVersion must equal 11')
   }
   const runtimeRng =requireRecord(state.runtimeRng,'runtimeRng')
   const runtimeRngCounters = requireRecord(runtimeRng.runtimeRngCounters,'runtimeRngCounters')

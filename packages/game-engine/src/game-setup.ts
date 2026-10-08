@@ -108,7 +108,8 @@ export function createGame(
     influence: 10,
     ticketsByColor: Object.freeze({ B: 0, R: 0, W: 0 }),
     acquiredArtworkCount: 0,
-    soldArtworkCount: 0
+    soldArtworkCount: 0,
+    status: 'WAITING',
   }))
   const regularTurnOrder = [
     ...playerIds.slice(firstPlayerIndex),
@@ -118,7 +119,7 @@ export function createGame(
   const startingLocationSelectionOrder = Object.freeze([...regularTurnOrder].reverse())
 
   const state: SetupGameState = {
-    stateSchemaVersion: 10,
+    stateSchemaVersion: 11,
     runtimeRng: {
       runtimeRngVersion: 'runtime-rng-v1',
       runtimeRngCounters: {
