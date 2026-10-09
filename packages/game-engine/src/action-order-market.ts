@@ -30,7 +30,8 @@ export function actionOrderMarket(
   if(typeAction === 'ACCEPT_ORDER') {
    let playerBoard = copyState.playerBoards.find(board => board.playerId === playerId)
    if(playerBoard === undefined) throw new Error( 'Invalid board')
-   if(playerBoard.boardOrders["1"].orderId !== null) throw new Error( 'Invalid boardOrder' )
+   if(boarderSlotOrderId !== '1' && boarderSlotOrderId !== '2' ) throw new Error( 'Invalid boarderSlotOrderId' )
+   if(playerBoard.boardOrders[boarderSlotOrderId].orderId !== null) throw new Error( 'Invalid boardOrder' )
     let isOrder = false
     let keyOrder: string | null = null
     for(let [key, value] of Object.entries(copyState.orderMarket.visibleOrders)) {
@@ -43,8 +44,8 @@ export function actionOrderMarket(
     if(keyOrder === null ) throw new Error( 'Invalid order' )
     if(orderId === null ) throw new Error( 'Invalid order' )
     if(copyState.orderMarket.remainingOrderIds.length === 0 && copyState.orderMarket.orderMarket[keyOrder as '1'|'2'|'3'|'4'].length === 0) throw new Error( 'Invalid order market' )
-    if(boarderSlotOrderId !== '1') throw new Error( 'Invalid order market' )
-    if(copyState.ticketOffice.ticketsByColor['B'] <= 1) throw new Error( 'Invalid tickets of tickets' )
+    if(boarderSlotOrderId === '1' && copyState.ticketOffice.ticketsByColor['B'] <= 1) throw new Error( 'Invalid tickets of tickets' )
+    if(boarderSlotOrderId === '2' && copyState.ticketOffice.ticketsByColor['R'] <= 1) throw new Error( 'Invalid tickets of tickets' )
     playerBoard = {
       ...playerBoard,
       boardOrders: {
@@ -65,7 +66,7 @@ export function actionOrderMarket(
     const updateVisibleOrders =  (orderMarket.length !== 0) ? orderMarket[orderMarket.length-1]: copyState.orderMarket.remainingOrderIds[0]
     const inputApplyTicketRewardToGameState: TicketRewardRequest = {
       playerId: playerId,
-      requestedColors: ['B'],
+      requestedColors: (boarderSlotOrderId === '1') ? ['B'] : ['R'],
     }
 
     const resultApplyTicketRewardToGameState = applyTicketRewardToGameState(copyState, inputApplyTicketRewardToGameState)
