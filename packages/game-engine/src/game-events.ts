@@ -18,8 +18,10 @@ export type GameEvent =
   | { readonly type: 'AssistantsHired', countHiredAssistants: number }
   | { readonly type: 'MasterpieceAuctionPrepared' }
   | { readonly type: 'FinalRoundStarted'}
+  | { readonly type: 'OrderTaken', readonly playerId: PlayerId, orderId: string }
   | { readonly type: 'IntermediateScoringTriggered' }
   | { readonly type: 'EndConditionReached' }
+  | { readonly type: 'OrderMarketRefilled' }
   | { readonly type: 'InitialVisitorsPlaced' }
   | { readonly type: 'FirstPlayerSelected'; readonly playerId: PlayerId }
   | { readonly type: 'PlayerBoardPrepared'; readonly playerId: PlayerId }

@@ -7,7 +7,10 @@ import { changeStatusPlayer } from "./change-status-player.js";
 export function receiveOrder(
   state: GameState,
   playerId:PlayerId,
-  typeAction: TypeActionOrderMarket): GameTransition<GameState> {
+  typeAction: TypeActionOrderMarket,
+  orderId: string | null = null,
+  boarderSlotOrderId: string | null = null
+): GameTransition<GameState> {
 
   if(state.phase !== 'ending_current_round' && state.phase !== 'regular_play' && state.phase !== 'final_round') {
     throw new Error( 'Invalid phase' )
@@ -23,5 +26,5 @@ export function receiveOrder(
     }
   }
 
-  return actionOrderMarket(copyState, playerId, typeAction)
+  return actionOrderMarket(copyState, playerId, typeAction,orderId,boarderSlotOrderId)
 }

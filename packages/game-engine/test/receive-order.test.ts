@@ -129,7 +129,7 @@ describe('ORDER-001/002: receiveOrder через публичный API', () => 
     expect(input).toEqual(before)
   })
 
-  it.each(['WAITING', 'PENDING', 'REFRESH', 'REFUSAL', 'SUCCESS'] as const)('ACCEPT_ORDER остаётся запрещён из %s', status => {
+  it.each(['WAITING', 'PENDING', 'REFRESH', 'REFUSAL', 'SUCCESS'] as const)('ACCEPT_ORDER без выбора отклоняется из %s', status => {
     const initial = scenario()
     const input = structuredClone(withStatus(initial, initial.activePlayerId, status))
     const before = structuredClone(input)
