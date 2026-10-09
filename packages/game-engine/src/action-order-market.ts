@@ -23,7 +23,7 @@ export function actionOrderMarket(
   }
 
   let events: GameEvent[] = []
-  if(typeAction === 'ACCEPT_ORDER' && player.status !== 'PENDING') {
+  if(typeAction === 'ACCEPT_ORDER' && player.status !== 'PENDING' && player.status !== 'REFRESH') {
     throw new Error( 'Invalid status' )
   }
 
@@ -42,9 +42,8 @@ export function actionOrderMarket(
     if(!isOrder) throw new Error( 'Invalid order' )
     if(keyOrder === null ) throw new Error( 'Invalid order' )
     if(orderId === null ) throw new Error( 'Invalid order' )
-    if(copyState.orderMarket.orderMarket[keyOrder as '1'|'2'|'3'|'4'].length !== 0) throw new Error( 'Invalid order market' )
-    if(copyState.orderMarket.remainingOrderIds.length === 0) throw new Error( 'Invalid order market' )
-    if(boarderSlotOrderId !== '1' || boarderSlotOrderId  === null) throw new Error( 'Invalid order market' )
+    if(copyState.orderMarket.remainingOrderIds.length === 0 && copyState.orderMarket.orderMarket[keyOrder as '1'|'2'|'3'|'4'].length === 0) throw new Error( 'Invalid order market' )
+    if(boarderSlotOrderId !== '1') throw new Error( 'Invalid order market' )
     if(copyState.ticketOffice.ticketsByColor['B'] <= 1) throw new Error( 'Invalid tickets of tickets' )
     playerBoard = {
       ...playerBoard,
@@ -62,7 +61,8 @@ export function actionOrderMarket(
       playerBoards: copyState.playerBoards.map( board => board.playerId === playerId ? {...board, ...playerBoard } : board),
     }
     events.push({  type: 'OrderTaken',  playerId: playerId, orderId: orderId })
-    const updateVisibleOrders = copyState.orderMarket.remainingOrderIds[0]
+    const orderMarket = copyState.orderMarket.orderMarket[keyOrder as '1'|'2'|'3'|'4'];
+    const updateVisibleOrders =  (orderMarket.length !== 0) ? orderMarket[orderMarket.length-1]: copyState.orderMarket.remainingOrderIds[0]
     const inputApplyTicketRewardToGameState: TicketRewardRequest = {
       playerId: playerId,
       requestedColors: ['B'],
@@ -82,7 +82,11 @@ export function actionOrderMarket(
             ...copyState.orderMarket.visibleOrders,
           [keyOrder]: updateVisibleOrders
         },
-        remainingOrderIds: copyState.orderMarket.remainingOrderIds.slice(1)
+        orderMarket: {
+            ...copyState.orderMarket.orderMarket,
+          [keyOrder]: (orderMarket.length === 0) ? orderMarket : orderMarket.slice(0, -1)
+        },
+        remainingOrderIds: (orderMarket.length === 0) ? copyState.orderMarket.remainingOrderIds.slice(1) : copyState.orderMarket.remainingOrderIds
       },
       players: copyState.players.map((playerItem) =>
         (playerItem.id === playerId)
@@ -91,7 +95,10 @@ export function actionOrderMarket(
 
       ),
     }
-    events.push({  type: 'OrderMarketRefilled'})
+    if(orderMarket.length === 0) {
+      events.push({  type: 'OrderMarketRefilled'})
+    }
+
   }
   if(typeAction === 'REFRESH') {
     if(player.status !== 'PENDING') throw new Error( 'Invalid player status' )
