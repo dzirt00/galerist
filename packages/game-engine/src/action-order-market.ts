@@ -12,7 +12,10 @@ export function actionOrderMarket(
   typeAction:TypeActionOrderMarket,
   orderId: string | null = null,
   boarderSlotOrderId: string | null = null,
-  requestedColor: SetupTicketColor | null = null
+  requestedColor: SetupTicketColor | null = null,
+  replacementColorsByRequestedColor?: Readonly<
+  Partial<Record<SetupTicketColor, SetupTicketColor>>
+>
 ) {
   if(state.phase !== 'ending_current_round' && state.phase !== 'regular_play' && state.phase !== 'final_round') {
     throw new Error( 'Invalid phase' )
@@ -46,9 +49,6 @@ export function actionOrderMarket(
     if(keyOrder === null ) throw new Error( 'Invalid order' )
     if(orderId === null ) throw new Error( 'Invalid order' )
     if(copyState.orderMarket.remainingOrderIds.length === 0 && copyState.orderMarket.orderMarket[keyOrder as '1'|'2'|'3'|'4'].length === 0) throw new Error( 'Invalid order market' )
-    if(boarderSlotOrderId === '1' && copyState.ticketOffice.ticketsByColor['B'] === 0) throw new Error( 'Invalid tickets of tickets' )
-    if(boarderSlotOrderId === '2' && copyState.ticketOffice.ticketsByColor['R'] === 0) throw new Error( 'Invalid tickets of tickets' )
-    if(boarderSlotOrderId === '3' && requestedColor !== null && copyState.ticketOffice.ticketsByColor[requestedColor] === 0) throw new Error( 'Invalid tickets of tickets' )
     playerBoard = {
       ...playerBoard,
       boardOrders: {
@@ -80,7 +80,8 @@ export function actionOrderMarket(
     const updateVisibleOrders =  (orderMarket.length !== 0) ? orderMarket[orderMarket.length-1]: copyState.orderMarket.remainingOrderIds[0]
     const inputApplyTicketRewardToGameState: TicketRewardRequest = {
       playerId: playerId,
-      requestedColors: requestedColors
+      requestedColors: requestedColors,
+      replacementColorsByRequestedColor: (replacementColorsByRequestedColor !== undefined) ? replacementColorsByRequestedColor : {}
     }
 
     const resultApplyTicketRewardToGameState = applyTicketRewardToGameState(copyState, inputApplyTicketRewardToGameState)

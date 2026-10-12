@@ -11,7 +11,10 @@ export function receiveOrder(
   typeAction: TypeActionOrderMarket,
   orderId: string | null = null,
   boarderSlotOrderId: string | null = null,
-  requestedColor: SetupTicketColor | null = null
+  requestedColor: SetupTicketColor | null = null,
+  replacementColorsByRequestedColor?: Readonly<
+    Partial<Record<SetupTicketColor, SetupTicketColor>>
+  >
 ): GameTransition<GameState> {
 
   if(state.phase !== 'ending_current_round' && state.phase !== 'regular_play' && state.phase !== 'final_round') {
@@ -28,5 +31,7 @@ export function receiveOrder(
     }
   }
 
-  return actionOrderMarket(copyState, playerId, typeAction,orderId,boarderSlotOrderId,requestedColor)
+  return (replacementColorsByRequestedColor === undefined )
+    ? actionOrderMarket(copyState, playerId, typeAction,orderId,boarderSlotOrderId,requestedColor)
+    : actionOrderMarket(copyState, playerId, typeAction,orderId,boarderSlotOrderId,requestedColor,replacementColorsByRequestedColor)
 }
