@@ -1,3 +1,4 @@
+import { expectOrderRecycled } from './order-recycle-assertions.js'
 import { describe, expect, it } from 'vitest'
 import {
   receiveOrder, restoreGameState, projectGameForViewer, projectEventsForViewer,
@@ -105,12 +106,16 @@ describe('ORDER-003 / EJECT-005: помощник заменяемого зак�
           })
       }
     }
-    it.each([3, 4])(`клетка ${slot}: отказ без пополнения сохраняет помощника при офисе %i`, office => {
+    it.each([3, 4])(`клетка ${slot}: переработка пустой колоды сохраняет эффект помощника при офисе %i`, office => {
       const { input: base, playerId } = scenario(slot, office)
       const input: GameState = { ...base, orderMarket: { ...base.orderMarket, remainingOrderIds: [],
         orderDiscard: [...base.orderMarket.orderDiscard, ...base.orderMarket.remainingOrderIds] } }
       const before = structuredClone(input)
-      expect(() => receiveOrder(input, playerId, 'ACCEPT_ORDER', input.orderMarket.visibleOrders[1], slot)).toThrow()
+      const result = expectOrderRecycled(input, input.orderMarket.visibleOrders[1], slot)
+      const assistantId = input.playerBoards.find(board => board.playerId === playerId)!.boardOrders[slot].assistant
+      expect(assistantLocations(result.state, playerId).filter(id => id === assistantId)).toHaveLength(office === 4 ? 0 : 1)
+      expect(result.state.playerBoards.find(board => board.playerId === playerId)!.assistants.assistantHireQueueIds)
+        .toEqual(input.playerBoards.find(board => board.playerId === playerId)!.assistants.assistantHireQueueIds)
       expect(input).toEqual(before)
     })
   }

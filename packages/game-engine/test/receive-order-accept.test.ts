@@ -1,3 +1,4 @@
+import { expectOrderRecycled } from './order-recycle-assertions.js'
 import { describe, expect, it } from 'vitest'
 import {
   receiveOrder, restoreGameState, projectGameForViewer, projectEventsForViewer,
@@ -196,12 +197,12 @@ describe('ORDER-003: первая пустая клетка через публ�
     expect(allOrderIds(result.state)).toEqual(allOrderIds(input))
   })
 
-  it('отклоняет пустую колоду до успешного получения', () => {
+  it('перерабатывает пустую колоду после получения', () => {
     const base = scenario()
     const input = { ...base, orderMarket: { ...base.orderMarket,
       remainingOrderIds: [], orderDiscard: base.orderMarket.remainingOrderIds,
     } }
-    expectAtomicRejection(input, input.orderMarket.visibleOrders[1])
+    expectOrderRecycled(input, input.orderMarket.visibleOrders[1])
   })
 
   it.each([null, 'missing'])('отклоняет отсутствующий или неизвестный заказ %s', orderId => {
@@ -355,7 +356,7 @@ describe('ORDER-003: получение после обновления чере
     expectAtomicRejection(declined.state, input.orderMarket.visibleOrders[3])
   })
 
-  it('после REFRESH отклоняет получение, если нижний массив и колода одновременно пусты', () => {
+  it('после REFRESH перерабатывает область при пустых нижнем массиве и колоде', () => {
     const base = scenario()
     const input = { ...base, orderMarket: { ...base.orderMarket,
       visibleOrders: { ...base.orderMarket.visibleOrders, 3: null },
@@ -365,7 +366,7 @@ describe('ORDER-003: получение после обновления чере
     const refreshed = receiveOrder(input, input.activePlayerId, 'REFRESH')
     expect(refreshed.state.orderMarket.orderMarket[3]).toEqual([])
     expect(refreshed.state.orderMarket.remainingOrderIds).toEqual([])
-    expectAtomicRejection(refreshed.state, refreshed.state.orderMarket.visibleOrders[3])
+    expectOrderRecycled(refreshed.state, refreshed.state.orderMarket.visibleOrders[3])
   })
 })
 
@@ -563,7 +564,7 @@ describe('ORDER-003: последний билет выбранной клетк
     }
 
     it.each(['occupied', 'no-refill'] as const)(
-      `последний ${color}: атомарный отказ при %s сохраняет билет и статус подсчёта`, reason => {
+      `последний ${color}: занятая клетка отклоняется, пустая колода перерабатывается: %s`, reason => {
         const base = scenario()
         const playerId = base.activePlayerId
         const occupiedId = base.orderMarket.remainingOrderIds[0]!
@@ -579,7 +580,15 @@ describe('ORDER-003: последний билет выбранной клетк
             ? { ...board, boardOrders: { ...board.boardOrders,
               [slot]: { orderId: occupiedId, orderStatus: 'unfulfilled', assistant: null } } } : board),
         }
-        expectAtomicRejection(input, input.orderMarket.visibleOrders[1], slot)
+        if (reason === 'occupied') expectAtomicRejection(input, input.orderMarket.visibleOrders[1], slot)
+        else {
+          const result = expectOrderRecycled(input, input.orderMarket.visibleOrders[1], slot, color)
+          expect(result.state.ticketOffice.ticketsByColor[color]).toBe(0)
+          expect(result.state.players.find(player => player.id === playerId)!.ticketsByColor[color])
+            .toBe(input.players.find(player => player.id === playerId)!.ticketsByColor[color] + 1)
+          expect(result.state.intermediateScoringStatus).toBe('pending')
+          expect(result.events.filter(event => event.type === 'IntermediateScoringTriggered')).toHaveLength(1)
+        }
       })
   }
 })
@@ -668,14 +677,16 @@ describe('ORDER-003: третья пустая клетка с выбранны�
       const input = thirdSlotInput(0, color)
       expectOrderWithoutTicket(input, input.orderMarket.visibleOrders[1], '3', color)
     })
-    it(`отсутствие карты для пополнения атомарно сохраняет последний ${color}`, () => {
+    it(`переработка пустой колоды сохраняет выдачу последнего ${color}`, () => {
       const base = thirdSlotInput(1, color)
       const input: GameState = { ...base, orderMarket: { ...base.orderMarket,
         remainingOrderIds: [], orderDiscard: [...base.orderMarket.orderDiscard, ...base.orderMarket.remainingOrderIds],
       } }
       const before = structuredClone(input)
-      expect(() => receiveOrder(input, input.activePlayerId!, 'ACCEPT_ORDER',
-        input.orderMarket.visibleOrders[1], '3', color)).toThrow()
+      const result = expectOrderRecycled(input, input.orderMarket.visibleOrders[1], '3', color)
+      expect(result.state.ticketOffice.ticketsByColor[color]).toBe(0)
+      expect(result.state.intermediateScoringStatus).toBe('pending')
+      expect(result.events.filter(event => event.type === 'IntermediateScoringTriggered')).toHaveLength(1)
       expect(input).toEqual(before)
     })
   }
@@ -869,13 +880,19 @@ describe('ORDER-003: замещение через публичную receiveOrd
       expect(input).toEqual(before)
     })
 
-    it(`клетка ${slot}: отказ без карты пополнения сохраняет все ресурсы обмена`, () => {
+    it(`клетка ${slot}: переработка пустой колоды сохраняет обмен билета`, () => {
       const base = inputForExchange('PENDING', 'draw', 'completed')
       const input: GameState = { ...base, orderMarket: { ...base.orderMarket, remainingOrderIds: [],
         orderDiscard: [...base.orderMarket.orderDiscard, ...base.orderMarket.remainingOrderIds] } }
       const before = structuredClone(input)
-      expect(() => receiveOrder(input, input.activePlayerId!, 'ACCEPT_ORDER', input.orderMarket.visibleOrders[2],
-        slot, color, { [color]: donor })).toThrow()
+      const result = expectOrderRecycled(input, input.orderMarket.visibleOrders[2], slot, color, { [color]: donor })
+      expect(result.state.ticketOffice.ticketsByColor[donor]).toBe(input.ticketOffice.ticketsByColor[donor] - 1)
+      expect(result.state.ticketDiscard).toEqual({ ...input.ticketDiscard, [color]: input.ticketDiscard[color] - 1,
+        [donor]: input.ticketDiscard[donor] + 1 })
+      expect(result.events.filter(event => event.type === 'TicketExchanged' || event.type === 'TicketReceived')).toEqual([
+        { type: 'TicketExchanged', playerId: input.activePlayerId, discardedColor: donor, receivedColor: color },
+        { type: 'TicketReceived', playerId: input.activePlayerId, color },
+      ])
       expect(input).toEqual(before)
     })
 
@@ -983,12 +1000,12 @@ describe('ORDER-003: замена completed-заказа без помощник
       expect(allOrderIds(result.state)).toEqual(allOrderIds(input))
     })
 
-    it(`клетка ${slot}: отсутствие карты пополнения сохраняет completed и сброс атомарно`, () => {
+    it(`клетка ${slot}: переработка включает сброшенный completed и сохраняет новый заказ`, () => {
       const base = replacementInput(slot, 'PENDING', 'draw')
       const input: GameState = { ...base, orderMarket: { ...base.orderMarket,
         remainingOrderIds: [], orderDiscard: [...base.orderMarket.orderDiscard, ...base.orderMarket.remainingOrderIds],
       } }
-      expectAtomicRejection(input, input.orderMarket.visibleOrders[3], slot)
+      expectOrderRecycled(input, input.orderMarket.visibleOrders[3], slot)
     })
 
     it(`клетка ${slot}: неверный открытый заказ после REFRESH сохраняет completed и обновлённый рынок`, () => {

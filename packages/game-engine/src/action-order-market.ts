@@ -65,8 +65,6 @@ export function actionOrderMarket(
     if ( !isOrder ) throw new Error( 'Invalid order' )
     if ( keyOrder === null ) throw new Error( 'Invalid order' )
     if ( orderId === null ) throw new Error( 'Invalid order' )
-    // Текущий срез требует карту для раскрытия или добора; проверяем до переноса заказа.
-    if ( copyState.orderMarket.remainingOrderIds.length === 0 && copyState.orderMarket.orderMarket[ keyOrder as '1' | '2' | '3' | '4' ].length === 0 ) throw new Error( 'Invalid order market' )
     // Сохраняем старый ID до перезаписи. Он нужен для сброса completed, а orderId — новый заказ.
     const oldOrderId = playerBoard.boardOrders[ boarderSlotOrderId ].orderId
     playerBoard = {
@@ -97,7 +95,89 @@ export function actionOrderMarket(
 
     // Нижние карты идут от самой нижней к ближайшей к верху; раскрывается последняя.
     const orderMarket = copyState.orderMarket.orderMarket[ keyOrder as '1' | '2' | '3' | '4' ];
-    const updateVisibleOrders = ( orderMarket.length !== 0 ) ? orderMarket[ orderMarket.length - 1 ] : copyState.orderMarket.remainingOrderIds[ 0 ]
+
+    let updateVisibleOrders: string | null = null
+    if( orderMarket.length > 0) {
+      const lastOrder = orderMarket.at(-1);
+      if (lastOrder !== undefined) {
+        updateVisibleOrders = lastOrder;
+        copyState = {
+          ...copyState,
+          orderMarket: {
+            ...copyState.orderMarket,
+            visibleOrders: {
+              ...copyState.orderMarket.visibleOrders,
+              [ keyOrder ]: updateVisibleOrders
+            },
+            orderMarket: {
+              ...copyState.orderMarket.orderMarket,
+              [ keyOrder ]: ( orderMarket.length === 0 ) ? orderMarket : orderMarket.slice( 0, -1 )
+            },
+            remainingOrderIds: ( orderMarket.length === 0 ) ? copyState.orderMarket.remainingOrderIds.slice( 1 ) : copyState.orderMarket.remainingOrderIds
+          },
+          players: copyState.players.map( ( playerItem ) =>
+            ( playerItem.id === playerId )
+              ? { ...playerItem, status: 'SUCCESS' }
+              : playerItem
+          ),
+        }
+      }
+
+    } else if (copyState.orderMarket.remainingOrderIds.length > 0 ) {
+      const lastOrder = copyState.orderMarket.remainingOrderIds.at(0);
+      if (lastOrder !== undefined) {
+        updateVisibleOrders = lastOrder;
+        copyState = {
+          ...copyState,
+          orderMarket: {
+            ...copyState.orderMarket,
+            visibleOrders: {
+              ...copyState.orderMarket.visibleOrders,
+              [ keyOrder ]: updateVisibleOrders
+            },
+            orderMarket: {
+              ...copyState.orderMarket.orderMarket,
+              [ keyOrder ]: ( orderMarket.length === 0 ) ? orderMarket : orderMarket.slice( 0, -1 )
+            },
+            remainingOrderIds: ( orderMarket.length === 0 ) ? copyState.orderMarket.remainingOrderIds.slice( 1 ) : copyState.orderMarket.remainingOrderIds
+          },
+          players: copyState.players.map( ( playerItem ) =>
+            ( playerItem.id === playerId )
+              ? { ...playerItem, status: 'SUCCESS' }
+              : playerItem
+          ),
+        }
+      }
+    } else {
+      copyState = {
+        ...copyState,
+        orderMarket: {
+          ...copyState.orderMarket,
+          visibleOrders: {
+            ...copyState.orderMarket.visibleOrders,
+            [ keyOrder ]: null
+          }
+        }
+      }
+
+      const updateMarket = refreshOrderMarket( copyState, playerId )
+      player = {
+        ...player,
+        status: 'SUCCESS',
+      }
+
+      copyState = {
+        ...updateMarket.state,
+        players: updateMarket.state.players.map( ( playerItem ) =>
+          playerItem.id === playerId
+            ? { ...playerItem, ...player }
+            : playerItem
+        ),
+      }
+      events.push(...updateMarket.events)
+    }
+
+
 
     let assistantId: string | null = null
     const oldBoardPlayer = state.playerBoards[playerBoardIndex]!
@@ -159,26 +239,7 @@ export function actionOrderMarket(
         ...resultApplyTicketRewardToGameState.state
       }
     }
-    copyState = {
-      ...copyState,
-      orderMarket: {
-        ...copyState.orderMarket,
-        visibleOrders: {
-          ...copyState.orderMarket.visibleOrders,
-          [ keyOrder ]: updateVisibleOrders
-        },
-        orderMarket: {
-          ...copyState.orderMarket.orderMarket,
-          [ keyOrder ]: ( orderMarket.length === 0 ) ? orderMarket : orderMarket.slice( 0, -1 )
-        },
-        remainingOrderIds: ( orderMarket.length === 0 ) ? copyState.orderMarket.remainingOrderIds.slice( 1 ) : copyState.orderMarket.remainingOrderIds
-      },
-      players: copyState.players.map( ( playerItem ) =>
-        ( playerItem.id === playerId )
-          ? { ...playerItem, status: 'SUCCESS' }
-          : playerItem
-      ),
-    }
+
     // При раскрытии нижней карты OrderMarketRefilled не создаётся; при доборе идёт последним.
     if ( orderMarket.length === 0 ) {
       events.push( { type: 'OrderMarketRefilled' } )
