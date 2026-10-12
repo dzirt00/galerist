@@ -44,8 +44,8 @@ export function actionOrderMarket(
     if(keyOrder === null ) throw new Error( 'Invalid order' )
     if(orderId === null ) throw new Error( 'Invalid order' )
     if(copyState.orderMarket.remainingOrderIds.length === 0 && copyState.orderMarket.orderMarket[keyOrder as '1'|'2'|'3'|'4'].length === 0) throw new Error( 'Invalid order market' )
-    if(boarderSlotOrderId === '1' && copyState.ticketOffice.ticketsByColor['B'] <= 1) throw new Error( 'Invalid tickets of tickets' )
-    if(boarderSlotOrderId === '2' && copyState.ticketOffice.ticketsByColor['R'] <= 1) throw new Error( 'Invalid tickets of tickets' )
+    if(boarderSlotOrderId === '1' && copyState.ticketOffice.ticketsByColor['B'] === 0) throw new Error( 'Invalid tickets of tickets' )
+    if(boarderSlotOrderId === '2' && copyState.ticketOffice.ticketsByColor['R'] === 0) throw new Error( 'Invalid tickets of tickets' )
     playerBoard = {
       ...playerBoard,
       boardOrders: {

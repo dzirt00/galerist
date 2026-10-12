@@ -153,7 +153,7 @@ describe('ORDER-003: первая пустая клетка через публ�
     expectAtomicRejection(input, input.orderMarket.visibleOrders[1])
   })
 
-  it.each([0, 1])('атомарно отклоняет B = %i, не оставляет заказ или расход RNG', count => {
+  it.each([0])('атомарно отклоняет B = %i, не оставляет заказ или расход RNG', count => {
     const base = scenario()
     const input = { ...base, ticketOffice: { ticketsByColor: { ...base.ticketOffice.ticketsByColor, B: count } } }
     expectAtomicRejection(input, input.orderMarket.visibleOrders[1])
@@ -322,7 +322,7 @@ describe('ORDER-003: получение после обновления чере
     for (const slot of ['3', '4', 'missing', null]) {
       expectAtomicRejection(input, input.orderMarket.visibleOrders[3], slot)
     }
-    for (const count of [0, 1]) {
+    for (const count of [0]) {
       expectAtomicRejection({ ...input, ticketOffice: { ticketsByColor: {
         ...input.ticketOffice.ticketsByColor, B: count,
       } } }, input.orderMarket.visibleOrders[3])
@@ -452,7 +452,7 @@ describe('ORDER-003: вторая пустая клетка и розовый б
   })
 
   for (const status of ['PENDING', 'REFRESH'] as const) {
-    it.each([0, 1])(`атомарно отклоняет R = %i из ${status}, даже при наличии B`, count => {
+    it.each([0])(`атомарно отклоняет R = %i из ${status}, даже при наличии B`, count => {
       const base = inputForSecondSlot('WAITING', 3)
       const ready = status === 'REFRESH' ? receiveOrder(base, base.activePlayerId!, 'REFRESH').state
         : withStatus(base, base.activePlayerId!, status)
@@ -461,5 +461,102 @@ describe('ORDER-003: вторая пустая клетка и розовый б
       }
       expectAtomicRejection(input, input.orderMarket.visibleOrders[2], '2')
     })
+  }
+})
+
+describe('ORDER-003: последний билет выбранной клетки', () => {
+  for (const [slot, color] of [['1', 'B'], ['2', 'R']] as const) {
+    for (const status of ['WAITING', 'PENDING', 'REFRESH'] as const) {
+      for (const scoringStatus of ['not_triggered', 'pending', 'completed'] as const) {
+        it.each(['draw', 'reveal'] as const)(
+          `клетка ${slot}, ${status}, ${scoringStatus}: последний ${color}, %s`, mode => {
+            const base = scenario()
+            const playerId = base.activePlayerId
+            const prepared: GameState = {
+              ...withStatus(base, playerId, status === 'REFRESH' ? 'WAITING' : status),
+              intermediateScoringStatus: scoringStatus,
+              ticketOffice: { ticketsByColor: { B: 3, R: 3, W: 3, [color]: 1 } },
+            }
+            const ready = status === 'REFRESH'
+              ? receiveOrder(prepared, playerId, 'REFRESH').state : prepared
+            // Перекладываем все нижние карты в колоду, сохраняя состав заказов.
+            const remaining = [...Object.values(ready.orderMarket.orderMarket).flat(),
+              ...ready.orderMarket.remainingOrderIds]
+            const input: GameState = { ...ready, orderMarket: { ...ready.orderMarket,
+              orderMarket: { 1: mode === 'reveal' ? [remaining[0]!] : [], 2: [], 3: [], 4: [] },
+              remainingOrderIds: mode === 'reveal' ? [] : remaining,
+              orderDiscard: mode === 'reveal'
+                ? [...ready.orderMarket.orderDiscard, ...remaining.slice(1)] : ready.orderMarket.orderDiscard,
+            } }
+            const before = structuredClone(input)
+            const orderId = input.orderMarket.visibleOrders[1]!
+            const player = input.players.find(item => item.id === playerId)!
+            const board = input.playerBoards.find(item => item.playerId === playerId)!
+            const expectedScoring = scoringStatus === 'not_triggered' ? 'pending' : scoringStatus
+            const result = receiveOrder(input, playerId, 'ACCEPT_ORDER', orderId, slot)
+            expect(result.state).toEqual({ ...input,
+              intermediateScoringStatus: expectedScoring,
+              players: input.players.map(item => item.id === playerId ? { ...player,
+                status: 'SUCCESS', ticketsByColor: { ...player.ticketsByColor,
+                  [color]: player.ticketsByColor[color] + 1 },
+              } : item),
+              playerBoards: input.playerBoards.map(item => item.playerId === playerId
+                ? { ...board, boardOrders: { ...board.boardOrders,
+                  [slot]: { orderId, orderStatus: 'unfulfilled' } } } : item),
+              ticketOffice: { ticketsByColor: { ...input.ticketOffice.ticketsByColor, [color]: 0 } },
+              orderMarket: { ...input.orderMarket,
+                visibleOrders: { ...input.orderMarket.visibleOrders, 1: remaining[0] },
+                orderMarket: { ...input.orderMarket.orderMarket, 1: [] },
+                remainingOrderIds: mode === 'draw' ? remaining.slice(1) : [],
+              },
+            })
+            expect(result.events).toEqual([
+              { type: 'OrderTaken', playerId, orderId },
+              { type: 'TicketReceived', playerId, color },
+              ...(scoringStatus === 'not_triggered' ? [{ type: 'IntermediateScoringTriggered' }] : []),
+              ...(mode === 'draw' ? [{ type: 'OrderMarketRefilled' }] : []),
+            ])
+            expect(allOrderIds(result.state)).toEqual(allOrderIds(input))
+            expect(input).toEqual(before)
+            expect(Object.isFrozen(result)).toBe(true)
+            expect(Object.isFrozen(result.state)).toBe(true)
+            expect(Object.isFrozen(result.state.players.find(item => item.id === playerId)!.ticketsByColor)).toBe(true)
+            expect(Object.isFrozen(result.events)).toBe(true)
+            expect(result.events.every(Object.isFrozen)).toBe(true)
+            const restored = restoreGameState(JSON.parse(JSON.stringify(result.state)))
+            expect(restored).toEqual(result.state)
+            expect(restored.stateSchemaVersion).toBe(12)
+            for (const viewer of [null, ...input.players.map(item => item.id)]) {
+              const projection = projectGameForViewer(restored, viewer)
+              expect(projection.intermediateScoringStatus).toBe(expectedScoring)
+              expect(projection.players).toEqual(restored.players)
+              expect(projection.playerBoards).toEqual(restored.playerBoards)
+              expect(projection.ticketOffice).toEqual(restored.ticketOffice)
+              expect(projection.orderMarket).not.toHaveProperty('remainingOrderIds')
+              expect(projectEventsForViewer(result.events, restored, viewer)).toEqual(result.events)
+            }
+          })
+      }
+    }
+
+    it.each(['occupied', 'no-refill'] as const)(
+      `последний ${color}: атомарный отказ при %s сохраняет билет и статус подсчёта`, reason => {
+        const base = scenario()
+        const playerId = base.activePlayerId
+        const occupiedId = base.orderMarket.remainingOrderIds[0]!
+        const input: GameState = { ...base,
+          intermediateScoringStatus: 'not_triggered',
+          ticketOffice: { ticketsByColor: { B: 3, R: 3, W: 3, [color]: 1 } },
+          orderMarket: { ...base.orderMarket,
+            remainingOrderIds: reason === 'no-refill' ? [] : base.orderMarket.remainingOrderIds.slice(1),
+            orderDiscard: reason === 'no-refill'
+              ? [...base.orderMarket.orderDiscard, ...base.orderMarket.remainingOrderIds] : base.orderMarket.orderDiscard,
+          },
+          playerBoards: base.playerBoards.map(board => board.playerId === playerId && reason === 'occupied'
+            ? { ...board, boardOrders: { ...board.boardOrders,
+              [slot]: { orderId: occupiedId, orderStatus: 'unfulfilled' } } } : board),
+        }
+        expectAtomicRejection(input, input.orderMarket.visibleOrders[1], slot)
+      })
   }
 })
