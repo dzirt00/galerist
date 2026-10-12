@@ -165,7 +165,7 @@ describe('ORDER-003: первая пустая клетка через публ�
     expectAtomicRejection(input, input.orderMarket.visibleOrders[1], slotId)
   })
 
-  it.each(['completed', 'unfulfilled'] as const)('не заменяет занятый заказ со статусом %s', orderStatus => {
+  it.each(['unfulfilled'] as const)('не заменяет занятый заказ со статусом %s', orderStatus => {
     const base = scenario()
     const input = { ...base, orderMarket: { ...base.orderMarket,
       remainingOrderIds: base.orderMarket.remainingOrderIds.slice(1),
@@ -462,7 +462,7 @@ describe('ORDER-003: вторая пустая клетка и розовый б
     expect(restoreGameState(JSON.parse(JSON.stringify(result.state)))).toEqual(result.state)
   })
 
-  it.each(['completed', 'unfulfilled'] as const)('атомарно отклоняет занятую вторую клетку: %s', orderStatus => {
+  it.each(['unfulfilled'] as const)('атомарно отклоняет занятую вторую клетку: %s', orderStatus => {
     const base = inputForSecondSlot()
     const input: GameState = { ...base,
       orderMarket: { ...base.orderMarket, remainingOrderIds: base.orderMarket.remainingOrderIds.slice(1) },
@@ -697,7 +697,7 @@ describe('ORDER-003: третья пустая клетка с выбранны�
     expect(Object.isFrozen(input)).toBe(false)
   })
 
-  it.each(['completed', 'unfulfilled'] as const)('атомарно отклоняет занятую третью клетку %s', orderStatus => {
+  it.each(['unfulfilled'] as const)('атомарно отклоняет занятую третью клетку %s', orderStatus => {
     const base = thirdSlotInput(1, 'W')
     const input: GameState = { ...base,
       orderMarket: { ...base.orderMarket, remainingOrderIds: base.orderMarket.remainingOrderIds.slice(1) },
@@ -888,6 +888,112 @@ describe('ORDER-003: замещение через публичную receiveOrd
       expect(result.state.ticketDiscard).toEqual(input.ticketDiscard)
       expect(result.state.ticketOffice.ticketsByColor[donor]).toBe(input.ticketOffice.ticketsByColor[donor])
       expect(result.state.ticketOffice.ticketsByColor[color]).toBe(1)
+    })
+  }
+})
+describe('ORDER-003: замена completed-заказа без помощника', () => {
+  function replacementInput(slot: '1' | '2' | '3', status: StatusPlayer, mode: 'draw' | 'reveal'): GameState {
+    const base = scenario()
+    const oldOrderId = base.orderMarket.remainingOrderIds[0]!
+    const prepared: GameState = { ...withStatus(base, base.activePlayerId, status === 'REFRESH' ? 'WAITING' : status),
+      ticketOffice: { ticketsByColor: { B: 1, R: 1, W: 1 } },
+      orderMarket: { ...base.orderMarket, remainingOrderIds: base.orderMarket.remainingOrderIds.slice(1) },
+      playerBoards: base.playerBoards.map(board => board.playerId === base.activePlayerId
+        ? { ...board, boardOrders: { ...board.boardOrders,
+          [slot]: { orderId: oldOrderId, orderStatus: 'completed' } } } : board),
+    }
+    const ready = status === 'REFRESH' ? receiveOrder(prepared, prepared.activePlayerId!, 'REFRESH').state : prepared
+    const remaining = [...Object.values(ready.orderMarket.orderMarket).flat(), ...ready.orderMarket.remainingOrderIds]
+    return { ...ready, orderMarket: { ...ready.orderMarket,
+      orderMarket: { 1: [], 2: [], 3: mode === 'reveal' ? [remaining[0]!] : [], 4: [] },
+      remainingOrderIds: mode === 'reveal' ? [] : remaining,
+      orderDiscard: mode === 'reveal'
+        ? [...ready.orderMarket.orderDiscard, ...remaining.slice(1)] : ready.orderMarket.orderDiscard,
+    } }
+  }
+
+  for (const slot of ['1', '2', '3'] as const) {
+    for (const status of ['WAITING', 'PENDING', 'REFRESH'] as const) {
+      it.each(['draw', 'reveal'] as const)(`клетка ${slot}, ${status}, %s: старый заказ в сброс, новый без билета`, mode => {
+        const input = replacementInput(slot, status, mode)
+        const before = structuredClone(input)
+        const playerId = input.activePlayerId!
+        const orderId = input.orderMarket.visibleOrders[3]!
+        const board = input.playerBoards.find(item => item.playerId === playerId)!
+        const oldOrderId = board.boardOrders[slot].orderId!
+        // Цвет не передаётся даже для третьей клетки: награда при замене отсутствует.
+        const result = receiveOrder(input, playerId, 'ACCEPT_ORDER', orderId, slot)
+        expect(result.state).toEqual({ ...input,
+          players: input.players.map(player => player.id === playerId ? { ...player, status: 'SUCCESS' } : player),
+          playerBoards: input.playerBoards.map(item => item.playerId === playerId
+            ? { ...board, boardOrders: { ...board.boardOrders, [slot]: { orderId, orderStatus: 'unfulfilled' } } } : item),
+          orderMarket: { ...input.orderMarket,
+            orderDiscard: [...input.orderMarket.orderDiscard, oldOrderId],
+            visibleOrders: { ...input.orderMarket.visibleOrders, 3: mode === 'draw'
+              ? input.orderMarket.remainingOrderIds[0] : input.orderMarket.orderMarket[3][0] },
+            orderMarket: { ...input.orderMarket.orderMarket, 3: [] },
+            remainingOrderIds: mode === 'draw' ? input.orderMarket.remainingOrderIds.slice(1) : [],
+          },
+        })
+        expect(result.events).toEqual([
+          { type: 'OrderDiscarded', playerId, orderId: oldOrderId },
+          { type: 'OrderTaken', playerId, orderId },
+          ...(mode === 'draw' ? [{ type: 'OrderMarketRefilled' }] : []),
+        ])
+        expect(result.state.orderMarket.orderDiscard.filter(id => id === oldOrderId)).toHaveLength(1)
+        expect(allOrderIds(result.state)).toEqual(allOrderIds(input))
+        expect(new Set(allOrderIds(result.state)).size).toBe(allOrderIds(result.state).length)
+        expect(input).toEqual(before)
+        expect(Object.isFrozen(input)).toBe(false)
+        expect(Object.isFrozen(result)).toBe(true)
+        expect(Object.isFrozen(result.state)).toBe(true)
+        expect(Object.isFrozen(result.state.playerBoards.find(item => item.playerId === playerId)!.boardOrders[slot])).toBe(true)
+        expect(Object.isFrozen(result.state.orderMarket.orderDiscard)).toBe(true)
+        expect(Object.isFrozen(result.events)).toBe(true)
+        expect(result.events.every(Object.isFrozen)).toBe(true)
+        const restored = restoreGameState(JSON.parse(JSON.stringify(result.state)))
+        expect(restored).toEqual(result.state)
+        expect(restored.stateSchemaVersion).toBe(12)
+        for (const viewer of [null, ...input.players.map(player => player.id)]) {
+          const projection = projectGameForViewer(restored, viewer)
+          expect(projection.playerBoards).toEqual(restored.playerBoards)
+          expect(projection.players).toEqual(restored.players)
+          expect(projection.ticketOffice).toEqual(restored.ticketOffice)
+          expect(projection.ticketDiscard).toEqual(restored.ticketDiscard)
+          expect(projection.intermediateScoringStatus).toBe(input.intermediateScoringStatus)
+          expect(projection.orderMarket).toEqual({ visibleOrders: restored.orderMarket.visibleOrders,
+            remainingOrderCount: restored.orderMarket.remainingOrderIds.length })
+          expect(projectEventsForViewer(result.events, restored, viewer)).toEqual(result.events)
+        }
+        expectAtomicRejection(result.state, result.state.orderMarket.visibleOrders[3], slot)
+      })
+    }
+
+    it(`клетка ${slot}: обратный порядок планшетов сохраняет старый ID нужного игрока`, () => {
+      const base = replacementInput(slot, 'PENDING', 'draw')
+      const input: GameState = { ...base, playerBoards: [...base.playerBoards].reverse() }
+      const playerId = input.activePlayerId!
+      const board = input.playerBoards.find(item => item.playerId === playerId)!
+      const result = receiveOrder(input, playerId, 'ACCEPT_ORDER', input.orderMarket.visibleOrders[3], slot)
+      expect(result.state.orderMarket.orderDiscard).toEqual([...input.orderMarket.orderDiscard, board.boardOrders[slot].orderId])
+      expect(result.state.players.find(player => player.id === playerId)!.ticketsByColor)
+        .toEqual(input.players.find(player => player.id === playerId)!.ticketsByColor)
+      expect(result.state.playerBoards.filter(item => item.playerId !== playerId))
+        .toEqual(input.playerBoards.filter(item => item.playerId !== playerId))
+      expect(allOrderIds(result.state)).toEqual(allOrderIds(input))
+    })
+
+    it(`клетка ${slot}: отсутствие карты пополнения сохраняет completed и сброс атомарно`, () => {
+      const base = replacementInput(slot, 'PENDING', 'draw')
+      const input: GameState = { ...base, orderMarket: { ...base.orderMarket,
+        remainingOrderIds: [], orderDiscard: [...base.orderMarket.orderDiscard, ...base.orderMarket.remainingOrderIds],
+      } }
+      expectAtomicRejection(input, input.orderMarket.visibleOrders[3], slot)
+    })
+
+    it(`клетка ${slot}: неверный открытый заказ после REFRESH сохраняет completed и обновлённый рынок`, () => {
+      const input = replacementInput(slot, 'REFRESH', 'reveal')
+      expectAtomicRejection(input, 'missing', slot)
     })
   }
 })

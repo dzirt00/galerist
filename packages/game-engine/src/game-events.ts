@@ -26,6 +26,7 @@ export type GameEvent =
   | { readonly type: 'FirstPlayerSelected'; readonly playerId: PlayerId }
   | { readonly type: 'PlayerBoardPrepared'; readonly playerId: PlayerId }
   | { readonly type: 'PrivateGoalsDealt'; readonly playerId: PlayerId }
+  | { readonly type: 'OrderDiscarded'; readonly playerId: PlayerId, readonly orderId: string}
   | { readonly type: 'FinalScoringStarted' }
   | { readonly type: 'GameEndTriggered' }
   | { readonly type: 'InfluenceSpent', readonly playerId: PlayerId, readonly spentInfluence: number }
