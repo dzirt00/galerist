@@ -208,6 +208,7 @@ function validatePlayerBoards(state: UnknownRecord, playerIds: ReadonlySet<Playe
     const hireQueue = requireSafeInteger(assistants.hireQueue, 'hireQueue')
     const assistantOfficeIds = assistants.assistantOfficeIds
     const assistantHireQueueIds = assistants.assistantHireQueueIds
+    let allAssistants:string[] = []
     if (!Array.isArray(assistantOfficeIds)) fail('artistSetup.slots must be an array')
     if (!Array.isArray(assistantHireQueueIds)) fail('artistSetup.slots must be an array')
     assistantOfficeIds.forEach(el => requireNonEmptyString(el,'string'))
@@ -219,7 +220,7 @@ function validatePlayerBoards(state: UnknownRecord, playerIds: ReadonlySet<Playe
       || assistantOfficeIds.length < 0
       || assistantOfficeIds.length > 4
     ) fail('error length')
-
+    allAssistants.push(...assistantOfficeIds, ...assistantHireQueueIds)
     requirePlayerReference(board.playerId, playerIds, `playerBoards[${index}].playerId`)
     const gallery = requireRecord(board.gallery, `playerBoards[${index}].gallery`)
     if (!Array.isArray(gallery.artworkSlots) || gallery.artworkSlots.length !== 4) {
@@ -259,16 +260,26 @@ function validatePlayerBoards(state: UnknownRecord, playerIds: ReadonlySet<Playe
     if(!setOrderKeys.has('1') || !setOrderKeys.has('2') || !setOrderKeys.has('3') || setOrderKeys.size !== 3) {
       fail('Invalid order keys')
     }
+
     for(let el of Object.values(orders)) {
       const order = requireRecord(el, 'order')
       if((order.orderId !== null && order.orderStatus === null) || (order.orderId === null && order.orderStatus !== null)) {
         fail(`invalid orderId`)
       }
       if(order.orderId !== null) requireNonEmptyString(order.orderId, 'orderId')
+      if(order.assistant !== null) {
+        const assistant = requireNonEmptyString( order.assistant, 'assistant' )
+        allAssistants.push(assistant)
+      }
+      if(order.orderId === null &&  order.orderStatus === null && order.assistant !== null) fail(`invalid assistant`)
       if(order.orderStatus !== null) {
         const orderStatus =requireNonEmptyString( order.orderStatus, 'typeOrder' )
         if(orderStatus !== 'completed' && orderStatus !== 'unfulfilled') fail('typeOrder')
       }
+
+    }
+    if(allAssistants.length !== (new Set(allAssistants)).size) {
+      fail(`invalid Assistants`)
     }
   })
 }
@@ -469,8 +480,8 @@ function validateOrderMarket(orderMarket: unknown) {
 /** Проверяет JSON-снимок по ADR-001/ADR-002 и возвращает независимый замороженный GameState. */
 export function restoreGameState(input: unknown): GameState {
   const state = requireRecord(input, 'state')
-  if (state.stateSchemaVersion !== 12) {
-    fail('stateSchemaVersion must equal 12')
+  if (state.stateSchemaVersion !== 13) {
+    fail('stateSchemaVersion must equal 13')
   }
   const runtimeRng =requireRecord(state.runtimeRng,'runtimeRng')
   const runtimeRngCounters = requireRecord(runtimeRng.runtimeRngCounters,'runtimeRngCounters')

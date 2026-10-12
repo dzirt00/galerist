@@ -21,6 +21,8 @@ export type GameEvent =
   | { readonly type: 'OrderTaken', readonly playerId: PlayerId, orderId: string }
   | { readonly type: 'IntermediateScoringTriggered' }
   | { readonly type: 'EndConditionReached' }
+  | { readonly type: 'AssistantReturnedHome', readonly playerId: PlayerId, assistantId: string }
+  | { readonly type: 'AssistantRemovedFromGame', readonly playerId: PlayerId, assistantId: string }
   | { readonly type: 'OrderMarketRefilled' }
   | { readonly type: 'InitialVisitorsPlaced' }
   | { readonly type: 'FirstPlayerSelected'; readonly playerId: PlayerId }

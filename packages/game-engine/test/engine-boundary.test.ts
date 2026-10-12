@@ -12,9 +12,9 @@ import { completeStartingLocationSelection } from './helpers.js'
 
 /** Создаёт детерминированную тестовую партию с заданным внешним ID. */
 describe('acquiredArtworkCount snapshot contract', () => {
-  it('initializes counts and preserves them in schema 12', () => {
+  it('initializes counts and preserves them in schema 13', () => {
     const setup = createSetup().state
-    expect(setup.stateSchemaVersion).toBe(12)
+    expect(setup.stateSchemaVersion).toBe(13)
     expect(setup.players.map(player => player.acquiredArtworkCount)).toEqual([0, 0])
     const source = {
       ...structuredClone(setup),

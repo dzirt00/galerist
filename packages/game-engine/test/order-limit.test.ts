@@ -10,7 +10,7 @@ function scenario(statuses: readonly [Status, Status, Status] = [null, null, nul
   const ids = base.orderMarket.remainingOrderIds.slice(0, 3)
   const slot = (index: number) => ({
     orderId: statuses[index] === null ? null : ids[index]!,
-    orderStatus: statuses[index]!,
+    orderStatus: statuses[index]!, assistant: null,
   })
   const usedIds = ids.filter((_, index) => statuses[index] !== null)
   return {
@@ -76,8 +76,8 @@ describe('ORDER-001: регрессия внутренней проверки л
   })
 
   it.each([
-    { orderId: null, orderStatus: 'unfulfilled' as const },
-    { orderId: 'ORDER-01', orderStatus: null },
+    { orderId: null, orderStatus: 'unfulfilled' as const, assistant: null },
+    { orderId: 'ORDER-01', orderStatus: null, assistant: null },
   ])('прямая команда отклоняет несогласованную клетку %j', slot => {
     const base = scenario()
     const input = { ...base, playerBoards: base.playerBoards.map(board => board.playerId === base.activePlayerId
@@ -88,9 +88,9 @@ describe('ORDER-001: регрессия внутренней проверки л
     expect(Object.isFrozen(input.playerBoards[0]!.boardOrders)).toBe(false)
   })
 
-  it('схема 12 и публичная проекция сохраняют клетки и решение о лимите', () => {
+  it('схема 13 и публичная проекция сохраняют клетки и решение о лимите', () => {
     const input = scenario(['unfulfilled', 'unfulfilled', 'completed'])
-    expect(input.stateSchemaVersion).toBe(12)
+    expect(input.stateSchemaVersion).toBe(13)
     const restored = restoreGameState(JSON.parse(JSON.stringify(input)))
     expect(restored).toEqual(input)
     const result = changeStatusPlayer(restored, input.activePlayerId)
@@ -102,9 +102,9 @@ describe('ORDER-001: регрессия внутренней проверки л
 
   it.each([
     {},
-    { 1: { orderId: null, orderStatus: null }, 2: { orderId: null, orderStatus: null } },
-    { '01': { orderId: null, orderStatus: null }, 2: { orderId: null, orderStatus: null }, 3: { orderId: null, orderStatus: null } },
-    { 1: { orderId: null, orderStatus: null }, 2: { orderId: null, orderStatus: null }, 3: { orderId: null, orderStatus: null }, '01': { orderId: null, orderStatus: null } },
+    { 1: { orderId: null, orderStatus: null, assistant: null }, 2: { orderId: null, orderStatus: null, assistant: null } },
+    { '01': { orderId: null, orderStatus: null, assistant: null }, 2: { orderId: null, orderStatus: null, assistant: null }, 3: { orderId: null, orderStatus: null, assistant: null } },
+    { 1: { orderId: null, orderStatus: null, assistant: null }, 2: { orderId: null, orderStatus: null, assistant: null }, 3: { orderId: null, orderStatus: null, assistant: null }, '01': { orderId: null, orderStatus: null, assistant: null } },
   ])('восстановление отклоняет неверные ключи %j', boardOrders => {
     const source = structuredClone(scenario())
     const board = source.playerBoards[0]! as unknown as Record<string, unknown>
@@ -115,11 +115,11 @@ describe('ORDER-001: регрессия внутренней проверки л
   })
 
   it.each([
-    { orderId: null, orderStatus: 'completed' },
-    { orderId: null, orderStatus: 'unfulfilled' },
-    { orderId: 'ORDER-01', orderStatus: null },
-    { orderId: '', orderStatus: 'unfulfilled' },
-    { orderId: 'ORDER-01', orderStatus: 'unknown' },
+    { orderId: null, orderStatus: 'completed', assistant: null },
+    { orderId: null, orderStatus: 'unfulfilled', assistant: null },
+    { orderId: 'ORDER-01', orderStatus: null, assistant: null },
+    { orderId: '', orderStatus: 'unfulfilled', assistant: null },
+    { orderId: 'ORDER-01', orderStatus: 'unknown', assistant: null },
     { orderId: null },
   ])('восстановление отклоняет повреждённую клетку %j', slot => {
     const source = structuredClone(scenario())

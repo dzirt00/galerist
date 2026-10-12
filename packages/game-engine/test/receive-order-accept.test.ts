@@ -41,7 +41,7 @@ function expectOrderWithoutTicket(source: GameState, orderId: string | null, slo
     ...input.players.find(player => player.id === input.activePlayerId)!, status: 'SUCCESS',
   })
   expect(result.state.playerBoards.find(board => board.playerId === input.activePlayerId)!.boardOrders[slot as '1' | '2' | '3'])
-    .toEqual({ orderId, orderStatus: 'unfulfilled' })
+    .toEqual({ orderId, orderStatus: 'unfulfilled', assistant: null })
   expect(result.state.ticketOffice).toEqual(input.ticketOffice)
   expect(result.state.ticketDiscard).toEqual(input.ticketDiscard)
   expect(result.state.intermediateScoringStatus).toBe('completed')
@@ -65,7 +65,7 @@ describe('ORDER-003: первая пустая клетка через публ�
       const board = result.state.playerBoards.find(board => board.playerId === playerId)!
       const originalBoard = input.playerBoards.find(board => board.playerId === playerId)!
       expect(board.boardOrders).toEqual({ ...originalBoard.boardOrders,
-        1: { orderId, orderStatus: 'unfulfilled' },
+        1: { orderId, orderStatus: 'unfulfilled', assistant: null },
       })
       expect(board).toEqual({ ...originalBoard, boardOrders: board.boardOrders })
       const originalPlayer = input.players.find(player => player.id === playerId)!
@@ -126,7 +126,7 @@ describe('ORDER-003: первая пустая клетка через публ�
     const orderId = input.orderMarket.visibleOrders[2]!
     const result = receiveOrder(input, input.activePlayerId, 'ACCEPT_ORDER', orderId, '1')
     expect(result.state.playerBoards.find(board => board.playerId === input.activePlayerId)!.boardOrders[1])
-      .toEqual({ orderId, orderStatus: 'unfulfilled' })
+      .toEqual({ orderId, orderStatus: 'unfulfilled', assistant: null })
     expect(result.state.playerBoards.map(board => board.playerId)).toEqual(input.playerBoards.map(board => board.playerId))
   })
 
@@ -138,7 +138,7 @@ describe('ORDER-003: первая пустая клетка через публ�
     expect(result).toEqual(receiveOrder(base, base.activePlayerId, 'ACCEPT_ORDER', base.orderMarket.visibleOrders[3], '1'))
     const restored = restoreGameState(JSON.parse(JSON.stringify(result.state)))
     expect(restored).toEqual(result.state)
-    expect(restored.stateSchemaVersion).toBe(12)
+    expect(restored.stateSchemaVersion).toBe(13)
     expectAtomicRejection(restored, restored.orderMarket.visibleOrders[3])
     for (const viewer of [null, ...base.players.map(player => player.id)]) {
       const projection = projectGameForViewer(restored, viewer)
@@ -171,7 +171,7 @@ describe('ORDER-003: первая пустая клетка через публ�
       remainingOrderIds: base.orderMarket.remainingOrderIds.slice(1),
     }, playerBoards: base.playerBoards.map(board => board.playerId === base.activePlayerId
       ? { ...board, boardOrders: { ...board.boardOrders,
-        1: { orderId: base.orderMarket.remainingOrderIds[0]!, orderStatus },
+        1: { orderId: base.orderMarket.remainingOrderIds[0]!, orderStatus, assistant: null },
       } } : board) }
     expectAtomicRejection(input, input.orderMarket.visibleOrders[1])
   })
@@ -232,7 +232,7 @@ describe('ORDER-003: получение после обновления чере
     const originalBoard = refreshed.state.playerBoards.find(board => board.playerId === playerId)!
     const board = result.state.playerBoards.find(board => board.playerId === playerId)!
     expect(board).toEqual({ ...originalBoard, boardOrders: { ...originalBoard.boardOrders,
-      1: { orderId, orderStatus: 'unfulfilled' },
+      1: { orderId, orderStatus: 'unfulfilled', assistant: null },
     } })
     const originalPlayer = refreshed.state.players.find(player => player.id === playerId)!
     expect(result.state.players.find(player => player.id === playerId)).toEqual({ ...originalPlayer,
@@ -268,7 +268,7 @@ describe('ORDER-003: получение после обновления чере
     expect(result.events.every(event => Object.isFrozen(event))).toBe(true)
     const restored = restoreGameState(JSON.parse(JSON.stringify(result.state)))
     expect(restored).toEqual(result.state)
-    expect(restored.stateSchemaVersion).toBe(12)
+    expect(restored.stateSchemaVersion).toBe(13)
     for (const viewer of [null, ...input.players.map(player => player.id)]) {
       const projection = projectGameForViewer(restored, viewer)
       expect(projection.orderMarket).toEqual({ visibleOrders: restored.orderMarket.visibleOrders,
@@ -380,7 +380,7 @@ describe('ORDER-003: вторая пустая клетка и розовый б
       orderMarket: { ...base.orderMarket, remainingOrderIds: base.orderMarket.remainingOrderIds.slice(1) },
       playerBoards: base.playerBoards.map(board => board.playerId === base.activePlayerId
         ? { ...board, boardOrders: { ...board.boardOrders,
-          1: { orderId: occupiedId, orderStatus: 'unfulfilled' },
+          1: { orderId: occupiedId, orderStatus: 'unfulfilled', assistant: null },
         } } : board),
     }
   }
@@ -396,7 +396,7 @@ describe('ORDER-003: вторая пустая клетка и розовый б
       const player = input.players.find(player => player.id === playerId)!
       expect(result.state).toEqual({ ...input,
         playerBoards: input.playerBoards.map(item => item.playerId === playerId
-          ? { ...board, boardOrders: { ...board.boardOrders, 2: { orderId, orderStatus: 'unfulfilled' } } } : item),
+          ? { ...board, boardOrders: { ...board.boardOrders, 2: { orderId, orderStatus: 'unfulfilled', assistant: null } } } : item),
         players: input.players.map(item => item.id === playerId
           ? { ...player, status: 'SUCCESS', ticketsByColor: { ...player.ticketsByColor, R: player.ticketsByColor.R + 1 } } : item),
         ticketOffice: { ticketsByColor: { ...input.ticketOffice.ticketsByColor, R: 1 } },
@@ -446,7 +446,7 @@ describe('ORDER-003: вторая пустая клетка и розовый б
     })
     const board = input.playerBoards.find(item => item.playerId === playerId)!
     expect(result.state.playerBoards.find(item => item.playerId === playerId)).toEqual({ ...board,
-      boardOrders: { ...board.boardOrders, 2: { orderId, orderStatus: 'unfulfilled' } },
+      boardOrders: { ...board.boardOrders, 2: { orderId, orderStatus: 'unfulfilled', assistant: null } },
     })
     const player = refreshed.state.players.find(item => item.id === playerId)!
     expect(result.state.players.find(item => item.id === playerId)).toEqual({ ...player,
@@ -468,7 +468,7 @@ describe('ORDER-003: вторая пустая клетка и розовый б
       orderMarket: { ...base.orderMarket, remainingOrderIds: base.orderMarket.remainingOrderIds.slice(1) },
       playerBoards: base.playerBoards.map(board => board.playerId === base.activePlayerId
         ? { ...board, boardOrders: { ...board.boardOrders,
-          2: { orderId: base.orderMarket.remainingOrderIds[0]!, orderStatus },
+          2: { orderId: base.orderMarket.remainingOrderIds[0]!, orderStatus, assistant: null },
         } } : board),
     }
     expectAtomicRejection(input, input.orderMarket.visibleOrders[2], '2')
@@ -525,7 +525,7 @@ describe('ORDER-003: последний билет выбранной клетк
               } : item),
               playerBoards: input.playerBoards.map(item => item.playerId === playerId
                 ? { ...board, boardOrders: { ...board.boardOrders,
-                  [slot]: { orderId, orderStatus: 'unfulfilled' } } } : item),
+                  [slot]: { orderId, orderStatus: 'unfulfilled', assistant: null } } } : item),
               ticketOffice: { ticketsByColor: { ...input.ticketOffice.ticketsByColor, [color]: 0 } },
               orderMarket: { ...input.orderMarket,
                 visibleOrders: { ...input.orderMarket.visibleOrders, 1: remaining[0] },
@@ -548,7 +548,7 @@ describe('ORDER-003: последний билет выбранной клетк
             expect(result.events.every(Object.isFrozen)).toBe(true)
             const restored = restoreGameState(JSON.parse(JSON.stringify(result.state)))
             expect(restored).toEqual(result.state)
-            expect(restored.stateSchemaVersion).toBe(12)
+            expect(restored.stateSchemaVersion).toBe(13)
             for (const viewer of [null, ...input.players.map(item => item.id)]) {
               const projection = projectGameForViewer(restored, viewer)
               expect(projection.intermediateScoringStatus).toBe(expectedScoring)
@@ -577,7 +577,7 @@ describe('ORDER-003: последний билет выбранной клетк
           },
           playerBoards: base.playerBoards.map(board => board.playerId === playerId && reason === 'occupied'
             ? { ...board, boardOrders: { ...board.boardOrders,
-              [slot]: { orderId: occupiedId, orderStatus: 'unfulfilled' } } } : board),
+              [slot]: { orderId: occupiedId, orderStatus: 'unfulfilled', assistant: null } } } : board),
         }
         expectAtomicRejection(input, input.orderMarket.visibleOrders[1], slot)
       })
@@ -592,8 +592,8 @@ describe('ORDER-003: третья пустая клетка с выбранны�
       orderMarket: { ...base.orderMarket, remainingOrderIds: base.orderMarket.remainingOrderIds.slice(2) },
       playerBoards: base.playerBoards.map(board => board.playerId === base.activePlayerId
         ? { ...board, boardOrders: { ...board.boardOrders,
-          1: { orderId: firstId!, orderStatus: 'unfulfilled' },
-          2: { orderId: secondId!, orderStatus: 'completed' },
+          1: { orderId: firstId!, orderStatus: 'unfulfilled', assistant: null },
+          2: { orderId: secondId!, orderStatus: 'completed', assistant: null },
         } } : board),
     }
   }
@@ -627,7 +627,7 @@ describe('ORDER-003: третья пустая клетка с выбранны�
               } : item),
               playerBoards: input.playerBoards.map(item => item.playerId === playerId
                 ? { ...board, boardOrders: { ...board.boardOrders,
-                  3: { orderId, orderStatus: 'unfulfilled' } } } : item),
+                  3: { orderId, orderStatus: 'unfulfilled', assistant: null } } } : item),
               orderMarket: { ...input.orderMarket,
                 visibleOrders: { ...input.orderMarket.visibleOrders, 4: remaining[0] },
                 orderMarket: { ...input.orderMarket.orderMarket, 4: [] },
@@ -650,7 +650,7 @@ describe('ORDER-003: третья пустая клетка с выбранны�
             expect(result.events.every(Object.isFrozen)).toBe(true)
             const restored = restoreGameState(JSON.parse(JSON.stringify(result.state)))
             expect(restored).toEqual(result.state)
-            expect(restored.stateSchemaVersion).toBe(12)
+            expect(restored.stateSchemaVersion).toBe(13)
             for (const viewer of [null, ...input.players.map(item => item.id)]) {
               const projection = projectGameForViewer(restored, viewer)
               expect(projection.players).toEqual(restored.players)
@@ -703,7 +703,7 @@ describe('ORDER-003: третья пустая клетка с выбранны�
       orderMarket: { ...base.orderMarket, remainingOrderIds: base.orderMarket.remainingOrderIds.slice(1) },
       playerBoards: base.playerBoards.map(board => board.playerId === base.activePlayerId
         ? { ...board, boardOrders: { ...board.boardOrders,
-          3: { orderId: base.orderMarket.remainingOrderIds[0]!, orderStatus },
+          3: { orderId: base.orderMarket.remainingOrderIds[0]!, orderStatus, assistant: null },
         } } : board),
     }
     const before = structuredClone(input)
@@ -742,7 +742,7 @@ describe('ORDER-003 / TICKET-002 / MID-001: замещение отсутств�
       ticketsByColor: { ...playerBefore.ticketsByColor, B: playerBefore.ticketsByColor.B + 1 },
     })
     expect(result.state.playerBoards.find(board => board.playerId === playerId)!.boardOrders[1])
-      .toEqual({ orderId, orderStatus: 'unfulfilled' })
+      .toEqual({ orderId, orderStatus: 'unfulfilled', assistant: null })
     expect(input).toEqual(before)
     expect(result.state.runtimeRng).toEqual(input.runtimeRng)
     expect(result.state.intermediateScoringStatus).toBe(scoringStatus)
@@ -790,7 +790,7 @@ describe('ORDER-003: замещение через публичную receiveOrd
                 ticketsByColor: { ...player.ticketsByColor, [color]: player.ticketsByColor[color] + 1 },
               } : item),
               playerBoards: input.playerBoards.map(item => item.playerId === playerId
-                ? { ...board, boardOrders: { ...board.boardOrders, [slot]: { orderId, orderStatus: 'unfulfilled' } } } : item),
+                ? { ...board, boardOrders: { ...board.boardOrders, [slot]: { orderId, orderStatus: 'unfulfilled', assistant: null } } } : item),
               orderMarket: { ...input.orderMarket,
                 visibleOrders: { ...input.orderMarket.visibleOrders,
                   2: mode === 'draw' ? input.orderMarket.remainingOrderIds[0] : input.orderMarket.orderMarket[2][0] },
@@ -836,7 +836,7 @@ describe('ORDER-003: замещение через публичную receiveOrd
         expect(result.state.players).toEqual(input.players.map(player => player.id === input.activePlayerId
           ? { ...player, status: 'SUCCESS' } : player))
         expect(result.state.playerBoards.find(board => board.playerId === input.activePlayerId)!.boardOrders[slot])
-          .toEqual({ orderId, orderStatus: 'unfulfilled' })
+          .toEqual({ orderId, orderStatus: 'unfulfilled', assistant: null })
         expect(result.state.ticketOffice).toEqual(input.ticketOffice)
         expect(result.state.ticketDiscard).toEqual(input.ticketDiscard)
         expect(result.state.intermediateScoringStatus).toBe('completed')
@@ -900,7 +900,7 @@ describe('ORDER-003: замена completed-заказа без помощник
       orderMarket: { ...base.orderMarket, remainingOrderIds: base.orderMarket.remainingOrderIds.slice(1) },
       playerBoards: base.playerBoards.map(board => board.playerId === base.activePlayerId
         ? { ...board, boardOrders: { ...board.boardOrders,
-          [slot]: { orderId: oldOrderId, orderStatus: 'completed' } } } : board),
+          [slot]: { orderId: oldOrderId, orderStatus: 'completed', assistant: null } } } : board),
     }
     const ready = status === 'REFRESH' ? receiveOrder(prepared, prepared.activePlayerId!, 'REFRESH').state : prepared
     const remaining = [...Object.values(ready.orderMarket.orderMarket).flat(), ...ready.orderMarket.remainingOrderIds]
@@ -926,7 +926,7 @@ describe('ORDER-003: замена completed-заказа без помощник
         expect(result.state).toEqual({ ...input,
           players: input.players.map(player => player.id === playerId ? { ...player, status: 'SUCCESS' } : player),
           playerBoards: input.playerBoards.map(item => item.playerId === playerId
-            ? { ...board, boardOrders: { ...board.boardOrders, [slot]: { orderId, orderStatus: 'unfulfilled' } } } : item),
+            ? { ...board, boardOrders: { ...board.boardOrders, [slot]: { orderId, orderStatus: 'unfulfilled', assistant: null } } } : item),
           orderMarket: { ...input.orderMarket,
             orderDiscard: [...input.orderMarket.orderDiscard, oldOrderId],
             visibleOrders: { ...input.orderMarket.visibleOrders, 3: mode === 'draw'
@@ -953,7 +953,7 @@ describe('ORDER-003: замена completed-заказа без помощник
         expect(result.events.every(Object.isFrozen)).toBe(true)
         const restored = restoreGameState(JSON.parse(JSON.stringify(result.state)))
         expect(restored).toEqual(result.state)
-        expect(restored.stateSchemaVersion).toBe(12)
+        expect(restored.stateSchemaVersion).toBe(13)
         for (const viewer of [null, ...input.players.map(player => player.id)]) {
           const projection = projectGameForViewer(restored, viewer)
           expect(projection.playerBoards).toEqual(restored.playerBoards)

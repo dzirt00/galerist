@@ -112,7 +112,7 @@ export interface RuntimeRngState {
   }
 }
 export interface GameStateBase {
-  readonly stateSchemaVersion: 12
+  readonly stateSchemaVersion: 13
   readonly id: GameId
   readonly runtimeRng: RuntimeRngState
   readonly config: Readonly<GameConfig>

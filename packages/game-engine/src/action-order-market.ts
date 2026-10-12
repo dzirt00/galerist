@@ -75,7 +75,8 @@ export function actionOrderMarket(
         ...playerBoard.boardOrders,
         [ boarderSlotOrderId ]: {
           orderId: copyState.orderMarket.visibleOrders[ keyOrder as '1' | '2' | '3' | '4' ],
-          orderStatus: 'unfulfilled'
+          orderStatus: 'unfulfilled',
+          assistant: null
         }
       }
     }
@@ -98,6 +99,38 @@ export function actionOrderMarket(
     const orderMarket = copyState.orderMarket.orderMarket[ keyOrder as '1' | '2' | '3' | '4' ];
     const updateVisibleOrders = ( orderMarket.length !== 0 ) ? orderMarket[ orderMarket.length - 1 ] : copyState.orderMarket.remainingOrderIds[ 0 ]
 
+    let assistantId: string | null = null
+    const oldBoardPlayer = state.playerBoards[playerBoardIndex]!
+    if(oldBoardPlayer.boardOrders[boarderSlotOrderId].assistant !== null  && oldBoardPlayer.assistants.office < 4) {
+      assistantId = oldBoardPlayer.boardOrders[boarderSlotOrderId].assistant
+      playerBoard = {
+        ...playerBoard,
+        assistants: {
+          ...playerBoard.assistants,
+          office: playerBoard.assistants.office + 1,
+          assistantOfficeIds: (assistantId !== null)
+            ? [...playerBoard.assistants.assistantOfficeIds,  assistantId ]
+            : [...playerBoard.assistants.assistantOfficeIds],
+
+        },
+      }
+
+      copyState = {
+        ...copyState,
+        playerBoards: copyState.playerBoards.map((board, index) =>
+          index === playerBoardIndex ? (playerBoard ?? board) : board
+        )
+      };
+
+
+
+
+      events.push({type: 'AssistantReturnedHome', playerId: playerId, assistantId: assistantId })
+    } else if(oldBoardPlayer.boardOrders[boarderSlotOrderId].assistant !== null && playerBoard.assistants.office >= 4) {
+      assistantId = oldBoardPlayer.boardOrders[boarderSlotOrderId].assistant
+      events.push({type: 'AssistantRemovedFromGame', playerId: playerId, assistantId: assistantId })
+    }
+
     // Билет положен только за ИСХОДНО пустую клетку. Замена completed пропускает всю ветку,
     // включая выбор цвета третьей клетки и проверку замещения отсутствующего билета.
     if ( state.playerBoards[ playerBoardIndex ]!.boardOrders[ boarderSlotOrderId ].orderId === null ) {
@@ -117,25 +150,6 @@ export function actionOrderMarket(
         playerId: playerId,
         requestedColors: requestedColors,
         replacementColorsByRequestedColor: ( replacementColorsByRequestedColor !== undefined ) ? replacementColorsByRequestedColor : {}
-      }
-      copyState = {
-        ...copyState,
-        playerBoards: copyState.playerBoards.map( el => {
-          if ( el.playerId === playerId ) {
-            el = {
-              ...el,
-              boardOrders: {
-                ...el.boardOrders,
-                [ boarderSlotOrderId ]: {
-                  orderId: orderId,
-                  orderStatus: 'unfulfilled',
-                }
-              }
-
-            }
-          }
-          return el
-        } )
       }
       // Готовая функция владеет выдачей/замещением и триггерами подсчёта и завершения.
       // Сохраняем весь её state/events, чтобы последующее обновление рынка не потеряло эффекты.

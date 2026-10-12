@@ -56,14 +56,14 @@ describe('ORDER-001/002: receiveOrder через публичный API', () => 
     expect(Object.isFrozen(refreshed.events[0])).toBe(true)
   })
 
-  it('продолжает восстановленный PENDING и REFRESH из схемы 12', () => {
+  it('продолжает восстановленный PENDING и REFRESH из схемы 13', () => {
     const initial = scenario()
     const playerId = initial.activePlayerId
     const pending = restoreGameState(JSON.parse(JSON.stringify(withStatus(initial, playerId, 'PENDING'))))
     const refreshed = receiveOrder(pending, playerId, 'REFRESH')
     expect(refreshed).toEqual(receiveOrder(initial, playerId, 'REFRESH'))
     const restored = restoreGameState(JSON.parse(JSON.stringify(refreshed.state)))
-    expect(restored.stateSchemaVersion).toBe(12)
+    expect(restored.stateSchemaVersion).toBe(13)
     expect(() => receiveOrder(restored, playerId, 'REFRESH')).toThrow()
     const declined = receiveOrder(restored, playerId, 'DECLINE')
     expect(declined).toEqual(receiveOrder(refreshed.state, playerId, 'DECLINE'))
@@ -142,7 +142,7 @@ describe('ORDER-001/002: receiveOrder через публичный API', () => 
     const playerId = base.activePlayerId
     const ids = base.orderMarket.remainingOrderIds.slice(0, 3)
     const slot = (index: number) => ({ orderId: ids[index]!,
-      orderStatus: index < count ? 'unfulfilled' as const : 'completed' as const })
+      orderStatus: index < count ? 'unfulfilled' as const : 'completed' as const, assistant: null })
     const input = { ...base, orderMarket: { ...base.orderMarket,
       remainingOrderIds: base.orderMarket.remainingOrderIds.slice(3),
     }, playerBoards: base.playerBoards.map(board => board.playerId === playerId

@@ -27,14 +27,17 @@ export interface BoardOrders {
   readonly 1: {
     readonly orderId: string | null
     readonly orderStatus: OrderStatus | null
+    readonly assistant: string | null
   }
   readonly 2: {
     readonly orderId: string | null
     readonly orderStatus: OrderStatus | null
+    readonly assistant: string | null
   }
   readonly 3: {
     readonly orderId: string | null
     readonly orderStatus: OrderStatus | null
+    readonly assistant: string | null
   }
 }
 export interface PlayerBoard {
@@ -76,15 +79,18 @@ export function preparePlayerBoards(
       boardOrders: {
         1: {
           orderId: null,
-          orderStatus: null
+          orderStatus: null,
+          assistant:  null
         },
         2: {
           orderId: null,
-          orderStatus:  null
+          orderStatus:  null,
+          assistant:  null
         },
         3: {
           orderId: null,
-          orderStatus: null
+          orderStatus: null,
+          assistant:  null
         }
       }
     }
