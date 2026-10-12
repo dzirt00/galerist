@@ -2,6 +2,7 @@ import type { GameState, PlayerId } from "./types.js";
 import { refreshOrderMarket } from "./refresh-order-market.js";
 import { freezeTransition, type GameEvent } from "./game-events.js";
 import { applyTicketRewardToGameState, type TicketRewardRequest } from "./ticket-reward-to-game-state.js";
+import type { SetupTicketColor } from "./component-catalog.js";
 
 export type TypeActionOrderMarket = 'REFRESH' | 'DECLINE' | 'ACCEPT_ORDER'
 
@@ -10,7 +11,8 @@ export function actionOrderMarket(
   playerId: PlayerId,
   typeAction:TypeActionOrderMarket,
   orderId: string | null = null,
-  boarderSlotOrderId: string | null = null
+  boarderSlotOrderId: string | null = null,
+  requestedColor: SetupTicketColor | null = null
 ) {
   if(state.phase !== 'ending_current_round' && state.phase !== 'regular_play' && state.phase !== 'final_round') {
     throw new Error( 'Invalid phase' )
@@ -30,7 +32,7 @@ export function actionOrderMarket(
   if(typeAction === 'ACCEPT_ORDER') {
    let playerBoard = copyState.playerBoards.find(board => board.playerId === playerId)
    if(playerBoard === undefined) throw new Error( 'Invalid board')
-   if(boarderSlotOrderId !== '1' && boarderSlotOrderId !== '2' ) throw new Error( 'Invalid boarderSlotOrderId' )
+   if(boarderSlotOrderId !== '1' && boarderSlotOrderId !== '2' && boarderSlotOrderId !== '3') throw new Error( 'Invalid boarderSlotOrderId' )
    if(playerBoard.boardOrders[boarderSlotOrderId].orderId !== null) throw new Error( 'Invalid boardOrder' )
     let isOrder = false
     let keyOrder: string | null = null
@@ -46,6 +48,7 @@ export function actionOrderMarket(
     if(copyState.orderMarket.remainingOrderIds.length === 0 && copyState.orderMarket.orderMarket[keyOrder as '1'|'2'|'3'|'4'].length === 0) throw new Error( 'Invalid order market' )
     if(boarderSlotOrderId === '1' && copyState.ticketOffice.ticketsByColor['B'] === 0) throw new Error( 'Invalid tickets of tickets' )
     if(boarderSlotOrderId === '2' && copyState.ticketOffice.ticketsByColor['R'] === 0) throw new Error( 'Invalid tickets of tickets' )
+    if(boarderSlotOrderId === '3' && requestedColor !== null && copyState.ticketOffice.ticketsByColor[requestedColor] === 0) throw new Error( 'Invalid tickets of tickets' )
     playerBoard = {
       ...playerBoard,
       boardOrders: {
@@ -62,11 +65,22 @@ export function actionOrderMarket(
       playerBoards: copyState.playerBoards.map( board => board.playerId === playerId ? {...board, ...playerBoard } : board),
     }
     events.push({  type: 'OrderTaken',  playerId: playerId, orderId: orderId })
+    let requestedColors: SetupTicketColor[];
+
+    if (boarderSlotOrderId === '1') {
+      requestedColors = ['B'];
+    } else if (boarderSlotOrderId === '2') {
+      requestedColors = ['R'];
+    } else if (requestedColor) {
+      requestedColors = [requestedColor];
+    } else {
+      throw new Error('Invalid tickets of tickets');
+    }
     const orderMarket = copyState.orderMarket.orderMarket[keyOrder as '1'|'2'|'3'|'4'];
     const updateVisibleOrders =  (orderMarket.length !== 0) ? orderMarket[orderMarket.length-1]: copyState.orderMarket.remainingOrderIds[0]
     const inputApplyTicketRewardToGameState: TicketRewardRequest = {
       playerId: playerId,
-      requestedColors: (boarderSlotOrderId === '1') ? ['B'] : ['R'],
+      requestedColors: requestedColors
     }
 
     const resultApplyTicketRewardToGameState = applyTicketRewardToGameState(copyState, inputApplyTicketRewardToGameState)

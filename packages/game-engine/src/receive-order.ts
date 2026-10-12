@@ -2,6 +2,7 @@ import type { GameState, PlayerId } from "./types.js";
 import { actionOrderMarket, type TypeActionOrderMarket } from "./action-order-market.js";
 import { type GameTransition } from "./game-events.js";
 import { changeStatusPlayer } from "./change-status-player.js";
+import type { SetupTicketColor } from "./component-catalog.js";
 
 
 export function receiveOrder(
@@ -9,7 +10,8 @@ export function receiveOrder(
   playerId:PlayerId,
   typeAction: TypeActionOrderMarket,
   orderId: string | null = null,
-  boarderSlotOrderId: string | null = null
+  boarderSlotOrderId: string | null = null,
+  requestedColor: SetupTicketColor | null = null
 ): GameTransition<GameState> {
 
   if(state.phase !== 'ending_current_round' && state.phase !== 'regular_play' && state.phase !== 'final_round') {
@@ -26,5 +28,5 @@ export function receiveOrder(
     }
   }
 
-  return actionOrderMarket(copyState, playerId, typeAction,orderId,boarderSlotOrderId)
+  return actionOrderMarket(copyState, playerId, typeAction,orderId,boarderSlotOrderId,requestedColor)
 }
