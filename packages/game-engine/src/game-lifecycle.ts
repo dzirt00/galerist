@@ -162,7 +162,17 @@ export function advanceTurn(state: GameState): GameTransition<GameState> {
     ? [...eventsIntermediateIncomeAwarded]
     : []
 
-  const updatePlayers = (updatePlayersState === null) ? state.players : updatePlayersState;
+  let updatePlayers = (updatePlayersState === null) ? state.players : updatePlayersState;
+  updatePlayers = updatePlayers.map(el => {
+    if(el.status === 'SUCCESS' || el.status === 'REFUSAL') {
+      el = {
+        ...el,
+        status: 'WAITING'
+      }
+    }
+    if(el.status === 'REFRESH' || el.status === 'PENDING') throw new Error(`Invalid status ${el.id}`)
+    return el
+  })
 
   const nextPlayer = state.players[(currentIndex + 1) % state.players.length]!.id
   // Граница раунда — возврат к firstPlayerId, который может быть не первым элементом players.

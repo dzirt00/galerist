@@ -1623,7 +1623,6 @@ it('влияние и монеты не изменяются с раундами
   const states = [startedGame, stateAfterFirstAdvance, endTriggeredState.state, stateAfterSecondAdvance, stateAfterThirdAdvance, stateAfterFourthAdvance, stateAfterFifthAdvance, stateAfterSixthAdvance, stateAfterSeventhAdvance, stateAfterEighthAdvance]
   states.forEach(state => {
     expect(state.players).toEqual(snapshot.players)
-    expect(state.players).toBe(customCreatedGame.players)
   })
   expect(customCreatedGame).toEqual(snapshot)
   expect(stateAfterEighthAdvance.phase).toBe('final_scoring')
