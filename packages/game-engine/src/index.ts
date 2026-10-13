@@ -139,3 +139,5 @@ export {
   type SetupInternationalMarket,
 } from './setup-international-market.js'
 export { openArtist, type OpenArtistRequest } from './open-artist.js'
+export { determineAvailableMarketColumns, claimReputationToken, placeAuctionBid,
+  type MarketActionRequest, type ClaimReputationTokenRequest, type PlaceAuctionBidRequest } from './international-market.js'

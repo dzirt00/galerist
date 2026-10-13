@@ -7,6 +7,10 @@ import {
 import type { PlayerId } from './types.js'
 
 export type GameEvent =
+  | { readonly type: 'ReputationTokenClaimed'; readonly playerId: PlayerId; readonly tokenId: string; readonly cellId: string; readonly boardCellId: string }
+  | { readonly type: 'BoardRewardClaimed'; readonly playerId: PlayerId; readonly boardCellId: string; readonly reward: import('./component-catalog.js').RewardId }
+  | { readonly type: 'AuctionBidPlaced'; readonly playerId: PlayerId; readonly cellId: string; readonly bid: 1 | 3 | 6 }
+  | { readonly type: 'AssistantPlacedOnMarket'; readonly playerId: PlayerId; readonly cellId: string; readonly assistantId: string }
   | { readonly type: 'OrderCompleted'; readonly playerId: PlayerId; readonly orderSlot: 1 | 2 | 3; readonly orderId: string }
   | { readonly type: 'OrderRewardSideSelected'; readonly playerId: PlayerId; readonly orderSlot: 1 | 2 | 3; readonly orderId: string; readonly orderRewardSide: import('./player-boards.js').OrderRewardSide }
   | { readonly type: 'ArtworkSold'; readonly playerId: PlayerId; readonly orderId: string; readonly artworkId: string; readonly artistId: string; readonly saleValue: number; readonly soldArtworkCount: number }

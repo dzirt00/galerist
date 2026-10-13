@@ -23,6 +23,7 @@ export interface LocationReputationToken {
 export type ReputationTokenIds = readonly string[]
 
 export interface SetupInternationalMarket {
+  readonly marketAssistants: readonly { readonly cellId: string; readonly playerId: string; readonly assistantId: string; readonly bid: 1 | 3 | 6 | null }[]
   readonly marketReputationCells: readonly MarketReputationCell[]
   readonly locationReputationTokens: readonly LocationReputationToken[]
   readonly remainingReputationTokenIds: ReputationTokenIds
@@ -73,6 +74,7 @@ export function prepareInternationalMarket(
   })
 
   return deepFreeze({
+    marketAssistants: [],
     marketReputationCells,
     locationReputationTokens,
     remainingReputationTokenIds: shuffledReputationTokenIds,

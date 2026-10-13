@@ -154,3 +154,4 @@ describe('Схема 13: контракт помощника на заказе',
     expect(() => restoreGameState({ ...input, stateSchemaVersion: 12 })).toThrow('stateSchemaVersion')
   })
 })
+

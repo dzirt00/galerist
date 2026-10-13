@@ -62,6 +62,7 @@ export function projectGameForViewer(
     },
     visitorBag: { visitorCount: state.visitorBag.visitors.length },
     internationalMarket: {
+      marketAssistants: state.internationalMarket.marketAssistants,
       marketReputationCells: state.internationalMarket.marketReputationCells,
       locationReputationTokens: state.internationalMarket.locationReputationTokens,
       remainingReputationTokenCount: state.internationalMarket.remainingReputationTokenIds.length,

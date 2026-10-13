@@ -1,5 +1,6 @@
 import { deepFreeze, setupComponentCatalog } from './component-catalog.js'
 import type { GamePhase, GameState, PlayerId } from './types.js'
+import { validateInternationalMarketState } from './international-market-validation.js'
 
 type UnknownRecord = Record<string, unknown>
 

@@ -47,6 +47,9 @@ export interface BoardOrders {
   }
 }
 export interface PlayerBoard {
+  readonly boardReputationTokens: Readonly<Record<string, string>>
+  readonly locationAssistants: readonly { readonly assistantId: string; readonly locationId: StartingLocationId }[]
+  readonly ejectedAssistant: { readonly assistantId: string; readonly displacedByPlayerId: string } | null
   readonly playerId: string,
   readonly assistants: {
     readonly office: number,
@@ -72,6 +75,9 @@ export function preparePlayerBoards(
   const playerBoards = playerIds.map(playerId => {
     return {
       playerId,
+      boardReputationTokens: {},
+      locationAssistants: [],
+      ejectedAssistant: null,
       assistants: {
         ...assistantsPerPlayer,
         assistantOfficeIds: [...assistantsPerPlayer.assistantOfficeIds],
