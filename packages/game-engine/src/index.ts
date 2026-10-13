@@ -1,4 +1,6 @@
 export * from './types.js'
+export { applyArtworkSaleToGameState, type ArtworkSaleRequest } from './artwork-sale-state.js'
+export { getAvailableArtworkSales } from './available-artwork-sales.js'
 export { applyVisitorMovementTickets, type VisitorMovementDestination, type VisitorMovementStep } from './apply-visitor-movement-tickets.js'
 export {createRuntimeRng, type RngRuntimeConfig} from './runtime-rng.js'
 export { advertisingArtist, type AdvertisingArtistRequest } from './advertising-artist.js'
@@ -47,6 +49,7 @@ export {
   type Gallery,
   type PlayerContract,
   type PlayerBoard,
+  type OrderRewardSide,
 } from './player-boards.js'
 export {applyAssistantHiringToGameState, type ApplyAssistantHiringToGameStateRequest} from './apply-assistant-hiring-to-game-state.js'
 export {completeFinalScoring} from './final-scoring-completion.js'

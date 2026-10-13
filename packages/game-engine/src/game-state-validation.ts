@@ -202,6 +202,8 @@ function validatePlayerBoards(state: UnknownRecord, playerIds: ReadonlySet<Playe
   if (!Array.isArray(state.playerBoards)) fail('playerBoards must be an array')
   // Одна физическая подпись не может одновременно лежать у художника, на работе и в контракте.
   const signatureLocations = new Set<string>()
+  const soldArtworkLocations = new Set<string>()
+  const exhibitedArtworkLocations = new Set<string>()
   const artistSetup = requireRecord(state.artistSetup, 'artistSetup')
   for (const value of artistSetup.slots as unknown[]) {
     const slot = requireRecord(value, 'artistSetup slot')
@@ -233,6 +235,15 @@ function validatePlayerBoards(state: UnknownRecord, playerIds: ReadonlySet<Playe
     ) fail('error length')
     allAssistants.push(...assistantOfficeIds, ...assistantHireQueueIds)
     requirePlayerReference(board.playerId, playerIds, `playerBoards[${index}].playerId`)
+    if (!Array.isArray(board.soldArtworkIds)) fail('soldArtworkIds must be an array')
+    const soldArtworkIds = new Set<string>()
+    for (const value of board.soldArtworkIds) {
+      const id = requireNonEmptyString(value, 'soldArtworkId')
+      if (!setupComponentCatalog.artworks.some(artwork => artwork.id === id)) fail('Unknown sold artwork')
+      if (soldArtworkLocations.has(id)) fail('soldArtworkIds must be unique')
+      soldArtworkIds.add(id)
+      soldArtworkLocations.add(id)
+    }
     const gallery = requireRecord(board.gallery, `playerBoards[${index}].gallery`)
     if (!Array.isArray(gallery.artworkSlots) || gallery.artworkSlots.length !== 4) {
       fail(`playerBoards[${index}].gallery.artworkSlots must contain four slots`)
@@ -246,7 +257,8 @@ function validatePlayerBoards(state: UnknownRecord, playerIds: ReadonlySet<Playe
         artworkValue,
         `playerBoards[${index}].gallery.artworkSlots[${artworkIndex}]`,
       )
-      requireNonEmptyString(artwork.artworkId, 'artworkId')
+      exhibitedArtworkLocations.add(requireNonEmptyString(artwork.artworkId, 'artworkId'))
+      if (soldArtworkIds.has(artwork.artworkId as string)) fail('Sold artwork cannot be exhibited')
       requireNonEmptyString(artwork.artistId, 'artistId')
       const signatureTokenId = requireNonEmptyString(artwork.signatureTokenId, 'signatureTokenId')
       requireSafeInteger(artwork.saleValue, 'saleValue')
@@ -263,6 +275,12 @@ function validatePlayerBoards(state: UnknownRecord, playerIds: ReadonlySet<Playe
     }
 
     const orders = requireRecord(board.boardOrders, `boardOrders`)
+    const orderRewardSides = requireRecord(board.orderRewardSides, 'orderRewardSides')
+    for (const [slot, side] of Object.entries(orderRewardSides)) {
+      if (slot !== '1' && slot !== '2' && slot !== '3') fail('Invalid order reward slot')
+      if (side !== 'coins' && side !== 'influence') fail('Invalid order reward side')
+      if (requireRecord(orders[slot], 'order').orderStatus !== 'completed') fail('Order reward side requires completed order')
+    }
     let orderKeys: string[] = []
     for (const key of Object.keys(orders)) {
       orderKeys.push(key)
@@ -293,6 +311,9 @@ function validatePlayerBoards(state: UnknownRecord, playerIds: ReadonlySet<Playe
       fail(`invalid Assistants`)
     }
   })
+  for (const id of soldArtworkLocations) {
+    if (exhibitedArtworkLocations.has(id)) fail('Sold artwork cannot be exhibited')
+  }
 }
 
 /** Проверяет игроков и возвращает множество допустимых ссылок на них. */
@@ -491,8 +512,8 @@ function validateOrderMarket(orderMarket: unknown) {
 /** Проверяет JSON-снимок по ADR-001/ADR-002 и возвращает независимый замороженный GameState. */
 export function restoreGameState(input: unknown): GameState {
   const state = requireRecord(input, 'state')
-  if (state.stateSchemaVersion !== 13) {
-    fail('stateSchemaVersion must equal 13')
+  if (state.stateSchemaVersion !== 15) {
+    fail('stateSchemaVersion must equal 15')
   }
   const runtimeRng =requireRecord(state.runtimeRng,'runtimeRng')
   const runtimeRngCounters = requireRecord(runtimeRng.runtimeRngCounters,'runtimeRngCounters')

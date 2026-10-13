@@ -1,3 +1,4 @@
+import { returnAssistantToOffice } from './return-assistant-to-office.js'
 import type { GameState, PlayerId } from "./types.js";
 import { refreshOrderMarket } from "./refresh-order-market.js";
 import { freezeTransition, type GameEvent } from "./game-events.js";
@@ -179,38 +180,13 @@ export function actionOrderMarket(
 
 
 
-    let assistantId: string | null = null
     const oldBoardPlayer = state.playerBoards[playerBoardIndex]!
-    if(oldBoardPlayer.boardOrders[boarderSlotOrderId].assistant !== null  && oldBoardPlayer.assistants.office < 4) {
-      assistantId = oldBoardPlayer.boardOrders[boarderSlotOrderId].assistant
-      playerBoard = {
-        ...playerBoard,
-        assistants: {
-          ...playerBoard.assistants,
-          office: playerBoard.assistants.office + 1,
-          assistantOfficeIds: (assistantId !== null)
-            ? [...playerBoard.assistants.assistantOfficeIds,  assistantId ]
-            : [...playerBoard.assistants.assistantOfficeIds],
-
-        },
-      }
-
-      copyState = {
-        ...copyState,
-        playerBoards: copyState.playerBoards.map((board, index) =>
-          index === playerBoardIndex ? (playerBoard ?? board) : board
-        )
-      };
-
-
-
-
-      events.push({type: 'AssistantReturnedHome', playerId: playerId, assistantId: assistantId })
-    } else if(oldBoardPlayer.boardOrders[boarderSlotOrderId].assistant !== null && playerBoard.assistants.office >= 4) {
-      assistantId = oldBoardPlayer.boardOrders[boarderSlotOrderId].assistant
-      events.push({type: 'AssistantRemovedFromGame', playerId: playerId, assistantId: assistantId })
-    }
-
+    const returned = returnAssistantToOffice(playerBoard, oldBoardPlayer.boardOrders[boarderSlotOrderId].assistant)
+    const orderRewardSides = { ...playerBoard.orderRewardSides }
+    delete orderRewardSides[Number(boarderSlotOrderId) as 1 | 2 | 3]
+    playerBoard = { ...playerBoard, assistants: returned.assistants, orderRewardSides }
+    copyState = { ...copyState, playerBoards: copyState.playerBoards.map((board, index) => index === playerBoardIndex ? playerBoard : board) }
+    events.push(...returned.events)
     // Билет положен только за ИСХОДНО пустую клетку. Замена completed пропускает всю ветку,
     // включая выбор цвета третьей клетки и проверку замещения отсутствующего билета.
     if ( state.playerBoards[ playerBoardIndex ]!.boardOrders[ boarderSlotOrderId ].orderId === null ) {

@@ -139,7 +139,7 @@ describe('ORDER-003: первая пустая клетка через публ�
     expect(result).toEqual(receiveOrder(base, base.activePlayerId, 'ACCEPT_ORDER', base.orderMarket.visibleOrders[3], '1'))
     const restored = restoreGameState(JSON.parse(JSON.stringify(result.state)))
     expect(restored).toEqual(result.state)
-    expect(restored.stateSchemaVersion).toBe(13)
+    expect(restored.stateSchemaVersion).toBe(15)
     expectAtomicRejection(restored, restored.orderMarket.visibleOrders[3])
     for (const viewer of [null, ...base.players.map(player => player.id)]) {
       const projection = projectGameForViewer(restored, viewer)
@@ -269,7 +269,7 @@ describe('ORDER-003: получение после обновления чере
     expect(result.events.every(event => Object.isFrozen(event))).toBe(true)
     const restored = restoreGameState(JSON.parse(JSON.stringify(result.state)))
     expect(restored).toEqual(result.state)
-    expect(restored.stateSchemaVersion).toBe(13)
+    expect(restored.stateSchemaVersion).toBe(15)
     for (const viewer of [null, ...input.players.map(player => player.id)]) {
       const projection = projectGameForViewer(restored, viewer)
       expect(projection.orderMarket).toEqual({ visibleOrders: restored.orderMarket.visibleOrders,
@@ -549,7 +549,7 @@ describe('ORDER-003: последний билет выбранной клетк
             expect(result.events.every(Object.isFrozen)).toBe(true)
             const restored = restoreGameState(JSON.parse(JSON.stringify(result.state)))
             expect(restored).toEqual(result.state)
-            expect(restored.stateSchemaVersion).toBe(13)
+            expect(restored.stateSchemaVersion).toBe(15)
             for (const viewer of [null, ...input.players.map(item => item.id)]) {
               const projection = projectGameForViewer(restored, viewer)
               expect(projection.intermediateScoringStatus).toBe(expectedScoring)
@@ -659,7 +659,7 @@ describe('ORDER-003: третья пустая клетка с выбранны�
             expect(result.events.every(Object.isFrozen)).toBe(true)
             const restored = restoreGameState(JSON.parse(JSON.stringify(result.state)))
             expect(restored).toEqual(result.state)
-            expect(restored.stateSchemaVersion).toBe(13)
+            expect(restored.stateSchemaVersion).toBe(15)
             for (const viewer of [null, ...input.players.map(item => item.id)]) {
               const projection = projectGameForViewer(restored, viewer)
               expect(projection.players).toEqual(restored.players)
@@ -970,7 +970,7 @@ describe('ORDER-003: замена completed-заказа без помощник
         expect(result.events.every(Object.isFrozen)).toBe(true)
         const restored = restoreGameState(JSON.parse(JSON.stringify(result.state)))
         expect(restored).toEqual(result.state)
-        expect(restored.stateSchemaVersion).toBe(13)
+        expect(restored.stateSchemaVersion).toBe(15)
         for (const viewer of [null, ...input.players.map(player => player.id)]) {
           const projection = projectGameForViewer(restored, viewer)
           expect(projection.playerBoards).toEqual(restored.playerBoards)

@@ -23,6 +23,7 @@ export interface PlayerContract {
   readonly signatureTokenId: string
 }
 export type OrderStatus = 'completed' | 'unfulfilled'
+export type OrderRewardSide = 'coins' | 'influence'
 export interface BoardOrders {
   readonly 1: {
     readonly orderId: string | null
@@ -49,6 +50,8 @@ export interface PlayerBoard {
     readonly assistantHireQueueIds: readonly string[]
   },
   readonly boardOrders: BoardOrders
+  readonly orderRewardSides: Readonly<Partial<Record<keyof BoardOrders, OrderRewardSide>>>
+  readonly soldArtworkIds: readonly string[]
   readonly startingLocationId: StartingLocationId | null,
   readonly thirdPartitionReputationTokenId: string | null
   readonly gallery: Gallery
@@ -69,6 +72,8 @@ export function preparePlayerBoards(
         assistantHireQueueIds: [...assistantsPerPlayer.assistantHireQueueIds],
       },
       startingLocationId: null,
+      orderRewardSides: {},
+      soldArtworkIds: [],
       thirdPartitionReputationTokenId: null,
       gallery: {
         artworkSlots: [null, null, null, null] as const,

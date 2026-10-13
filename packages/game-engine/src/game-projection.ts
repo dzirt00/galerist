@@ -1,5 +1,6 @@
 import { deepFreeze, setupComponentCatalog } from './component-catalog.js'
 import type { GameState, PlayerId } from './types.js'
+import { getAvailableArtworkSales } from './available-artwork-sales.js'
 
 /** Создаёт проекцию для viewer без seed и скрытых порядков по ADR-001. */
 export function projectGameForViewer(
@@ -31,6 +32,8 @@ export function projectGameForViewer(
           : {}),
       }
   const winnerIds = (state.phase === 'finished' && 'winnerIds' in state) ? state.winnerIds : undefined
+  const playerBoard = viewerId === null ? undefined : state.playerBoards.find(board => board.playerId === viewerId)
+  if (viewerId !== null && !playerBoard) throw new Error('Viewer player board is missing')
 
   const projection = {
     config: { playerCount: state.config.playerCount },
@@ -79,6 +82,7 @@ export function projectGameForViewer(
       remainingDealerGoalCount: state.privateGoals.remainingDealerGoals.length,
     },
     playerBoards: state.playerBoards,
+    availableArtworkSales: playerBoard ? getAvailableArtworkSales(playerBoard) : [],
     plazaVisitors: state.plazaVisitors,
     vestibuleVisitors: state.vestibuleVisitors,
     winnerIds,

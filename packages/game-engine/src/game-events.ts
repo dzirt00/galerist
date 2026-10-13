@@ -2,6 +2,11 @@ import { deepFreeze, type SetupTicketColor, type StartingLocationId } from './co
 import type { PlayerId } from './types.js'
 
 export type GameEvent =
+  | { readonly type: 'OrderCompleted'; readonly playerId: PlayerId; readonly orderSlot: 1 | 2 | 3; readonly orderId: string }
+  | { readonly type: 'OrderRewardSideSelected'; readonly playerId: PlayerId; readonly orderSlot: 1 | 2 | 3; readonly orderId: string; readonly orderRewardSide: import('./player-boards.js').OrderRewardSide }
+  | { readonly type: 'ArtworkSold'; readonly playerId: PlayerId; readonly orderId: string; readonly artworkId: string; readonly artistId: string; readonly saleValue: number; readonly soldArtworkCount: number }
+  | { readonly type: 'SignatureReturned'; readonly playerId: PlayerId; readonly artistId: string; readonly signatureTokenId: string }
+  | { readonly type: 'VisitorMoved'; readonly visitorId: string; readonly from: 'gallery'; readonly to: 'plaza'; readonly playerId: PlayerId }
   | { readonly type: 'GameCreated'; readonly gameId: string }
   | { readonly type: 'VisitorBagPrepared' }
   | { readonly type: 'TicketOfficePrepared' }

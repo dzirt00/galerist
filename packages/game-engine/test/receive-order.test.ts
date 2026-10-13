@@ -63,7 +63,7 @@ describe('ORDER-001/002: receiveOrder через публичный API', () => 
     const refreshed = receiveOrder(pending, playerId, 'REFRESH')
     expect(refreshed).toEqual(receiveOrder(initial, playerId, 'REFRESH'))
     const restored = restoreGameState(JSON.parse(JSON.stringify(refreshed.state)))
-    expect(restored.stateSchemaVersion).toBe(13)
+    expect(restored.stateSchemaVersion).toBe(15)
     expect(() => receiveOrder(restored, playerId, 'REFRESH')).toThrow()
     const declined = receiveOrder(restored, playerId, 'DECLINE')
     expect(declined).toEqual(receiveOrder(refreshed.state, playerId, 'DECLINE'))
