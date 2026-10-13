@@ -1,4 +1,9 @@
-import { deepFreeze, type SetupTicketColor, type StartingLocationId } from './component-catalog.js'
+import {
+  deepFreeze,
+  type GalleristPosition,
+  type SetupTicketColor,
+  type StartingLocationId
+} from './component-catalog.js'
 import type { PlayerId } from './types.js'
 
 export type GameEvent =
@@ -105,6 +110,12 @@ export type GameEvent =
       readonly playerId: PlayerId
       readonly gainedInfluence: number
     }
+  | {
+      readonly type: 'GalleristMoved';
+      readonly playerId: PlayerId;
+      readonly from: GalleristPosition;
+      readonly to: StartingLocationId
+  }
 
 export interface GameTransition<TState> {
   readonly state: TState

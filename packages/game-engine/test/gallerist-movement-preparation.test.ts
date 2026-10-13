@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
-  chooseStartingLocation, confirmTurnDraft, createTurnDraft, prepareTurn,
-  projectGameForViewer, restoreGameState, updateTurnDraft,
+  applyGalleristMovementToGameState, chooseStartingLocation, confirmTurnDraft,
+  createTurnDraft, prepareTurn, projectEventsForViewer, projectGameForViewer,
+  restoreGameState, updateTurnDraft,
   type ConfirmedTurnCommand, type GameState, type StartingLocationId,
 } from '../src/index.js'
 import { twoPlayerConfigs, twoPlayerGameConfig } from './fixtures.js'
@@ -95,5 +96,60 @@ describe('TURN-003: подготовка перемещения через пу�
 
   it('отклоняет прежнюю версию схемы без поля позиции', () => {
     expect(() => restoreGameState({ ...scenario('HOME'), stateSchemaVersion: 15 })).toThrow('stateSchemaVersion')
+  })
+})
+
+describe('TURN-003: применение перемещения через публичный API', () => {
+  it('перемещает активного галериста между локациями и создаёт GalleristMoved', () => {
+    const state = scenario('LOC-ARTISTS_COLONY')
+    const input = command(state, 'LOC-MEDIA_CENTER')
+    const snapshot = structuredClone({ state, input })
+
+    const result = applyGalleristMovementToGameState(state, input)
+
+    expect(result.state).toEqual({
+      ...snapshot.state,
+      playerBoards: snapshot.state.playerBoards.map(board => board.playerId === input.playerId
+        ? { ...board, galleristPosition: 'LOC-MEDIA_CENTER' }
+        : board),
+    })
+    expect(result.events).toEqual([{
+      type: 'GalleristMoved',
+      playerId: input.playerId,
+      from: 'LOC-ARTISTS_COLONY',
+      to: 'LOC-MEDIA_CENTER',
+    }])
+    expect(projectEventsForViewer(result.events, result.state, null)).toEqual(result.events)
+    expect(projectEventsForViewer(result.events, result.state, input.playerId)).toEqual(result.events)
+    expect({ state, input }).toEqual(snapshot)
+    expect(Object.isFrozen(result)).toBe(true)
+    expect(Object.isFrozen(result.state)).toBe(true)
+    expect(Object.isFrozen(result.state.playerBoards)).toBe(true)
+    expect(Object.isFrozen(result.events)).toBe(true)
+    expect(Object.isFrozen(result.events[0])).toBe(true)
+  })
+
+  it('перемещает галериста из HOME в любую локацию', () => {
+    for (const destination of locations) {
+      const state = scenario('HOME')
+      const input = command(state, destination)
+
+      const result = applyGalleristMovementToGameState(state, input)
+
+      expect(result.state.playerBoards.find(board => board.playerId === input.playerId)
+        ?.galleristPosition).toBe(destination)
+      expect(result.events).toEqual([{
+        type: 'GalleristMoved', playerId: input.playerId, from: 'HOME', to: destination,
+      }])
+    }
+  })
+
+  it('атомарно отклоняет повторную локацию', () => {
+    const state = scenario('LOC-INTERNATIONAL_MARKET')
+    const input = command(state, 'LOC-INTERNATIONAL_MARKET')
+    const snapshot = structuredClone({ state, input })
+
+    expect(() => applyGalleristMovementToGameState(state, input)).toThrow('Invalid movement')
+    expect({ state, input }).toEqual(snapshot)
   })
 })

@@ -4,6 +4,7 @@ export { getAvailableArtworkSales } from './available-artwork-sales.js'
 export { applyVisitorMovementTickets, type VisitorMovementDestination, type VisitorMovementStep } from './apply-visitor-movement-tickets.js'
 export {createRuntimeRng, type RngRuntimeConfig} from './runtime-rng.js'
 export { advertisingArtist, type AdvertisingArtistRequest } from './advertising-artist.js'
+export {applyGalleristMovementToGameState} from './apply-gallerist-movement-to-game-state.js'
 export {
   type GameEvent,
   type GameTransition,
