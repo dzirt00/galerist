@@ -4,8 +4,7 @@ import { canTriggerGameEnd, triggerGameEnd } from './game-lifecycle.js'
 import { applyInfluenceGainToPlayer } from './influence-gain-award.js'
 import { applyAdditionalFameSpend } from './influence-fame-spending-award.js'
 import { applyTicketReward } from './ticket-reward-to-game-state.js'
-import { calculateArtworkSaleValue } from './artwork-sale-value.js'
-import type { Gallery } from './player-boards.js'
+import { applyArtistFameEffects } from './artist-fame-effects.js'
 import type { GameState, PlayerId } from './types.js'
 
 export interface AdvertisingArtistRequest {
@@ -126,33 +125,8 @@ export function advertisingArtist(
     events.push({ type: 'InfluenceSpent', playerId: player.id, spentInfluence: previousInfluence - player.influence },
       { type: 'ArtistFameIncreased', artistId: artist.artistId, previousFame: baseFame, fame })
   }
-  const saleValue = calculateArtworkSaleValue(artist.artistId, fame)
-  const becameSuperstar = !artist.isSuperstar && fame === 19
-  const masterpieceEvents: GameEvent[] = []
-  let saleValuesChanged = false
-  const playerBoards = state.playerBoards.map((playerBoard, index) => {
-    const nextGallery = index === boardIndex ? gallery : playerBoard.gallery
-    const updateArtwork = (artwork: Gallery['artworkSlots'][number]): Gallery['artworkSlots'][number] => {
-      if (!artwork || artwork.artistId !== artist.artistId) return artwork
-      if (artwork.saleValue !== saleValue) saleValuesChanged = true
-      if (becameSuperstar && !artwork.isMasterpiece) {
-        masterpieceEvents.push({ type: 'ArtworkBecameMasterpiece', playerId: playerBoard.playerId, artworkId: artwork.artworkId })
-      }
-      return { ...artwork, saleValue, isMasterpiece: artwork.isMasterpiece || becameSuperstar }
-    }
-    const artworkSlots: Gallery['artworkSlots'] = [
-      updateArtwork(nextGallery.artworkSlots[0]), updateArtwork(nextGallery.artworkSlots[1]),
-      updateArtwork(nextGallery.artworkSlots[2]), updateArtwork(nextGallery.artworkSlots[3]),
-    ]
-    return { ...playerBoard, gallery: { ...nextGallery, artworkSlots } }
-  })
-  if (saleValuesChanged) events.push({ type: 'ArtworkSaleValuesChanged', artistId: artist.artistId, saleValue })
-  if (becameSuperstar) {
-    player = { ...player, coins: player.coins + 5 }
-    events.push({ type: 'ArtistBecameSuperstar', artistId: artist.artistId },
-      { type: 'CoinsReceived', playerId: player.id, coinsReceived: 5 })
-  }
-  events.push(...masterpieceEvents)
+  const playerBoards = state.playerBoards.map((playerBoard, index) => index === boardIndex
+    ? { ...playerBoard, gallery } : playerBoard)
   const players = [...state.players]
   players[playerIndex] = player
   let nextState: GameState = {
@@ -163,8 +137,12 @@ export function advertisingArtist(
       : { ...state.artworkMarket, remainingVisitorBag: visitorBag },
     promotionSupply: { tokenIdsByLevel },
     artistMarket: { ...state.artistMarket, slots: state.artistMarket.slots.map(slot => slot.artistId === artist.artistId
-      ? { ...slot, promotionLevel: nextLevel, promotionTokenId, fame, isSuperstar: slot.isSuperstar || becameSuperstar } : slot) },
+      ? { ...slot, promotionLevel: nextLevel, promotionTokenId } : slot) },
   }
+
+  const fameResult = applyArtistFameEffects(nextState, player.id, artist.artistId, fame)
+  nextState = fameResult.state
+  events.push(...fameResult.events)
 
   let ticketsInState = 0
   let ticketsInNextState = 0

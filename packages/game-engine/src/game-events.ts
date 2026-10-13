@@ -8,6 +8,9 @@ export type GameEvent =
   | { readonly type: 'OrderMarketPrepared' }
   | { readonly type: 'ArtistsPrepared' }
   | { readonly type: 'ArtistOpened'; readonly artistId: string }
+  | { readonly type: 'ArtistBonusClaimed'; readonly playerId: PlayerId; readonly artistId: string; readonly bonusId: string }
+  | { readonly type: 'ContractSigned'; readonly playerId: PlayerId; readonly artistId: string; readonly signatureTokenId: string }
+  | { readonly type: 'VisitorMoved'; readonly visitorId: string; readonly from: 'artist'; readonly to: 'plaza'; readonly artistId: string }
   | { readonly type: 'PromotionSupplyPrepared' }
   | { readonly type: 'OrderDeckRecycled', readonly playerId: PlayerId }
   | { readonly type: 'ArtworkMarketPrepared' }

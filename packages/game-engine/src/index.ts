@@ -131,3 +131,4 @@ export {
   type ReputationTokenIds,
   type SetupInternationalMarket,
 } from './setup-international-market.js'
+export { openArtist, type OpenArtistRequest } from './open-artist.js'

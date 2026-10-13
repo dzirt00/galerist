@@ -174,6 +174,17 @@ function validateCommonCollections(state: UnknownRecord): void {
   if (!Array.isArray(artistSetup.slots)) fail('artistSetup.slots must be an array')
   artistSetup.slots.forEach((value, index) => {
     const slot = requireRecord(value, `artistSetup.slots[${index}]`)
+    const marketSlot = (artistMarket.slots as unknown[]).find(value => requireRecord(value, 'artist slot').artistId === slot.artistId)
+    if (!marketSlot) fail('artistSetup slot must reference a selected artist')
+    if (!requireRecord(marketSlot, 'artist slot').isOpen && slot.bonus === null) {
+      fail('Closed artist must have a prepared bonus')
+    }
+    if (slot.bonus !== null) {
+      const bonus = requireRecord(slot.bonus, 'artist bonus')
+      if (!setupComponentCatalog.artistBonuses.some(item => item.id === bonus.id && item.reward === bonus.reward)) {
+        fail('Invalid prepared artist bonus')
+      }
+    }
     if (!Array.isArray(slot.availableSignatureTokenIds)) {
       fail(`artistSetup.slots[${index}].availableSignatureTokenIds must be an array`)
     }
