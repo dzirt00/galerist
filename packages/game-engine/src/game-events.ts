@@ -116,6 +116,12 @@ export type GameEvent =
       readonly from: GalleristPosition;
       readonly to: StartingLocationId
   }
+  | {
+      readonly type: 'AssistantLeftAtLocation'
+      readonly playerId: PlayerId
+      readonly assistantId: string
+      readonly locationId: StartingLocationId
+  }
 
 export interface GameTransition<TState> {
   readonly state: TState

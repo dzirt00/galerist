@@ -1,4 +1,4 @@
-import {deepFreeze, setupComponentCatalog} from './component-catalog.js'
+import { deepFreeze, setupComponentCatalog } from './component-catalog.js'
 import type { GamePhase, GameState, PlayerId } from './types.js'
 
 type UnknownRecord = Record<string, unknown>
@@ -322,6 +322,87 @@ function validatePlayerBoards(state: UnknownRecord, playerIds: ReadonlySet<Playe
   }
 }
 
+/** Проверяет размещение помощников в локациях и единственность каждой пары игрок + помощник. */
+function validateAssistantsByLocation(
+  state: UnknownRecord,
+  playerIds: ReadonlySet<PlayerId>,
+): void {
+  const assistantByLocation = requireRecord(state.assistantByLocation, 'assistantByLocation')
+  const locationIds = setupComponentCatalog.startingLocationOrder
+  if (
+    Object.keys(assistantByLocation).length !== locationIds.length
+    || !locationIds.every(locationId => Object.hasOwn(assistantByLocation, locationId))
+  ) {
+    fail('assistantByLocation must contain exactly the four starting locations')
+  }
+
+  const assistantIds = new Set([
+    ...setupComponentCatalog.assistantsPerPlayer.assistantOfficeIds,
+    ...setupComponentCatalog.assistantsPerPlayer.assistantHireQueueIds,
+  ])
+  const locatedIdsByPlayer = new Map<PlayerId, Set<string>>()
+  const locateAssistant = (playerId: PlayerId, assistantId: string): void => {
+    let locatedIds = locatedIdsByPlayer.get(playerId)
+    if (!locatedIds) {
+      locatedIds = new Set<string>()
+      locatedIdsByPlayer.set(playerId, locatedIds)
+    }
+    if (locatedIds.has(assistantId)) {
+      fail('assistant must have one location for its player')
+    }
+    locatedIds.add(assistantId)
+  }
+
+  for (const [boardIndex, value] of (state.playerBoards as unknown[]).entries()) {
+    const board = requireRecord(value, `playerBoards[${boardIndex}]`)
+    const playerId = requirePlayerReference(
+      board.playerId,
+      playerIds,
+      `playerBoards[${boardIndex}].playerId`,
+    )
+    const assistants = requireRecord(board.assistants, `playerBoards[${boardIndex}].assistants`)
+    for (const value of [
+      ...(assistants.assistantOfficeIds as unknown[]),
+      ...(assistants.assistantHireQueueIds as unknown[]),
+    ]) {
+      locateAssistant(playerId, requireNonEmptyString(value, 'assistantId'))
+    }
+    const orders = requireRecord(board.boardOrders, `playerBoards[${boardIndex}].boardOrders`)
+    for (const orderValue of Object.values(orders)) {
+      const order = requireRecord(orderValue, 'order')
+      if (order.assistant !== null) {
+        locateAssistant(playerId, requireNonEmptyString(order.assistant, 'assistantId'))
+      }
+    }
+  }
+
+  for (const locationId of locationIds) {
+    const value = assistantByLocation[locationId]
+    if (value === null) continue
+    const assistant = requireRecord(value, `assistantByLocation.${locationId}`)
+    if (
+      Object.keys(assistant).length !== 2
+      || !Object.hasOwn(assistant, 'playerId')
+      || !Object.hasOwn(assistant, 'assistantId')
+    ) {
+      fail(`assistantByLocation.${locationId} must contain playerId and assistantId`)
+    }
+    const playerId = requirePlayerReference(
+      assistant.playerId,
+      playerIds,
+      `assistantByLocation.${locationId}.playerId`,
+    )
+    const assistantId = requireNonEmptyString(
+      assistant.assistantId,
+      `assistantByLocation.${locationId}.assistantId`,
+    )
+    if (!assistantIds.has(assistantId)) {
+      fail(`assistantByLocation.${locationId}.assistantId is invalid`)
+    }
+    locateAssistant(playerId, assistantId)
+  }
+}
+
 /** Проверяет игроков и возвращает множество допустимых ссылок на них. */
 function validatePlayers(state: UnknownRecord): ReadonlySet<PlayerId> {
   if (!Array.isArray(state.players)) {
@@ -518,8 +599,8 @@ function validateOrderMarket(orderMarket: unknown) {
 /** Проверяет JSON-снимок по ADR-001/ADR-002 и возвращает независимый замороженный GameState. */
 export function restoreGameState(input: unknown): GameState {
   const state = requireRecord(input, 'state')
-  if (state.stateSchemaVersion !== 16) {
-    fail('stateSchemaVersion must equal 16')
+  if (state.stateSchemaVersion !== 17) {
+    fail('stateSchemaVersion must equal 17')
   }
   const runtimeRng =requireRecord(state.runtimeRng,'runtimeRng')
   const runtimeRngCounters = requireRecord(runtimeRng.runtimeRngCounters,'runtimeRngCounters')
@@ -546,6 +627,7 @@ export function restoreGameState(input: unknown): GameState {
   }
   validateCommonCollections(state)
   validatePlayerBoards(state, playerIds)
+  validateAssistantsByLocation(state, playerIds)
   validatePhase(state, playerIds)
   if(state.intermediateScoringStatus !== 'not_triggered' && state.intermediateScoringStatus !== 'pending' && state.intermediateScoringStatus !== 'completed') {
     fail('intermediateScoringStatus invalid')

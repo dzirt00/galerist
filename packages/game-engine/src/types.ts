@@ -16,6 +16,7 @@ export type IntermediateScoringStatus = 'not_triggered' | 'pending' | 'completed
 export interface MovementCommand {
   readonly category: 'movement'
   readonly locationId: StartingLocationId
+  readonly assistantId?: string
 }
 
 export interface LocationActionCommand {
@@ -112,9 +113,15 @@ export interface RuntimeRngState {
     readonly 'orders/recycle': number
   }
 }
+export interface LocationAssistant {
+  readonly playerId: PlayerId
+  readonly assistantId: string
+}
+
 export interface GameStateBase {
-  readonly stateSchemaVersion: 16
+  readonly stateSchemaVersion: 17
   readonly id: GameId
+  readonly assistantByLocation: Readonly<Record<StartingLocationId, LocationAssistant | null>>
   readonly runtimeRng: RuntimeRngState
   readonly config: Readonly<GameConfig>
   readonly players: readonly PlayerState[]

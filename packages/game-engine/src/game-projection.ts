@@ -43,6 +43,7 @@ export function projectGameForViewer(
     round: state.round,
     ticketOfficeEmptyReached: state.ticketOfficeEmptyReached,
     activePlayerId: state.activePlayerId,
+    assistantByLocation: state.assistantByLocation,
     ...phaseFields,
     orderMarket: {
       visibleOrders: state.orderMarket.visibleOrders,
