@@ -165,6 +165,23 @@ export function advertisingArtist(
     artistMarket: { ...state.artistMarket, slots: state.artistMarket.slots.map(slot => slot.artistId === artist.artistId
       ? { ...slot, promotionLevel: nextLevel, promotionTokenId, fame, isSuperstar: slot.isSuperstar || becameSuperstar } : slot) },
   }
+
+  let ticketsInState = 0
+  let ticketsInNextState = 0
+  for(let val of Object.values(state.ticketOffice.ticketsByColor)) {
+    ticketsInState +=  val
+  }
+  for(let val of Object.values(nextState.ticketOffice.ticketsByColor)) {
+    ticketsInNextState += val
+  }
+  if(!state.ticketOfficeEmptyReached && ticketsInState !== 0 && ticketsInNextState === 0) {
+    nextState = {
+      ...nextState,
+      ticketOfficeEmptyReached: true
+    }
+    events.push({type: 'EndConditionReached'})
+  }
+
   if (nextState.phase === 'regular_play' && canTriggerGameEnd(nextState)) {
     const end = triggerGameEnd(nextState)
     nextState = end.state

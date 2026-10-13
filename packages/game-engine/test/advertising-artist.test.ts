@@ -150,7 +150,7 @@ describe('PROMO-001/PROMO-002: public atomic promotion', () => {
     expect(result.state.intermediateScoringStatus).toBe('pending')
     expect(result.state.players[0]!.ticketsByColor).toEqual({ B: 1, R: 1, W: 0 })
     expect(result.events.map(event => event.type)).toEqual(['InfluenceSpent', 'ArtistPromoted', 'TicketReceived', 'TicketReceived',
-      'IntermediateScoringTriggered', 'ArtistFameIncreased', 'ArtistBecameSuperstar', 'CoinsReceived', 'GameEndTriggered'])
+      'IntermediateScoringTriggered', 'ArtistFameIncreased', 'ArtistBecameSuperstar', 'CoinsReceived', 'EndConditionReached', 'GameEndTriggered'])
   })
 
   it('tolerates an empty ticket office without inventing tickets', () => {
@@ -282,6 +282,114 @@ describe('PROMO-001/PROMO-002: public atomic promotion', () => {
       expect(request).toEqual(requestBefore)
       expect(Object.isFrozen(state.players[0])).toBe(false)
     })
+})
+
+describe('END-001: ticket office achievement through advertisingArtist', () => {
+  it.each(['B', 'R', 'W'] as const)('records the last %s ticket without starting game end and exposes a frozen achievement', color => {
+    const { state: base, request } = scenario()
+    const state: GameState = { ...base, ticketOffice: { ticketsByColor: { B: 0, R: 0, W: 0, [color]: 1 } } }
+    const command = { ...request, requestedTicketColors: [color] }
+    const before = structuredClone(state)
+    const commandBefore = structuredClone(command)
+    const result = advertisingArtist(state, command)
+    expect(result.state.ticketOffice.ticketsByColor).toEqual({ B: 0, R: 0, W: 0 })
+    expect(result.state.players[0]!.ticketsByColor[color]).toBe(state.players[0]!.ticketsByColor[color] + 1)
+    expect(result.state.ticketOfficeEmptyReached).toBe(true)
+    expect(result.state.phase).toBe('regular_play')
+    expect(result.events.map(event => event.type)).toEqual([
+      'InfluenceSpent', 'ArtistPromoted', 'TicketReceived', 'IntermediateScoringTriggered', 'ArtistFameIncreased', 'EndConditionReached',
+    ])
+    expect(result.events.at(-1)).toEqual({ type: 'EndConditionReached' })
+    expect(state).toEqual(before)
+    expect(command).toEqual(commandBefore)
+    expect(result.state).not.toBe(state)
+    expect(Object.isFrozen(state)).toBe(false)
+    expect(Object.isFrozen(result)).toBe(true)
+    expect(Object.isFrozen(result.state)).toBe(true)
+    expect(Object.isFrozen(result.state.ticketOffice.ticketsByColor)).toBe(true)
+    expect(Object.isFrozen(result.events)).toBe(true)
+    expect(result.events.every(Object.isFrozen)).toBe(true)
+    expect(restoreGameState(result.state)).toEqual(result.state)
+    for (const viewerId of [null, ...state.players.map(player => player.id)]) {
+      expect(projectGameForViewer(result.state, viewerId).ticketOfficeEmptyReached).toBe(true)
+      expect(projectEventsForViewer(result.events, result.state, viewerId)).toEqual(result.events)
+    }
+  })
+
+  it('does not confuse an empty color with the whole office', () => {
+    const { state: base, request } = scenario()
+    const state: GameState = { ...base, ticketOffice: { ticketsByColor: { B: 1, R: 1, W: 0 } } }
+    const result = advertisingArtist(state, { ...request, requestedTicketColors: ['B'] })
+    expect(result.state.ticketOffice.ticketsByColor).toEqual({ B: 0, R: 1, W: 0 })
+    expect(result.state.ticketOfficeEmptyReached).toBe(false)
+    expect(result.events.some(event => event.type === 'EndConditionReached')).toBe(false)
+    expect(result.state.intermediateScoringStatus).toBe('pending')
+  })
+
+  it.each(['ending_current_round', 'final_round'] as const)('records a newly emptied office in %s without retriggering game end', phase => {
+    const { state: base, request } = scenario()
+    const state: GameState = { ...base, phase, endTriggeredRound: 1,
+      ticketOffice: { ticketsByColor: { B: 1, R: 0, W: 0 } }, visitorBag: { visitors: [] } }
+    const result = advertisingArtist(state, { ...request, requestedTicketColors: ['B'] })
+    expect(result.state).toMatchObject({ phase, endTriggeredRound: 1, ticketOfficeEmptyReached: true })
+    expect(result.events.filter(event => event.type === 'EndConditionReached')).toEqual([{ type: 'EndConditionReached' }])
+    expect(result.events.some(event => event.type === 'GameEndTriggered')).toBe(false)
+  })
+
+  it.each([false, true])('does not invent a first achievement for an already empty office (flag=%s)', ticketOfficeEmptyReached => {
+    const { state: base, request } = scenario()
+    const state: GameState = { ...base, ticketOfficeEmptyReached, ticketOffice: { ticketsByColor: { B: 0, R: 0, W: 0 } } }
+    const result = advertisingArtist(state, { ...request, requestedTicketColors: ['B'] })
+    expect(result.state.ticketOfficeEmptyReached).toBe(ticketOfficeEmptyReached)
+    expect(result.events.some(event => event.type === 'EndConditionReached')).toBe(false)
+  })
+
+  it('does not repeat a saved achievement when another last ticket is received', () => {
+    const { state: base, request } = scenario()
+    const state: GameState = { ...base, ticketOfficeEmptyReached: true, ticketOffice: { ticketsByColor: { B: 1, R: 0, W: 0 } } }
+    const result = advertisingArtist(state, { ...request, requestedTicketColors: ['B'] })
+    expect(result.state.ticketOfficeEmptyReached).toBe(true)
+    expect(result.state.ticketOffice.ticketsByColor).toEqual({ B: 0, R: 0, W: 0 })
+    expect(result.events.some(event => event.type === 'EndConditionReached')).toBe(false)
+  })
+
+  it('preserves the achievement through a second promotion without repeating its event', () => {
+    const { state: base, request } = scenario()
+    const state: GameState = { ...base, ticketOffice: { ticketsByColor: { B: 1, R: 0, W: 0 } } }
+    const first = advertisingArtist(state, { ...request, requestedTicketColors: ['B'] })
+    const before = structuredClone(first.state)
+    const second = advertisingArtist(first.state, request)
+    expect(second.state.ticketOfficeEmptyReached).toBe(true)
+    expect(second.events.some(event => event.type === 'EndConditionReached')).toBe(false)
+    expect(first.state).toEqual(before)
+  })
+
+  it('records the last available ticket consumed by a replacement after all reward events', () => {
+    const { state: base, request } = scenario()
+    const state: GameState = { ...base, intermediateScoringStatus: 'completed',
+      ticketOffice: { ticketsByColor: { B: 0, R: 0, W: 1 } }, ticketDiscard: { B: 1, R: 0, W: 0 } }
+    const result = advertisingArtist(state, { ...request, requestedTicketColors: ['B'], replacementColorsByRequestedColor: { B: 'W' } })
+    expect(result.state.ticketOfficeEmptyReached).toBe(true)
+    expect(result.state.ticketOffice.ticketsByColor).toEqual({ B: 0, R: 0, W: 0 })
+    expect(result.state.players[0]!.ticketsByColor.B).toBe(1)
+    expect(result.state.ticketDiscard).toEqual({ B: 0, R: 0, W: 1 })
+    expect(result.events.map(event => event.type)).toEqual([
+      'InfluenceSpent', 'ArtistPromoted', 'TicketExchanged', 'TicketReceived', 'ArtistFameIncreased', 'EndConditionReached',
+    ])
+  })
+
+  it('rolls back a last-ticket reward when a later extra influence spend fails', () => {
+    const { state: base, request } = scenario()
+    const state: GameState = { ...base, ticketOffice: { ticketsByColor: { B: 1, R: 0, W: 0 } } }
+    const command = { ...request, requestedTicketColors: ['B'] as const, targetInfluence: 9 }
+    const before = structuredClone(state)
+    const commandBefore = structuredClone(command)
+    expect(() => advertisingArtist(state, command)).toThrow()
+    expect(state).toEqual(before)
+    expect(command).toEqual(commandBefore)
+    expect(state.ticketOfficeEmptyReached).toBe(false)
+    expect(Object.isFrozen(state.ticketOffice.ticketsByColor)).toBe(false)
+  })
 })
 
 describe('promotion and soldArtworkCount snapshot boundary', () => {
