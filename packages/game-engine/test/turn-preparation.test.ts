@@ -40,7 +40,7 @@ function createConfirmedTurn(
   return {
     type: 'perform_turn',
     playerId: 'player-1',
-    movement: { category: 'movement' },
+    movement: { category: 'movement', locationId: 'LOC-SALES_OFFICE' },
     locationAction: { category: 'location_action' },
     ...(timing === undefined ? {} : {
       management: {
@@ -110,7 +110,9 @@ it.each([
 
   expect(prepared).toEqual({
     playerId: 'player-1',
-    steps: expectedCategories.map(category => ({ category })),
+    steps: expectedCategories.map(category => category === 'movement'
+      ? { category, locationId: 'LOC-SALES_OFFICE' }
+      : { category }),
   })
   expect(prepared.steps).toHaveLength(expectedCategories.length)
   expect(prepared.steps).not.toContain(undefined)
@@ -335,7 +337,7 @@ it('подготавливает ход, созданный через полн�
   const empty = createTurnDraft('player-1')
   const moved = updateTurnDraft(empty, {
     type: 'set_movement',
-    movement: { category: 'movement' },
+    movement: { category: 'movement', locationId: 'LOC-SALES_OFFICE' },
   })
   const located = updateTurnDraft(moved, {
     type: 'set_location_action',

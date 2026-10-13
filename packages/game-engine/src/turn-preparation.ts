@@ -4,6 +4,16 @@ import type {
   PreparedTurn,
   TurnExecutionSteps,
 } from './types.js'
+import type {StartingLocationId} from './component-catalog.js'
+
+function isGalleristPosition(id: string): id is StartingLocationId {
+  return [
+    'LOC-ARTISTS_COLONY',
+    'LOC-MEDIA_CENTER',
+    'LOC-INTERNATIONAL_MARKET',
+    'LOC-SALES_OFFICE',
+  ].includes(id);
+}
 
 /** Готовит действия подтверждённого составного хода по TURN-002. */
 export function prepareTurn(
@@ -37,7 +47,12 @@ export function prepareTurn(
   ) {
     throw new Error('Confirmed turn requires movement and location action')
   }
-
+  if (!isGalleristPosition(command.movement.locationId)) {
+   throw new Error('Movement cannot be in a GalleristPosition')
+  }
+  if(command.movement.locationId === state.playerBoards.find(el => el.playerId === command.playerId)?.galleristPosition) {
+    throw new Error('Invalid movement')
+  }
   const movement = Object.freeze({ ...command.movement })
   const locationAction = Object.freeze({ ...command.locationAction })
   let steps: TurnExecutionSteps

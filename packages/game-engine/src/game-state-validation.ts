@@ -1,4 +1,4 @@
-import { deepFreeze, setupComponentCatalog } from './component-catalog.js'
+import {deepFreeze, setupComponentCatalog} from './component-catalog.js'
 import type { GamePhase, GameState, PlayerId } from './types.js'
 
 type UnknownRecord = Record<string, unknown>
@@ -216,12 +216,18 @@ function validatePlayerBoards(state: UnknownRecord, playerIds: ReadonlySet<Playe
 
   state.playerBoards.forEach((value, index) => {
     const board = requireRecord(value, `playerBoards[${index}]`)
+    const chooseStartingLocation = requireNonEmptyString(board.galleristPosition, 'chooseStartingLocation')
+    if(chooseStartingLocation !== 'LOC-ARTISTS_COLONY'
+      && chooseStartingLocation !== 'LOC-MEDIA_CENTER'
+      && chooseStartingLocation !== 'LOC-INTERNATIONAL_MARKET'
+      && chooseStartingLocation !== 'LOC-SALES_OFFICE'
+      && chooseStartingLocation !== 'HOME' ) fail('invalid chooseStartingLocation')
     const assistants = requireRecord(board.assistants, 'assistants')
     const office = requireSafeInteger(assistants.office, 'office')
     const hireQueue = requireSafeInteger(assistants.hireQueue, 'hireQueue')
     const assistantOfficeIds = assistants.assistantOfficeIds
     const assistantHireQueueIds = assistants.assistantHireQueueIds
-    let allAssistants:string[] = []
+    const allAssistants:string[] = []
     if (!Array.isArray(assistantOfficeIds)) fail('artistSetup.slots must be an array')
     if (!Array.isArray(assistantHireQueueIds)) fail('artistSetup.slots must be an array')
     assistantOfficeIds.forEach(el => requireNonEmptyString(el,'string'))
@@ -281,7 +287,7 @@ function validatePlayerBoards(state: UnknownRecord, playerIds: ReadonlySet<Playe
       if (side !== 'coins' && side !== 'influence') fail('Invalid order reward side')
       if (requireRecord(orders[slot], 'order').orderStatus !== 'completed') fail('Order reward side requires completed order')
     }
-    let orderKeys: string[] = []
+    const orderKeys: string[] = []
     for (const key of Object.keys(orders)) {
       orderKeys.push(key)
     }
@@ -290,7 +296,7 @@ function validatePlayerBoards(state: UnknownRecord, playerIds: ReadonlySet<Playe
       fail('Invalid order keys')
     }
 
-    for(let el of Object.values(orders)) {
+    for(const el of Object.values(orders)) {
       const order = requireRecord(el, 'order')
       if((order.orderId !== null && order.orderStatus === null) || (order.orderId === null && order.orderStatus !== null)) {
         fail(`invalid orderId`)
@@ -512,14 +518,14 @@ function validateOrderMarket(orderMarket: unknown) {
 /** Проверяет JSON-снимок по ADR-001/ADR-002 и возвращает независимый замороженный GameState. */
 export function restoreGameState(input: unknown): GameState {
   const state = requireRecord(input, 'state')
-  if (state.stateSchemaVersion !== 15) {
-    fail('stateSchemaVersion must equal 15')
+  if (state.stateSchemaVersion !== 16) {
+    fail('stateSchemaVersion must equal 16')
   }
   const runtimeRng =requireRecord(state.runtimeRng,'runtimeRng')
   const runtimeRngCounters = requireRecord(runtimeRng.runtimeRngCounters,'runtimeRngCounters')
   const orderRecycle = requireSafeInteger(runtimeRngCounters['orders/recycle'], 'orders/recycle')
   if(orderRecycle< 0) fail('orderRecycle < 0')
-  for (let el of Object.values(runtimeRngCounters) ){
+  for (const el of Object.values(runtimeRngCounters) ){
     const num = requireSafeInteger(el,'number')
     if(num< 0) fail('runtimeRngCounters < 0')
   }

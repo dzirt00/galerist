@@ -97,7 +97,7 @@
 | `OrderCompleted` | Использованный в продаже заказ перевёрнут в completed; содержит playerId, orderSlot и orderId. |
 | `OrderRewardSideSelected` | Зафиксирована верхняя награда оборота заказа; содержит playerId, orderSlot, orderId и orderRewardSide. Награду не выдаёт. |
 | `'completed'/ 'unfulfilled'`                     | возможный статус заказа                                                                                                                 |
-
+|`galleristPosition / GalleristPosition`| позиция галериста|
 ### Критические различия
 
 - `influence` принадлежит игроку и может расходоваться; `fame` принадлежит художнику и задаёт стоимость; `reputationToken` — физический жетон/позиция рынка.

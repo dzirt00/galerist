@@ -54,6 +54,7 @@ export function chooseStartingLocation(
           ...playerBoard,
           startingLocationId: locationId,
           thirdPartitionReputationTokenId: selectedLocationToken.tokenId,
+          galleristPosition: locationId
         }
       : playerBoard
   ))

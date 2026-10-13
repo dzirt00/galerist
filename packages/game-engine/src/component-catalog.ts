@@ -10,6 +10,8 @@ export type StartingLocationId =
   | 'LOC-INTERNATIONAL_MARKET'
   | 'LOC-SALES_OFFICE'
 
+export type GalleristPosition = StartingLocationId | 'HOME'
+
 export interface HireQueue {
   readonly id: string;
   readonly position: number;

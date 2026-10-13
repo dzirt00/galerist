@@ -1,4 +1,9 @@
-import { deepFreeze, type StartingLocationId, type VisitorInstance } from "./component-catalog.js";
+import {
+  deepFreeze,
+  type GalleristPosition,
+  type StartingLocationId,
+  type VisitorInstance
+} from "./component-catalog.js";
 
 export interface ExhibitedArtwork {
   readonly artworkId: string
@@ -57,6 +62,7 @@ export interface PlayerBoard {
   readonly gallery: Gallery
   readonly contract: PlayerContract | null
   readonly reputationTokenArtworkIds: Record<string, string> | null
+  readonly galleristPosition: GalleristPosition
 }
 /** Подготавливает личные планшеты игроков по SETUP-012 в порядке мест. */
 export function preparePlayerBoards(
@@ -97,7 +103,8 @@ export function preparePlayerBoards(
           orderStatus: null,
           assistant:  null
         }
-      }
+      },
+      galleristPosition: 'HOME' as GalleristPosition,
     }
   });
   return deepFreeze(playerBoards)

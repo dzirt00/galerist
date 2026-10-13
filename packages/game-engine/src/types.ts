@@ -15,6 +15,7 @@ export type PlayerId = string
 export type IntermediateScoringStatus = 'not_triggered' | 'pending' | 'completed'
 export interface MovementCommand {
   readonly category: 'movement'
+  readonly locationId: StartingLocationId
 }
 
 export interface LocationActionCommand {
@@ -112,7 +113,7 @@ export interface RuntimeRngState {
   }
 }
 export interface GameStateBase {
-  readonly stateSchemaVersion: 15
+  readonly stateSchemaVersion: 16
   readonly id: GameId
   readonly runtimeRng: RuntimeRngState
   readonly config: Readonly<GameConfig>

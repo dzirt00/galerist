@@ -53,7 +53,7 @@ function expectDraftReplacementIsImmutable({
 it('обновляет перемещение в черновике без изменения прежнего черновика',() => {
   const turnDraft: TurnDraft = { playerId: 'player-1' }
   const turnDraftClone = structuredClone(turnDraft)
-  const firstMovement: MovementCommand = { category: 'movement' }
+  const firstMovement: MovementCommand = { category: 'movement', locationId: 'LOC-MEDIA_CENTER' }
   const firstEdit: TurnDraftEdit = {
     type: 'set_movement',
     movement: firstMovement
@@ -61,7 +61,7 @@ it('обновляет перемещение в черновике без из�
   const draftWithFirstMovement = updateTurnDraft(turnDraft, firstEdit)
   const firstDraftSnapshot = structuredClone(draftWithFirstMovement)
   // Тестовые метки различают абстрактные команды без добавления игровых действий.
-  const secondMovement = { category: 'movement' as const, testId: 'replacement' }
+  const secondMovement = { category: 'movement' as const, locationId: 'LOC-SALES_OFFICE' as const, testId: 'replacement' }
   const secondEdit: TurnDraftEdit = {
     type: 'set_movement',
     movement: secondMovement
@@ -158,7 +158,7 @@ it.each([
 function createCompleteMutableTurnDraftFixture() {
   return {
     playerId: 'player-1',
-    movement: { category: 'movement' as const, testId: 'original movement' },
+    movement: { category: 'movement' as const, locationId: 'LOC-MEDIA_CENTER' as const, testId: 'original movement' },
     locationAction: { category: 'location_action' as const, testId: 'original location' },
     management: {
       timing: 'before_location' as ManagementTiming,
@@ -183,7 +183,7 @@ it.each([true, false])('удаляет действие управления б�
 })
 
 const immutableDraftEditCases: readonly TurnDraftEdit[] = [
-  { type: 'set_movement', movement: { category: 'movement' } },
+  { type: 'set_movement', movement: { category: 'movement', locationId: 'LOC-SALES_OFFICE' } },
   { type: 'set_location_action', locationAction: { category: 'location_action' } },
   { type: 'set_management_action', timing: 'after_location', managementAction: { category: 'management_action' } },
   { type: 'clear_management_action' },
