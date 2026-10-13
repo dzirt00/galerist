@@ -7,10 +7,14 @@ export type GameEvent =
   | { readonly type: 'TicketOfficePrepared' }
   | { readonly type: 'OrderMarketPrepared' }
   | { readonly type: 'ArtistsPrepared' }
+  | { readonly type: 'TicketSpent', readonly playerId: PlayerId, readonly color: SetupTicketColor }
   | { readonly type: 'ArtistOpened'; readonly artistId: string }
   | { readonly type: 'ArtistBonusClaimed'; readonly playerId: PlayerId; readonly artistId: string; readonly bonusId: string }
   | { readonly type: 'ContractSigned'; readonly playerId: PlayerId; readonly artistId: string; readonly signatureTokenId: string }
   | { readonly type: 'VisitorMoved'; readonly visitorId: string; readonly from: 'artist'; readonly to: 'plaza'; readonly artistId: string }
+  | { readonly type: 'VisitorMoved'; readonly visitorId: string; readonly from: 'plaza'; readonly to: 'vestibule'; readonly playerId: PlayerId }
+  | { readonly type: 'VisitorMoved'; readonly visitorId: string; readonly from: 'vestibule'; readonly to: 'gallery'; readonly playerId: PlayerId }
+  | { readonly type: 'VisitorMoved'; readonly visitorId: string; readonly from: 'vestibule'; readonly to: 'plaza'; readonly playerId: PlayerId; readonly fromPlayerId: PlayerId }
   | { readonly type: 'PromotionSupplyPrepared' }
   | { readonly type: 'OrderDeckRecycled', readonly playerId: PlayerId }
   | { readonly type: 'ArtworkMarketPrepared' }

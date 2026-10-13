@@ -1,4 +1,5 @@
 export * from './types.js'
+export { applyVisitorMovementTickets, type VisitorMovementDestination, type VisitorMovementStep } from './apply-visitor-movement-tickets.js'
 export {createRuntimeRng, type RngRuntimeConfig} from './runtime-rng.js'
 export { advertisingArtist, type AdvertisingArtistRequest } from './advertising-artist.js'
 export {
