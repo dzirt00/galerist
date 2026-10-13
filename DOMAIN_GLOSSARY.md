@@ -84,6 +84,12 @@
 | `winnerIds`                                      | победители в партии                                                                                                                     |
 | `BoardOrders` / `boardOrders` | Три клетки заказов в PlayerBoard с ключами 1, 2, 3. Пустая клетка: orderId, orderStatus и assistant равны null; занятая: непустой ID, статус completed либо unfulfilled и assistant: ID помощника либо null. |
 | `orderId` | ID размещённого заказа; null для пустой клетки. |
+| `orderSlot` | Ключ выбранной клетки boardOrders: 1, 2 или 3. |
+| `assistantId` | ID выбранного помощника; принадлежность офису проверяется по assistantOfficeIds планшета игрока. |
+| `orderCardReward` | Публичная атомарная команда MGMT-004: каталожная лицевая награда unfulfilled-заказа в orderSlot с выбранным assistantId из офиса; необязательные choices задают вложенные выборы, помощник назначается до применения награды; возвращает замороженные state/events. |
+| `OrderRewardChoices` / `choices` | Вложенные выборы награды заказа: visitorId, fameArtistId, requestedTicketColors, replacementColorsByRequestedColor и orderActions. Тип эффекта определяет каталог, пользователь его не переопределяет. |
+| `OrderRewardAction` / `orderActions` | Полный выбор вложенного ORDER-ACTION: один ACCEPT_ORDER/DECLINE либо REFRESH с последующим ACCEPT_ORDER/DECLINE; каждый шаг задаёт typeAction, при получении — orderId, orderSlot, requestedColor и необязательные replacementColorsByRequestedColor. Переиспользует receiveOrder с обычными условиями и сохраняет полные state/events/RNG. |
+| `AssistantAssignedToOrder` | Событие назначения помощника на заказ: playerId, orderSlot, orderId и assistantId; предшествует событию награды. |
 | `boardOrders[slot].assistant` | ID помощника на заказе либо null; в пустой клетке всегда null. При замене completed возвращается в офис либо удаляется при полном офисе; новый заказ сохраняет null. ID уникален среди офиса, очереди найма и заказов одного планшета. |
 | `OrderStatus` / `orderStatus` | Состояние размещённого заказа: completed — выполнен, unfulfilled — невыполнен. В пустой клетке поле orderStatus равно null. |
 | `'completed'/ 'unfulfilled'`                     | возможный статус заказа                                                                                                                 |

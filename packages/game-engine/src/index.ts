@@ -20,6 +20,8 @@ export {
 export { projectEventsForViewer } from './game-event-projection.js'
 export { restoreGameState } from './game-state-validation.js'
 export { receiveOrder } from './receive-order.js'
+export { orderCardReward } from './order-card-reward.js'
+export type { OrderRewardChoices, OrderRewardAction } from './order-reward-effect.js'
 export {
   confirmTurnDraft,
   createTurnDraft,

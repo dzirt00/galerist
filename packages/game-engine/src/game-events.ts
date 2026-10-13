@@ -39,6 +39,7 @@ export type GameEvent =
   | { readonly type: 'FinalScoringStarted' }
   | { readonly type: 'GameEndTriggered' }
   | { readonly type: 'InfluenceSpent', readonly playerId: PlayerId, readonly spentInfluence: number }
+  | { readonly type: 'AssistantAssignedToOrder'; readonly playerId: PlayerId; readonly orderSlot: 1 | 2 | 3; readonly orderId: string; readonly assistantId: string }
   | { readonly type: 'CoinsReceived', readonly playerId: PlayerId, readonly coinsReceived: number }
   | { readonly type: 'RoundEnded'; readonly round: number }
   | { readonly type: 'ArtistPromoted'; readonly playerId: PlayerId; readonly artistId: string; readonly previousPromotionLevel: number; readonly promotionLevel: number; readonly promotionTokenId: string }
