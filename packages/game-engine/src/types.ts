@@ -14,6 +14,9 @@ import type { VisitorMovementStep } from "./apply-visitor-movement-tickets.js";
 import type { ApplyAssistantHiringToGameStateRequest } from "./apply-assistant-hiring-to-game-state.js";
 import type { ArtworkSaleRequest } from "./artwork-sale-state.js";
 import type { OrderRewardChoices } from "./order-reward-effect.js";
+import type { OpenArtistRequest } from './open-artist.js';
+import type { ArtworkPurchaseRequest } from './artwork-purchase-payment-state.js';
+import type { ClaimReputationTokenRequest, PlaceAuctionBidRequest } from './international-market.js';
 export type StatusPlayer = 'PENDING' | 'REFRESH' | 'REFUSAL' | 'SUCCESS' | 'WAITING'
 export type GameId = string
 export type PlayerId = string
@@ -34,6 +37,11 @@ export interface LocationActionCommand {
   readonly advertisingArtist?: AdvertisingArtistRequest
   readonly hireAssistants?: ApplyAssistantHiringToGameStateRequest
   readonly artworkSale?: ArtworkSaleRequest
+  readonly receiveOrder?: Pick<OrderRewardChoices, 'orderActions'>
+  readonly openArtist?: OpenArtistRequest
+  readonly artworkPurchase?: ArtworkPurchaseRequest
+  readonly claimReputationToken?: ClaimReputationTokenRequest
+  readonly placeAuctionBid?: PlaceAuctionBidRequest
 }
 
 export interface ManagementActionCommand {
