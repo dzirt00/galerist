@@ -78,6 +78,7 @@ export {applyAdditionalFameSpend} from './influence-fame-spending-award.js'
 export {prepareTicketOffice, type PreparedTicketOffice} from './setup-tickets.js'
 export { calculateArtworkPurchaseFameGain } from './artwork-purchase-fame.js'
 export { calculateArtworkSaleValue } from './artwork-sale-value.js'
+export { applyTurn } from './apply-turn.js'
 export {
   curatorGoals,
   dealerGoals,

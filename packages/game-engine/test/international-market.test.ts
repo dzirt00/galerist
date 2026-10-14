@@ -338,7 +338,7 @@ describe('market rewards and lifecycle', () => {
   })
 })
 
-describe('schema 16 market restoration', () => {
+describe('current schema market restoration', () => {
   it.each(['old', 'missingPlacements', 'missingBoardTokens', 'missingLocations', 'missingEjection', 'duplicateAssistant',
     'wrongBid', 'invalidCell', 'invalidOwner', 'duplicateCell', 'tokenDuplicate', 'tokenMissing', 'twoTokens'] as const)('rejects %s snapshot atomically', reason => {
     const initial = fixture()
@@ -346,7 +346,7 @@ describe('schema 16 market restoration', () => {
     const input = state as unknown as Record<string, any>
     const market = input.internationalMarket
     const board = input.playerBoards[0]
-    if (reason === 'old') input.stateSchemaVersion = 15
+    if (reason === 'old') input.stateSchemaVersion = state.stateSchemaVersion - 1
     if (reason === 'missingPlacements') delete market.marketAssistants
     if (reason === 'missingBoardTokens') delete board.boardReputationTokens
     if (reason === 'missingLocations') delete board.locationAssistants
@@ -360,7 +360,7 @@ describe('schema 16 market restoration', () => {
     if (reason === 'tokenMissing') market.marketReputationCells.shift()
     if (reason === 'twoTokens') board.boardReputationTokens = { 'BOARD-REP-R2-L': 'REP-001', 'BOARD-REP-R3-L': 'REP-002' }
     const before = structuredClone(input)
-    expect(() => restoreGameState(input)).toThrow()
+    expect(() => restoreGameState(input)).toThrow('Invalid game state:')
     expect(input).toEqual(before)
   })
 })

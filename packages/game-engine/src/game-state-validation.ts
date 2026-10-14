@@ -634,5 +634,6 @@ export function restoreGameState(input: unknown): GameState {
     fail('intermediateScoringStatus invalid')
   }
   validateOrderMarket(state.orderMarket)
+  validateInternationalMarketState(state as unknown as GameState)
   return deepFreeze(structuredClone(state)) as unknown as GameState
 }
