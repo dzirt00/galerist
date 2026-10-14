@@ -7,16 +7,22 @@ import type { SetupInternationalMarket } from "./setup-international-market.js";
 import type { PreparedArtworkMarket } from "./setup-artworks.js";
 import type { PreparedMasterpieceAuction } from "./setup-masterpieces.js";
 import type { PreparedPrivateGoals } from './setup-goals.js'
-import type { PlayerBoard } from "./player-boards.js";
+import type { BoardOrders, PlayerBoard } from "./player-boards.js";
 import type { SetupTicketColor, StartingLocationId } from "./component-catalog.js";
 import type { AdvertisingArtistRequest } from "./advertising-artist.js";
 import type { VisitorMovementStep } from "./apply-visitor-movement-tickets.js";
 import type { ApplyAssistantHiringToGameStateRequest } from "./apply-assistant-hiring-to-game-state.js";
 import type { ArtworkSaleRequest } from "./artwork-sale-state.js";
+import type { OrderRewardChoices } from "./order-reward-effect.js";
 export type StatusPlayer = 'PENDING' | 'REFRESH' | 'REFUSAL' | 'SUCCESS' | 'WAITING'
 export type GameId = string
 export type PlayerId = string
 export type IntermediateScoringStatus = 'not_triggered' | 'pending' | 'completed'
+export interface OrderCardReward {
+  orderSlot: keyof BoardOrders,
+  assistantId: string,
+  choices?: Readonly<OrderRewardChoices>
+}
 export interface MovementCommand {
   readonly category: 'movement'
   readonly locationId: StartingLocationId
@@ -33,6 +39,7 @@ export interface LocationActionCommand {
 export interface ManagementActionCommand {
   readonly category: 'management_action'
   readonly visitorMovementSteps?: readonly VisitorMovementStep[]
+  readonly orderCardReward?: OrderCardReward
 }
 
 export type ManagementTiming = 'before_location' | 'after_location'

@@ -6,6 +6,7 @@ import { advertisingArtist } from "./advertising-artist.js";
 import { applyVisitorMovementTickets } from "./apply-visitor-movement-tickets.js";
 import { applyAssistantHiringToGameState } from "./apply-assistant-hiring-to-game-state.js";
 import { applyArtworkSaleToGameState } from "./artwork-sale-state.js";
+import { orderCardReward } from "./order-card-reward.js";
 
 function canUseLocationActionCommand (location:  LocationActionCommand): boolean {
   let count = 0
@@ -109,14 +110,28 @@ export function applyTurn(
       }
 
     }else if(step.category === 'management_action') {
-      if(step.visitorMovementSteps === undefined) throw new Error('management_action')
+      if(step.visitorMovementSteps === undefined && step.orderCardReward === undefined) throw new Error('management_action')
+      if(step.visitorMovementSteps !== undefined && step.orderCardReward !== undefined) throw new Error('management_action')
       events.push({type: 'ManagementActionStarted', playerId: resultPrepareTurn.playerId})
       if(updateCopyState === null) throw new Error('invalid update state')
-      gameTransition = applyVisitorMovementTickets(updateCopyState,resultPrepareTurn.playerId,step.visitorMovementSteps)
-      events.push(...gameTransition.events)
-      updateCopyState = {
-        ...gameTransition.state,
+
+      if(step.visitorMovementSteps !== undefined) {
+        gameTransition = applyVisitorMovementTickets(updateCopyState,resultPrepareTurn.playerId,step.visitorMovementSteps)
+        events.push(...gameTransition.events)
+        updateCopyState = {
+          ...gameTransition.state,
+        }
       }
+      if(step.orderCardReward !== undefined) {
+        const {orderSlot,assistantId,choices} = step.orderCardReward
+        const currenChoices = (choices !== undefined) ? choices : {}
+        gameTransition = orderCardReward(updateCopyState,resultPrepareTurn.playerId,orderSlot,assistantId,currenChoices)
+        events.push(...gameTransition.events)
+        updateCopyState = {
+          ...gameTransition.state,
+        }
+      }
+
     } else {
       throw new Error('invalid command')
     }
