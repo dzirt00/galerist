@@ -49,6 +49,86 @@ function expectFrozen(value: unknown, frozen: boolean): void {
   Object.values(value).forEach(item => expectFrozen(item, frozen))
 }
 
+describe('MGMT-004: completed order back reward', () => {
+  function completed(side: 'coins' | 'influence', slot: 1 | 2 | 3 = 2) {
+    // ORDER-05 has a visitor front reward: the back must ignore that effect.
+    const data = fixture(slot, 'ORDER-05')
+    const base = withGallery(data.state, data.boardIndex, ['B', 'B', 'R', 'W'])
+    const state: GameState = { ...base, playerBoards: base.playerBoards.map((board, index) =>
+      index === data.boardIndex ? { ...board,
+        boardOrders: { ...board.boardOrders, [slot]: { ...board.boardOrders[slot], orderStatus: 'completed' } },
+        orderRewardSides: { [slot]: side },
+      } : board) }
+    return { ...data, state }
+  }
+
+  for (const side of ['coins', 'influence'] as const) {
+    it.each([1, 2, 3] as const)(`${side}: applies saved back reward in slot %i`, slot => {
+      const { state, playerId, boardIndex, assistantId } = completed(side, slot)
+      const before = structuredClone(state)
+      const result = orderCardReward(state, playerId, slot, assistantId)
+      const previous = state.players.find(player => player.id === playerId)!
+      expect(result.state.players.find(player => player.id === playerId)).toEqual({ ...previous,
+        [side]: previous[side] + (side === 'coins' ? 5 : 3),
+      })
+      const board = result.state.playerBoards[boardIndex]!
+      expect(board.boardOrders[slot]).toEqual({ ...state.playerBoards[boardIndex]!.boardOrders[slot], assistant: assistantId })
+      expect(board.orderRewardSides).toEqual({ [slot]: side })
+      expect(board.assistants.assistantOfficeIds).toEqual(state.playerBoards[boardIndex]!.assistants.assistantOfficeIds.filter(id => id !== assistantId))
+      expect(board.assistants.office).toBe(state.playerBoards[boardIndex]!.assistants.office - 1)
+      expect(result.events).toEqual([
+        { type: 'AssistantAssignedToOrder', playerId, orderSlot: slot, orderId: 'ORDER-05', assistantId },
+        side === 'coins' ? { type: 'CoinsReceived', playerId, coinsReceived: 5 }
+          : { type: 'InfluenceReceived', playerId, gainedInfluence: 3 },
+      ])
+      for (const viewer of [null, ...state.players.map(player => player.id)]) {
+        expect(projectGameForViewer(result.state, viewer).playerBoards[boardIndex]).toEqual(board)
+        expect(projectEventsForViewer(result.events, result.state, viewer)).toEqual(result.events)
+      }
+      expect(restoreGameState(JSON.parse(JSON.stringify(result.state)))).toEqual(result.state)
+      expect(orderCardReward(restoreGameState(JSON.parse(JSON.stringify(state))), playerId, slot, assistantId)).toEqual(result)
+      expect(state).toEqual(before)
+      expectFrozen(state, false)
+      expectFrozen(result, true)
+      const remaining = board.assistants.assistantOfficeIds[0]!
+      expect(() => orderCardReward(result.state, playerId, slot, remaining)).toThrow('already has an assistant')
+    })
+
+    it(`${side}: assigns an assistant even for zero reward`, () => {
+      const { state: base, playerId, boardIndex, assistantId, orderSlot } = completed(side)
+      const board = base.playerBoards[boardIndex]!
+      const visitorBag = { visitors: [...base.visitorBag.visitors, ...board.gallery.visitors] }
+      const state = { ...base, visitorBag,
+        artworkMarket: { ...base.artworkMarket, remainingVisitorBag: visitorBag },
+        playerBoards: base.playerBoards.map((item, index) => index === boardIndex
+          ? { ...item, gallery: { ...item.gallery, visitors: [] } } : item) }
+      const result = orderCardReward(state, playerId, orderSlot, assistantId)
+      expect(result.state.players).toEqual(state.players)
+      expect(result.state.playerBoards[boardIndex]!.boardOrders[orderSlot].assistant).toBe(assistantId)
+      expect(result.events[1]).toEqual(side === 'coins' ? { type: 'CoinsReceived', playerId, coinsReceived: 0 }
+        : { type: 'InfluenceReceived', playerId, gainedInfluence: 0 })
+    })
+  }
+
+  it.each([34, 35])('caps back influence starting at %i', influence => {
+    const { state: base, playerId, assistantId, orderSlot } = completed('influence')
+    const state = { ...base, players: base.players.map(player => player.id === playerId ? { ...player, influence } : player) }
+    const result = orderCardReward(state, playerId, orderSlot, assistantId)
+    expect(result.state.players.find(player => player.id === playerId)!.influence).toBe(35)
+    expect(result.events[1]).toEqual({ type: 'InfluenceReceived', playerId, gainedInfluence: 35 - influence })
+  })
+
+  it.each([undefined, null, 'COINS', 'invalid'])('rejects invalid saved side %s atomically', side => {
+    const { state: base, playerId, assistantId, orderSlot, boardIndex } = completed('coins')
+    const state = { ...base, playerBoards: base.playerBoards.map((board, index) => index === boardIndex
+      ? { ...board, orderRewardSides: { [orderSlot]: side } } : board) } as unknown as GameState
+    const before = structuredClone(state)
+    expect(() => orderCardReward(state, playerId, orderSlot, assistantId)).toThrow('Order reward side required')
+    expect(state).toEqual(before)
+    expectFrozen(state, false)
+  })
+})
+
 describe('MGMT-004: публичная лицевая награда с помощником из офиса', () => {
   it.each([1, 2, 3] as const)('переносит выбранного помощника в клетку %i, сохраняет проекции и снимок', orderSlot => {
     const { state, playerId, boardIndex, assistantId } = fixture(orderSlot)

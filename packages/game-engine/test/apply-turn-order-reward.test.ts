@@ -53,6 +53,47 @@ function expectFrozen(value: unknown, frozen: boolean): void {
 }
 
 describe('TURN-002 / MGMT-004: order reward in a composed turn', () => {
+  for (const side of ['coins', 'influence'] as const) {
+    it.each(['before_location', 'after_location'] as const)(`applies completed ${side} reward at %s`, timing => {
+      const { state: base, command, assistantId } = scenario(timing)
+      const state: GameState = { ...base, playerBoards: base.playerBoards.map(board => board.playerId === command.playerId
+        ? { ...board, boardOrders: { ...board.boardOrders, 1: { ...board.boardOrders[1], orderStatus: 'completed' } },
+          orderRewardSides: { 1: side } } : board) }
+      const before = structuredClone({ state, command })
+      const result = applyTurn(state, command)
+      const player = result.state.players.find(item => item.id === command.playerId)!
+      const previous = state.players.find(item => item.id === command.playerId)!
+      expect(player.coins).toBe(previous.coins - 1 + (side === 'coins' ? 5 : 0))
+      expect(player.influence).toBe(previous.influence + (side === 'influence' ? 3 : 0))
+      const index = result.events.findIndex(event => event.type === 'ManagementActionStarted')
+      expect(result.events.slice(index, index + 3)).toEqual([
+        { type: 'ManagementActionStarted', playerId: command.playerId },
+        { type: 'AssistantAssignedToOrder', playerId: command.playerId, orderSlot: 1, orderId: 'ORDER-03', assistantId },
+        side === 'coins' ? { type: 'CoinsReceived', playerId: command.playerId, coinsReceived: 5 }
+          : { type: 'InfluenceReceived', playerId: command.playerId, gainedInfluence: 3 },
+      ])
+      const paidIndex = result.events.findIndex(event => event.type === 'CoinsSpent')
+      expect(timing === 'before_location' ? index < paidIndex : index > paidIndex).toBe(true)
+      const board = result.state.playerBoards.find(item => item.playerId === command.playerId)!
+      expect(board.boardOrders[1].assistant).toBe(assistantId)
+      expect(board.boardOrders[1].orderStatus).toBe('completed')
+      expect(board.orderRewardSides).toEqual({ 1: side })
+      expect(restoreGameState(JSON.parse(JSON.stringify(result.state)))).toEqual(result.state)
+      expect({ state, command }).toEqual(before)
+      expectFrozen(result, true)
+    })
+  }
+
+  it('rolls back movement and hiring when the completed back side is missing', () => {
+    const { state: base, command } = scenario('after_location')
+    const state: GameState = { ...base, playerBoards: base.playerBoards.map(board => board.playerId === command.playerId
+      ? { ...board, boardOrders: { ...board.boardOrders, 1: { ...board.boardOrders[1], orderStatus: 'completed' } } } : board) }
+    const before = structuredClone({ state, command })
+    expect(() => applyTurn(state, command)).toThrow('Order reward side required')
+    expect({ state, command }).toEqual(before)
+    expectFrozen({ state, command }, false)
+  })
+
   it.each(['before_location', 'after_location'] as const)('preserves state and events at %s', timing => {
     const { state, command, assistantId, board } = scenario(timing)
     const before = structuredClone({ state, command })

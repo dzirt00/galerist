@@ -1,4 +1,4 @@
-import { setupComponentCatalog } from './component-catalog.js'
+import { type RewardId, setupComponentCatalog } from './component-catalog.js'
 import { freezeTransition, type GameTransition } from './game-events.js'
 import { applyOrderRewardEffect, type OrderRewardChoices } from './order-reward-effect.js'
 import type { BoardOrders } from './player-boards.js'
@@ -21,12 +21,25 @@ export function orderCardReward(
   if (playerIndex < 0 || boardIndex < 0) throw new Error('Invalid order reward player or playerBoard')
   const board = state.playerBoards[boardIndex]!
   const order = board.boardOrders[orderSlot]
-  if (!order.orderId || order.orderStatus !== 'unfulfilled') {
+  if (!order.orderId || (order.orderStatus !== 'unfulfilled' && order.orderStatus !== 'completed')) {
     throw new Error('Order reward requires an unfulfilled order')
   }
-  const definition = setupComponentCatalog.orders.find(item => item.id === order.orderId)
-  if (!definition) throw new Error('Unknown order front reward')
-  if (order.assistant !== null) throw new Error('Order already has an assistant')
+
+  const definition = setupComponentCatalog.orders.find( item => item.id === order.orderId )
+  if ( !definition ) throw new Error( 'Unknown order front reward' )
+
+  let reward: RewardId | null =  null
+  if(order.orderStatus === 'unfulfilled') {
+    reward = definition.reward
+  } else {
+    const orderRewardSidesSlot = board.orderRewardSides[orderSlot]
+
+    if(orderRewardSidesSlot !== 'coins' && orderRewardSidesSlot !== 'influence') throw new Error( 'Order reward side required' )
+
+    reward = (orderRewardSidesSlot  === 'coins') ? 'COINS' : 'INFLUENCE'
+  }
+
+  if ( order.assistant !== null ) throw new Error( 'Order already has an assistant' )
   if (typeof assistantId !== 'string' || !assistantId || !board.assistants.assistantOfficeIds.includes(assistantId)) {
     throw new Error('Selected assistant must be in the player office')
   }
@@ -43,7 +56,7 @@ export function orderCardReward(
       boardOrders: { ...nextBoard.boardOrders, [orderSlot]: { ...nextBoard.boardOrders[orderSlot], assistant: assistantId } },
     } : item),
   }
-  const result = applyOrderRewardEffect(nextState, playerId, definition.reward, choices)
+  const result = applyOrderRewardEffect(nextState, playerId, reward, choices)
   return freezeTransition(result.state, [
     { type: 'AssistantAssignedToOrder', playerId, orderSlot, orderId: order.orderId, assistantId },
     ...result.events,
