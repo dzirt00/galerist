@@ -11,6 +11,7 @@ import type { PlayerBoard } from "./player-boards.js";
 import type { SetupTicketColor, StartingLocationId } from "./component-catalog.js";
 import type { AdvertisingArtistRequest } from "./advertising-artist.js";
 import type { VisitorMovementStep } from "./apply-visitor-movement-tickets.js";
+import type { ApplyAssistantHiringToGameStateRequest } from "./apply-assistant-hiring-to-game-state.js";
 export type StatusPlayer = 'PENDING' | 'REFRESH' | 'REFUSAL' | 'SUCCESS' | 'WAITING'
 export type GameId = string
 export type PlayerId = string
@@ -24,6 +25,7 @@ export interface MovementCommand {
 export interface LocationActionCommand {
   readonly category: 'location_action'
   readonly advertisingArtist?: AdvertisingArtistRequest
+  readonly hireAssistants?: ApplyAssistantHiringToGameStateRequest
 }
 
 export interface ManagementActionCommand {

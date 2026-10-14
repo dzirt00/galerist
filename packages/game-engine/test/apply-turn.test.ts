@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  applyTurn, confirmTurnDraft, createTurnDraft, updateTurnDraft,
+  applyTurn, applyAssistantHiringToGameState, confirmTurnDraft, createTurnDraft, updateTurnDraft,
   projectGameForViewer, projectEventsForViewer, restoreGameState,
   type ConfirmedTurnCommand, type GameState,
 } from '../src/index.js'
@@ -206,6 +206,148 @@ describe('TURN-002: atomic movement and promotion through public API', () => {
       expect({ state, command }).toEqual(before)
       expect(Object.isFrozen(state)).toBe(false)
       expect(Object.isFrozen(command)).toBe(false)
+    },
+  )
+})
+
+describe('TURN-002: hiring within a confirmed media-center turn', () => {
+  function hiringScenario(timing?: 'before_location' | 'after_location', tickets = 0) {
+    const initial = startGameAfterSetup(createGameState(twoPlayerGameConfig, twoPlayerConfigs))
+    const playerId = initial.activePlayerId!
+    // Two prior hires make BOARD-HIRE-3 the next cell and fill the office.
+    const base = applyAssistantHiringToGameState(initial, { playerId, countAssistants: 2 }).state
+    const board = base.playerBoards.find(board => board.playerId === playerId)!
+    const visitor = base.visitorBag.visitors.find(visitor => visitor.type === 'R')!
+    const state: GameState = {
+      ...base,
+      players: base.players.map(player => player.id === playerId
+        ? { ...player, coins: 9, ticketsByColor: { ...player.ticketsByColor, R: tickets } } : player),
+      playerBoards: base.playerBoards.map(board => board.playerId === playerId
+        ? { ...board, galleristPosition: 'LOC-ARTISTS_COLONY' } : board),
+      assistantByLocation: { ...base.assistantByLocation, 'LOC-ARTISTS_COLONY': null },
+      visitorBag: { visitors: base.visitorBag.visitors.filter(item => item.id !== visitor.id) },
+      plazaVisitors: [...base.plazaVisitors, visitor],
+    }
+    const command: ConfirmedTurnCommand = {
+      type: 'perform_turn', playerId,
+      movement: { category: 'movement', locationId: 'LOC-MEDIA_CENTER',
+        assistantId: board.assistants.assistantOfficeIds[0]! },
+      locationAction: { category: 'location_action', hireAssistants: { playerId, countAssistants: 1 } },
+      ...(timing === undefined ? {} : { management: { timing, command: {
+        category: 'management_action' as const,
+        visitorMovementSteps: [{ visitorId: visitor.id, destination: 'vestibule' as const }],
+      } } }),
+    }
+    return { state, command, visitor, board }
+  }
+
+  it.each([undefined, 'before_location', 'after_location'] as const)(
+    'preserves hiring, assistant placement, event order and snapshots with timing %s', timing => {
+      const { state, command, visitor, board } = hiringScenario(timing, timing === 'before_location' ? 1 : 0)
+      const before = structuredClone({ state, command })
+      const result = applyTurn(state, command)
+      const hiringEvents = ['AssistantsHired', 'CoinsSpent', 'TicketReceived']
+      const managementEvents = ['ManagementActionStarted', 'TicketSpent', 'VisitorMoved']
+      expect(result.events.map(event => event.type)).toEqual([
+        'AssistantLeftAtLocation', 'GalleristMoved',
+        ...(timing === 'before_location' ? managementEvents : []),
+        ...hiringEvents,
+        ...(timing === 'after_location' ? managementEvents : []),
+      ])
+      const player = result.state.players.find(player => player.id === command.playerId)!
+      expect(player.coins).toBe(7)
+      expect(player.ticketsByColor.R).toBe(timing === 'after_location' ? 0 : 1)
+      const updatedBoard = result.state.playerBoards.find(board => board.playerId === command.playerId)!
+      expect(updatedBoard.galleristPosition).toBe('LOC-MEDIA_CENTER')
+      expect(updatedBoard.assistants).toEqual({
+        office: 4, hireQueue: 5,
+        assistantOfficeIds: [...board.assistants.assistantOfficeIds.slice(1), board.assistants.assistantHireQueueIds[0]!],
+        assistantHireQueueIds: board.assistants.assistantHireQueueIds.slice(1),
+      })
+      expect(result.state.assistantByLocation['LOC-ARTISTS_COLONY']).toEqual({
+        playerId: command.playerId, assistantId: command.movement.assistantId,
+      })
+      expect(result.state.ticketOffice.ticketsByColor.R).toBe(state.ticketOffice.ticketsByColor.R - 1)
+      expect(result.state.ticketDiscard.R).toBe(state.ticketDiscard.R + (timing === undefined ? 0 : 1))
+      if (timing !== undefined) {
+        expect(result.state.plazaVisitors).not.toContainEqual(visitor)
+        expect(result.state.vestibuleVisitors).toContainEqual({ playerId: command.playerId, vestibuleVisitor: visitor })
+      }
+      expect(result.events).toContainEqual({ type: 'AssistantsHired', countHiredAssistants: 1 })
+      expect(result.events).toContainEqual({ type: 'CoinsSpent', playerId: command.playerId, paid: 2 })
+      expect(result.events).toContainEqual({ type: 'TicketReceived', playerId: command.playerId, color: 'R' })
+      expect(result.state.activePlayerId).toBe(state.activePlayerId)
+      expect(result.state.round).toBe(state.round)
+      expect(result.state.artistMarket).toEqual(state.artistMarket)
+      expect({ state, command }).toEqual(before)
+      expect(Object.isFrozen(command.locationAction.hireAssistants)).toBe(false)
+      expect(Object.isFrozen(result)).toBe(true)
+      expect(Object.isFrozen(result.state.playerBoards)).toBe(true)
+      expect(Object.isFrozen(updatedBoard.assistants.assistantOfficeIds)).toBe(true)
+      expect(Object.isFrozen(result.events)).toBe(true)
+      expect(result.events.every(Object.isFrozen)).toBe(true)
+      expect(restoreGameState(JSON.parse(JSON.stringify(result.state)))).toEqual(result.state)
+      expect(projectGameForViewer(result.state, null).playerBoards.find(board => board.playerId === command.playerId)!.assistants)
+        .toEqual(updatedBoard.assistants)
+      expect(projectEventsForViewer(result.events, result.state, null)).toEqual(result.events)
+    },
+  )
+
+  it('uses the confirmed player rather than the nested hiring player', () => {
+    const { state, command } = hiringScenario()
+    const other = state.players.find(player => player.id !== command.playerId)!
+    const input: ConfirmedTurnCommand = { ...command, locationAction: {
+      ...command.locationAction, hireAssistants: { ...command.locationAction.hireAssistants!, playerId: other.id },
+    } }
+    const result = applyTurn(state, input)
+    expect(result.state.players.find(player => player.id === other.id)).toEqual(other)
+    expect(result.state.playerBoards.find(board => board.playerId === other.id))
+      .toEqual(state.playerBoards.find(board => board.playerId === other.id))
+    expect(result.state.players.find(player => player.id === command.playerId)!.coins).toBe(7)
+    expect(result.events.filter(event => 'playerId' in event).every(event => 'playerId' in event && event.playerId === command.playerId)).toBe(true)
+  })
+
+  it('passes optional payment and ticket choices to the existing hiring command', () => {
+    const { state, command } = hiringScenario()
+    const request = { ...command.locationAction.hireAssistants!, targetInfluence: 0,
+      requestedTicketColors: ['R'] as const, replacementColorsByRequestedColor: { R: 'B' as const } }
+    const inputState: GameState = { ...state, ticketOffice: {
+      ticketsByColor: { ...state.ticketOffice.ticketsByColor, R: 0 },
+    } }
+    const freedState: GameState = { ...inputState, playerBoards: inputState.playerBoards.map(board => board.playerId === command.playerId
+      ? { ...board, assistants: { ...board.assistants, office: 3,
+        assistantOfficeIds: board.assistants.assistantOfficeIds.slice(1) } } : board) }
+    const expected = applyAssistantHiringToGameState(freedState, request)
+    const result = applyTurn(inputState, { ...command, locationAction: { category: 'location_action', hireAssistants: request } })
+    expect(result.state.players).toEqual(expected.state.players)
+    expect(result.state.ticketOffice).toEqual(expected.state.ticketOffice)
+    expect(result.events.slice(2)).toEqual(expected.events)
+  })
+
+  it.each(['future ticket', 'late second step', 'full office', 'payment', 'both actions', 'no action'])(
+    'rejects %s atomically', reason => {
+      const fixture = hiringScenario(reason === 'future ticket' ? 'before_location' : 'after_location')
+      let state = fixture.state
+      let command = fixture.command
+      if (reason === 'late second step') command = { ...command, management: {
+        timing: 'after_location', command: { category: 'management_action', visitorMovementSteps: [
+          { visitorId: fixture.visitor.id, destination: 'vestibule' },
+          { visitorId: fixture.visitor.id, destination: 'gallery' },
+        ] },
+      } }
+      if (reason === 'full office') command = { ...command, movement: { category: 'movement', locationId: 'LOC-MEDIA_CENTER' } }
+      if (reason === 'payment') state = { ...state, players: state.players.map(player => player.id === command.playerId
+        ? { ...player, coins: 0 } : player) }
+      if (reason === 'both actions') command = { ...command, locationAction: {
+        ...command.locationAction, advertisingArtist: scenario().command.locationAction.advertisingArtist!,
+      } }
+      if (reason === 'no action') command = { ...command, locationAction: { category: 'location_action' } }
+      const before = structuredClone({ state, command })
+      expect(() => applyTurn(state, command)).toThrow()
+      expect({ state, command }).toEqual(before)
+      expect(Object.isFrozen(state)).toBe(false)
+      expect(Object.isFrozen(command)).toBe(false)
+      expect(Object.isFrozen(command.locationAction.hireAssistants)).toBe(reason === 'no action')
     },
   )
 })
