@@ -10,6 +10,7 @@ import type {
   GameState,
   PlayerId,
 } from './types.js'
+import { returnAssistantToOffice } from "./return-assistant-to-office.js";
 
 interface AssistantLeavingResult {
   readonly state: GameState
@@ -103,15 +104,15 @@ export function applyGalleristMovementToGameState(
 ): GameTransition<GameState> {
   const preparedTurn = prepareTurn(state, command)
   const movement = preparedTurn.steps[0]
-  const copiedState = structuredClone(state)
-  const playerBoard = copiedState.playerBoards.find(
+  let copiedState = structuredClone(state)
+  let playerBoard = copiedState.playerBoards.find(
     board => board.playerId === preparedTurn.playerId,
   )
-  if (!playerBoard) throw new Error('invalid playerId')
+  const playerBoardIndex = copiedState.playerBoards.findIndex(board => board.playerId === preparedTurn.playerId)
+  if (!playerBoard || playerBoardIndex < 0) throw new Error('invalid playerId')
 
   const departedLocationId = playerBoard.galleristPosition
   const events: GameEvent[] = []
-  let stateAfterAssistant = copiedState
 
   if (movement.assistantId !== undefined) {
     if (departedLocationId === 'HOME') {
@@ -123,24 +124,14 @@ export function applyGalleristMovementToGameState(
       movement.assistantId,
       departedLocationId,
     )
-    stateAfterAssistant = assistantResult.state
+    copiedState =  {
+      ...assistantResult.state
+    }
+    playerBoard = {
+      ...playerBoard,
+      ...copiedState.playerBoards.find((el,index) => index === playerBoardIndex)
+    }
     events.push(assistantResult.event)
-  }
-
-  const movingPlayerBoardIndex = stateAfterAssistant.playerBoards.findIndex(
-    board => board.playerId === preparedTurn.playerId,
-  )
-  const movingPlayerBoard = stateAfterAssistant.playerBoards[movingPlayerBoardIndex]
-  if (!movingPlayerBoard || movingPlayerBoardIndex < 0) {
-    throw new Error('invalid playerId')
-  }
-
-  const movedState: GameState = {
-    ...stateAfterAssistant,
-    playerBoards: stateAfterAssistant.playerBoards.map((board, index) =>
-      index === movingPlayerBoardIndex
-        ? { ...movingPlayerBoard, galleristPosition: movement.locationId }
-        : board),
   }
   events.push({
     type: 'GalleristMoved',
@@ -148,6 +139,43 @@ export function applyGalleristMovementToGameState(
     from: departedLocationId,
     to: movement.locationId,
   })
+  if(!movement.locationId) throw new Error('invalid location id')
+  if (copiedState.assistantByLocation[movement.locationId]?.playerId === command.playerId) {
+    const assistantId = copiedState.assistantByLocation[movement.locationId]?.assistantId
+    if(assistantId === undefined) throw new  Error('invalid assistantId')
+    events.push({type: 'OwnAssistantEjected', playerId: command.playerId, assistantId: assistantId, locationId: movement.locationId})
+    const resultAssistantToOffice = returnAssistantToOffice(playerBoard,assistantId)
+    playerBoard = {
+      ...playerBoard,
+      assistants: {
+        ...resultAssistantToOffice.assistants,
+      }
+    }
+    copiedState = {
+      ...copiedState,
+      playerBoards: copiedState.playerBoards.map((board, index) => (index === playerBoardIndex) ? (playerBoard ?? board) : board),
+      assistantByLocation: {
+        ...copiedState.assistantByLocation,
+        [movement.locationId]: null
+      }
+    }
+    events.push(...resultAssistantToOffice.events)
+  }
 
+  const movingPlayerBoardIndex = copiedState.playerBoards.findIndex(
+    board => board.playerId === preparedTurn.playerId,
+  )
+  const movingPlayerBoard = copiedState.playerBoards[movingPlayerBoardIndex]
+  if (!movingPlayerBoard || movingPlayerBoardIndex < 0) {
+    throw new Error('invalid playerId')
+  }
+
+  const movedState: GameState = {
+    ...copiedState,
+    playerBoards: copiedState.playerBoards.map((board, index) =>
+      index === movingPlayerBoardIndex
+        ? { ...movingPlayerBoard, galleristPosition: movement.locationId }
+        : board),
+  }
   return freezeTransition(movedState, events)
 }
