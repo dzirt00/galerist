@@ -12,6 +12,7 @@ import type { SetupTicketColor, StartingLocationId } from "./component-catalog.j
 import type { AdvertisingArtistRequest } from "./advertising-artist.js";
 import type { VisitorMovementStep } from "./apply-visitor-movement-tickets.js";
 import type { ApplyAssistantHiringToGameStateRequest } from "./apply-assistant-hiring-to-game-state.js";
+import type { ArtworkSaleRequest } from "./artwork-sale-state.js";
 export type StatusPlayer = 'PENDING' | 'REFRESH' | 'REFUSAL' | 'SUCCESS' | 'WAITING'
 export type GameId = string
 export type PlayerId = string
@@ -26,6 +27,7 @@ export interface LocationActionCommand {
   readonly category: 'location_action'
   readonly advertisingArtist?: AdvertisingArtistRequest
   readonly hireAssistants?: ApplyAssistantHiringToGameStateRequest
+  readonly artworkSale?: ArtworkSaleRequest
 }
 
 export interface ManagementActionCommand {

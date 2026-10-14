@@ -5,15 +5,27 @@ import { applyGalleristMovementToGameState } from "./apply-gallerist-movement-to
 import { advertisingArtist } from "./advertising-artist.js";
 import { applyVisitorMovementTickets } from "./apply-visitor-movement-tickets.js";
 import { applyAssistantHiringToGameState } from "./apply-assistant-hiring-to-game-state.js";
+import { applyArtworkSaleToGameState } from "./artwork-sale-state.js";
 
+function canUseLocationActionCommand (location:  LocationActionCommand): boolean {
+  let count = 0
+  for (let [key,val] of Object.entries(location)) {
+    if(key !== 'category' && val !== undefined) {
+      count++
+    }
+  }
+  return count === 1;
+}
 
 export function applyTurn(
   state: GameState,
   command: ConfirmedTurnCommand
 ): GameTransition<GameState> {
-  if(command.locationAction.advertisingArtist === undefined && command.locationAction.hireAssistants === undefined)  throw new Error('invalid locationAction.advertisingArtist')
-  if(command.locationAction.advertisingArtist !== undefined && command.locationAction.hireAssistants !== undefined)  throw new Error('invalid locationAction.advertisingArtist')
-  if(command.movement.locationId !== 'LOC-MEDIA_CENTER') throw new Error('invalid movement.movement.locationId must be defined')
+  if(!canUseLocationActionCommand(command.locationAction))  throw new Error('invalid locationAction.advertisingArtist')
+  if(command.movement.locationId !== 'LOC-MEDIA_CENTER' && command.movement.locationId !== 'LOC-SALES_OFFICE') throw new Error('invalid movement.movement.locationId must be defined')
+  if(command.movement.locationId === 'LOC-MEDIA_CENTER' && command.locationAction.hireAssistants === undefined && command.locationAction.advertisingArtist === undefined) throw new Error('invalid movement.movement.locationId must be defined')
+  if(command.movement.locationId === 'LOC-SALES_OFFICE' && command.locationAction.artworkSale === undefined) throw new Error('invalid movement.movement.locationId must be defined')
+
   if(command.management && command.management.command.category !== 'management_action') throw new Error('invalid command.management?.command.category must be defined')
 
   const copyState = structuredClone(state)
@@ -32,7 +44,7 @@ export function applyTurn(
   resultPrepareTurn.steps.forEach(step => {
     if(!['movement','location_action','management_action'].includes(step.category)) throw new Error('invalid movement')
     if(step.category === 'movement') {
-      if(step.locationId !== 'LOC-MEDIA_CENTER')  throw new Error('movement')
+      if(step.locationId !== 'LOC-MEDIA_CENTER' && step.locationId !== 'LOC-SALES_OFFICE')  throw new Error('movement')
       gameTransition = applyGalleristMovementToGameState(copyState, command)
       events.push(...gameTransition.events)
       updateCopyState = {
@@ -40,7 +52,7 @@ export function applyTurn(
       }
     } else if(step.category === 'location_action') {
 
-      if(step.advertisingArtist === undefined && step.hireAssistants === undefined) throw new Error('location_action')
+      if(step.advertisingArtist === undefined && step.hireAssistants === undefined && step.artworkSale === undefined) throw new Error('location_action')
       if(updateCopyState === null) throw new Error('invalid update state')
 
       if(step.advertisingArtist !== undefined) {
@@ -73,6 +85,23 @@ export function applyTurn(
           ...(replacementColorsByRequestedColor !== undefined && { replacementColorsByRequestedColor }),
         };
         gameTransition =  applyAssistantHiringToGameState(updateCopyState,requestForAdvertisingArtist)
+        events.push(...gameTransition.events)
+        updateCopyState = {
+          ...gameTransition.state
+        }
+      }
+
+      if(step.artworkSale !== undefined) {
+        const { playerId, orderId, artworkId, visitorId, orderRewardSide } = step.artworkSale;
+        const requestForAdvertisingArtist: Parameters<typeof applyArtworkSaleToGameState>[1] = {
+          playerId: command.playerId,
+          orderId,
+          artworkId,
+          ...(visitorId !== undefined && { visitorId }),
+          ...(orderRewardSide !== undefined && { orderRewardSide }),
+        };
+
+        gameTransition =  applyArtworkSaleToGameState(updateCopyState,requestForAdvertisingArtist)
         events.push(...gameTransition.events)
         updateCopyState = {
           ...gameTransition.state

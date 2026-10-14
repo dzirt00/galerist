@@ -7,6 +7,22 @@ import {
 import { createGameState, startGameAfterSetup } from './helpers.js'
 import { twoPlayerConfigs, twoPlayerGameConfig } from './fixtures.js'
 
+it('counts defined location actions rather than optional keys with undefined values', () => {
+  const { state, command } = scenario()
+  const withAbsentActions = {
+    ...command,
+    locationAction: {
+      ...command.locationAction,
+      hireAssistants: undefined,
+      artworkSale: undefined,
+    },
+  } as unknown as ConfirmedTurnCommand
+  const before = structuredClone({ state, command: withAbsentActions })
+  const expected = applyTurn(state, command)
+  expect(applyTurn(state, withAbsentActions)).toEqual(expected)
+  expect({ state, command: withAbsentActions }).toEqual(before)
+})
+
 function scenario() {
   const base = startGameAfterSetup(createGameState(twoPlayerGameConfig, twoPlayerConfigs))
   const artist = base.artistMarket.slots.find(slot => slot.initialPromotion === 0)!
