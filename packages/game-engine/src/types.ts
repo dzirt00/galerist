@@ -10,6 +10,7 @@ import type { PreparedPrivateGoals } from './setup-goals.js'
 import type { PlayerBoard } from "./player-boards.js";
 import type { SetupTicketColor, StartingLocationId } from "./component-catalog.js";
 import type { AdvertisingArtistRequest } from "./advertising-artist.js";
+import type { VisitorMovementStep } from "./apply-visitor-movement-tickets.js";
 export type StatusPlayer = 'PENDING' | 'REFRESH' | 'REFUSAL' | 'SUCCESS' | 'WAITING'
 export type GameId = string
 export type PlayerId = string
@@ -27,6 +28,7 @@ export interface LocationActionCommand {
 
 export interface ManagementActionCommand {
   readonly category: 'management_action'
+  readonly visitorMovementSteps?: readonly VisitorMovementStep[]
 }
 
 export type ManagementTiming = 'before_location' | 'after_location'

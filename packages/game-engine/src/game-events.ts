@@ -20,6 +20,7 @@ export type GameEvent =
   | { readonly type: 'VisitorBagPrepared' }
   | { readonly type: 'TicketOfficePrepared' }
   | { readonly type: 'OrderMarketPrepared' }
+  | { readonly type: 'ManagementActionStarted', readonly playerId: PlayerId }
   | { readonly type: 'ArtistsPrepared' }
   | { readonly type: 'TicketSpent', readonly playerId: PlayerId, readonly color: SetupTicketColor }
   | { readonly type: 'ArtistOpened'; readonly artistId: string }
