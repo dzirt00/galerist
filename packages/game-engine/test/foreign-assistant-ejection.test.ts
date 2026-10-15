@@ -125,3 +125,134 @@ describe('EJECT-001: foreign assistant displacement', () => {
     expect({ state, command }).toEqual(before)
   })
 })
+
+describe('EJECT-005 / END-004: assistant returns after the final-round turn', () => {
+  function finalScenario(office: number = 0) {
+    const base = scenario()
+    const state: GameState = {
+      ...base.state, phase: 'final_round', round: 2, endTriggeredRound: 1,
+      playerBoards: base.state.playerBoards.map(board => board.playerId !== base.ownerId ? board : {
+        ...board, assistants: {
+          ...board.assistants, office,
+          assistantOfficeIds: board.assistants.assistantHireQueueIds.slice(0, office),
+          assistantHireQueueIds: board.assistants.assistantHireQueueIds.slice(office),
+          hireQueue: board.assistants.hireQueue - office,
+        },
+      }),
+    }
+    return { ...base, state }
+  }
+
+  it.each([0, 1, 3, 4])('returns or removes the assistant with %i occupied office spaces', office => {
+    const { state, command, playerId, ownerId, assistantId, otherAssistantId } = finalScenario(office)
+    expect(restoreGameState(JSON.parse(JSON.stringify(state)))).toEqual(state)
+    const before = structuredClone({ state, command })
+    const originalOwner = state.playerBoards.find(board => board.playerId === ownerId)!
+    const movement = applyGalleristMovementToGameState(state, command)
+    expect(movement.state.playerBoards.find(board => board.playerId === ownerId)!.ejectedAssistant)
+      .toEqual({ assistantId, displacedByPlayerId: playerId })
+    const result = applyTurn(state, command)
+    const owner = result.state.playerBoards.find(board => board.playerId === ownerId)!
+    expect(owner).toEqual({
+      ...originalOwner, ejectedAssistant: null,
+      locationAssistants: [{ assistantId: otherAssistantId, locationId: otherLocation }],
+      assistants: office === 4 ? originalOwner.assistants : {
+        ...originalOwner.assistants, office: office + 1,
+        assistantOfficeIds: [...originalOwner.assistants.assistantOfficeIds, assistantId],
+      },
+    })
+    expect(result.state.assistantByLocation).toEqual({ ...state.assistantByLocation, [destination]: null })
+    expect(result.state.activePlayerId).toBe(state.activePlayerId)
+    expect(result.state.round).toBe(state.round)
+    expect(result.state.phase).toBe('final_round')
+    expect(result.state.artistMarket).not.toEqual(movement.state.artistMarket)
+    expect(result.events.map(event => event.type)).toEqual([
+      'GalleristMoved', 'PieceEjected', 'InfluenceSpent', 'ArtistPromoted', 'TicketReceived',
+      'ArtistFameIncreased', office === 4 ? 'AssistantRemovedFromGame' : 'AssistantReturnedHome',
+    ])
+    expect(result.events.at(-1)).toEqual({
+      type: office === 4 ? 'AssistantRemovedFromGame' : 'AssistantReturnedHome', playerId: ownerId, assistantId,
+    })
+    for (const viewer of [null, playerId, ownerId]) {
+      expect(projectGameForViewer(result.state, viewer).playerBoards).toEqual(result.state.playerBoards)
+      expect(projectEventsForViewer(result.events, result.state, viewer)).toEqual(result.events)
+    }
+    expect(restoreGameState(JSON.parse(JSON.stringify(result.state)))).toEqual(result.state)
+    expect({ state, command }).toEqual(before)
+    expect(Object.isFrozen(state)).toBe(false)
+    expect(Object.isFrozen(result)).toBe(true)
+    expect(Object.isFrozen(owner)).toBe(true)
+    expect(Object.isFrozen(owner.assistants.assistantOfficeIds)).toBe(true)
+    expect(Object.isFrozen(result.events.at(-1))).toBe(true)
+  })
+
+  it.each(['before_location', 'after_location'] as const)('returns after management %s', timing => {
+    const { state: base, command: original, playerId, ownerId, assistantId } = finalScenario(3)
+    const visitor = { id: 'assistant-final-return-visitor', type: 'B' as const }
+    const state: GameState = { ...base, plazaVisitors: [...base.plazaVisitors, visitor],
+      players: base.players.map(player => player.id === playerId ? {
+        ...player, ticketsByColor: { ...player.ticketsByColor, B: 1 },
+      } : player) }
+    const command: ConfirmedTurnCommand = { ...original, management: { timing,
+      command: { category: 'management_action', visitorMovementSteps: [
+        { visitorId: visitor.id, destination: 'vestibule' },
+      ] },
+    } }
+    const before = structuredClone({ state, command })
+    const result = applyTurn(state, command)
+    const actionEvents = ['InfluenceSpent', 'ArtistPromoted', 'TicketReceived', 'ArtistFameIncreased']
+    const managementEvents = ['ManagementActionStarted', 'TicketSpent', 'VisitorMoved']
+    expect(result.events.map(event => event.type)).toEqual(['GalleristMoved', 'PieceEjected',
+      ...(timing === 'before_location' ? [...managementEvents, ...actionEvents] : [...actionEvents, ...managementEvents]),
+      'AssistantReturnedHome',
+    ])
+    expect(result.events.at(-1)).toEqual({ type: 'AssistantReturnedHome', playerId: ownerId, assistantId })
+    expect(result.state.playerBoards.find(board => board.playerId === ownerId)!.assistants.office).toBe(4)
+    expect(result.state.vestibuleVisitors).toContainEqual({ playerId, vestibuleVisitor: visitor })
+    expect(restoreGameState(JSON.parse(JSON.stringify(result.state)))).toEqual(result.state)
+    expect({ state, command }).toEqual(before)
+  })
+
+  it.each(['regular_play', 'ending_current_round'] as const)('keeps the ejected assistant in %s', phase => {
+    const { state: base, command, ownerId, playerId, assistantId } = scenario()
+    const state: GameState = phase === 'regular_play' ? base : { ...base, phase, endTriggeredRound: base.round }
+    const result = applyTurn(state, command)
+    const owner = result.state.playerBoards.find(board => board.playerId === ownerId)!
+    expect(owner.ejectedAssistant).toEqual({ assistantId, displacedByPlayerId: playerId })
+    expect(owner.assistants).toEqual(state.playerBoards.find(board => board.playerId === ownerId)!.assistants)
+    expect(result.events.some(event => event.type === 'AssistantReturnedHome' || event.type === 'AssistantRemovedFromGame')).toBe(false)
+  })
+
+  it.each([false, true])('does not return an earlier assistant when no new piece is ejected: %s', earlier => {
+    const { state: base, command, ownerId, playerId, assistantId } = finalScenario()
+    const state: GameState = { ...base,
+      assistantByLocation: { ...base.assistantByLocation, [destination]: null },
+      playerBoards: base.playerBoards.map(board => board.playerId !== ownerId ? board : {
+        ...board, locationAssistants: board.locationAssistants.filter(item => item.locationId !== destination),
+        ejectedAssistant: earlier ? { assistantId, displacedByPlayerId: playerId } : null,
+        assistants: earlier ? board.assistants : { ...board.assistants,
+          office: 1, assistantOfficeIds: [assistantId] },
+      }),
+    }
+    expect(restoreGameState(JSON.parse(JSON.stringify(state)))).toEqual(state)
+    const result = applyTurn(state, command)
+    expect(result.state.playerBoards.find(board => board.playerId === ownerId))
+      .toEqual(state.playerBoards.find(board => board.playerId === ownerId))
+    expect(result.events.some(event => event.type === 'PieceEjected' || event.type === 'AssistantReturnedHome'
+      || event.type === 'AssistantRemovedFromGame')).toBe(false)
+  })
+
+  it.each(['location', 'management'] as const)('rejects a late %s failure atomically', failure => {
+    const { state, command: original, ownerId } = finalScenario(3)
+    const command: ConfirmedTurnCommand = failure === 'location' ? { ...original, locationAction: {
+      category: 'location_action', advertisingArtist: { ...original.locationAction.advertisingArtist!, artistId: 'unknown' },
+    } } : { ...original, management: { timing: 'after_location', command: {
+      category: 'management_action', visitorMovementSteps: [{ visitorId: 'unknown', destination: 'vestibule' }],
+    } } }
+    const before = structuredClone({ state, command })
+    expect(() => applyTurn(state, command)).toThrow()
+    expect({ state, command }).toEqual(before)
+    expect(state.playerBoards.find(board => board.playerId === ownerId)!.assistants.office).toBe(3)
+    expect(Object.isFrozen(state)).toBe(false)
+  })
+})

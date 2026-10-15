@@ -27,7 +27,7 @@ const mapGaleristLocation: Record< StartingLocationId, EjectedGalleristPosition 
  * Проверяет и применяет оставление одного помощника по TURN-004.
  * Вызывающий код уже получил допустимый ход и активного игрока из prepareTurn.
  */
-function leaveAssistantAtLocation(
+export function leaveAssistantAtLocation(
   state: GameState,
   playerId: PlayerId,
   assistantId: unknown,

@@ -1,7 +1,7 @@
 import type { ConfirmedTurnCommand, GameState, LocationActionCommand } from './types.js'
 import { freezeTransition, type GameEvent, type GameTransition } from './game-events.js'
 import { prepareTurn } from './turn-preparation.js'
-import { applyGalleristMovementToGameState } from './apply-gallerist-movement-to-game-state.js'
+import { applyGalleristMovementToGameState, leaveAssistantAtLocation } from './apply-gallerist-movement-to-game-state.js'
 import { advertisingArtist } from './advertising-artist.js'
 import { applyVisitorMovementTickets } from './apply-visitor-movement-tickets.js'
 import { applyAssistantHiringToGameState } from './apply-assistant-hiring-to-game-state.js'
@@ -11,6 +11,7 @@ import { applyOrderRewardEffect } from './order-reward-effect.js'
 import { openArtist } from './open-artist.js'
 import { applyArtworkPurchaseToGameState } from './artwork-purchase-payment-state.js'
 import { claimReputationToken, placeAuctionBid } from './international-market.js'
+import { returnAssistantToOffice } from "./return-assistant-to-office.js";
 
 const locationActions = {
   'LOC-MEDIA_CENTER': ['advertisingArtist', 'hireAssistants'],
@@ -86,8 +87,24 @@ export function applyTurn(state: GameState, command: ConfirmedTurnCommand): Game
         }
         events.push({type: 'GalleristReturnedHome', playerId: el.playerId})
       }
+      if(event !== undefined && event.pieceType === 'assistant' && event.playerId === el.playerId ) {
+        const assistant = el.ejectedAssistant
+        if(assistant !== null) {
+          const resultReturnAssistantToOffice = returnAssistantToOffice(el,event.assistantId)
+          events.push(...resultReturnAssistantToOffice.events)
+
+          el = {
+            ...el,
+            ejectedAssistant: null,
+            assistants: {
+              ...resultReturnAssistantToOffice.assistants
+            }
+          }
+        }
+      }
       return el
     })
+
     next = {
       ...next,
       playerBoards: [

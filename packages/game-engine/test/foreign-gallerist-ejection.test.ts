@@ -208,7 +208,11 @@ describe('EJECT-004 / END-004: gallerist returns after the final-round turn', ()
     const result = applyTurn(state, command)
     const after = result.state.playerBoards.find(board => board.playerId === ownerId)!
     expect(after.galleristPosition).toBe('LOC-SALES_OFFICE')
-    expect(after.ejectedAssistant).toEqual({ assistantId, displacedByPlayerId: command.playerId })
+    expect(after.ejectedAssistant).toBeNull()
+    expect(after.assistants).toEqual({ ...owner.assistants,
+      assistantOfficeIds: [...owner.assistants.assistantOfficeIds.slice(1), assistantId],
+    })
+    expect(result.events.at(-1)).toEqual({ type: 'AssistantReturnedHome', playerId: ownerId, assistantId })
     expect(result.events.some(event => event.type === 'PieceEjected' && event.pieceType === 'assistant')).toBe(true)
     expect(result.events.some(event => event.type === 'GalleristReturnedHome')).toBe(false)
   })
