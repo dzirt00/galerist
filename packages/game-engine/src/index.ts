@@ -21,6 +21,7 @@ export {
   type ProjectedGameState,
 } from './game-projection.js'
 export { projectEventsForViewer } from './game-event-projection.js'
+export { declineEjectionOpportunity } from './decline-ejection-opportunity.js'
 export { restoreGameState } from './game-state-validation.js'
 export { receiveOrder } from './receive-order.js'
 export { orderCardReward } from './order-card-reward.js'

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  applyGalleristMovementToGameState, applyTurn, confirmTurnDraft, createTurnDraft,
+  applyGalleristMovementToGameState, applyTurn, confirmTurnDraft, createTurnDraft, declineEjectionOpportunity,
   updateTurnDraft, projectGameForViewer, projectEventsForViewer, restoreGameState,
   type GameState, type ConfirmedTurnCommand,
 } from '../src/index.js'
@@ -10,6 +10,75 @@ import { createGameState, startGameAfterSetup } from './helpers.js'
 const departure = 'LOC-ARTISTS_COLONY' as const
 const destination = 'LOC-MEDIA_CENTER' as const
 const otherLocation = 'LOC-SALES_OFFICE' as const
+
+describe('EJECT-003/005: decline assistant opportunity', () => {
+  it.each([0, 1, 3, 4])('returns or removes the assistant with %i office occupants', office => {
+    for (const phase of ['regular_play', 'ending_current_round'] as const) {
+      const { state: base, command, ownerId, playerId, assistantId } = scenario()
+      const state: GameState = {
+        ...(phase === 'regular_play' ? base : { ...base, phase, endTriggeredRound: base.round }),
+        playerBoards: base.playerBoards.map(board => board.playerId !== ownerId ? board : {
+          ...board, assistants: { ...board.assistants, office,
+            hireQueue: board.assistants.assistantHireQueueIds.length - office,
+            assistantOfficeIds: board.assistants.assistantHireQueueIds.slice(0, office),
+            assistantHireQueueIds: board.assistants.assistantHireQueueIds.slice(office),
+          },
+        }),
+      }
+      const pending = applyTurn(state, command).state
+      const before = structuredClone(pending)
+      const owner = pending.playerBoards.find(board => board.playerId === ownerId)!
+      const result = declineEjectionOpportunity(pending, ownerId)
+      expect(result.state).toEqual({ ...pending, pendingEjectionOpportunity: null,
+        playerBoards: pending.playerBoards.map(board => board.playerId !== ownerId ? board : {
+          ...board, ejectedAssistant: null, assistants: { ...board.assistants,
+            office: office === 4 ? 4 : office + 1,
+            assistantOfficeIds: office === 4 ? board.assistants.assistantOfficeIds
+              : [...board.assistants.assistantOfficeIds, assistantId],
+          },
+        }),
+      })
+      expect(result.events).toEqual([
+        { type: 'EjectionActionDeclined', playerId: ownerId },
+        { type: office === 4 ? 'AssistantRemovedFromGame' : 'AssistantReturnedHome', playerId: ownerId, assistantId },
+      ])
+      expect(result.state.playerBoards.find(board => board.playerId === ownerId)!.assistants.assistantHireQueueIds)
+        .toEqual(owner.assistants.assistantHireQueueIds)
+      expect(restoreGameState(JSON.parse(JSON.stringify(result.state)))).toEqual(result.state)
+      for (const viewer of [null, playerId, ownerId]) {
+        expect(projectGameForViewer(result.state, viewer).pendingEjectionOpportunity).toBeNull()
+        expect(projectGameForViewer(result.state, viewer).playerBoards).toEqual(result.state.playerBoards)
+        expect(projectEventsForViewer(result.events, result.state, viewer)).toEqual(result.events)
+      }
+      expect(pending).toEqual(before)
+      expect(Object.isFrozen(result)).toBe(true)
+      expect(Object.isFrozen(result.state.playerBoards.find(board => board.playerId === ownerId)!.assistants.assistantOfficeIds)).toBe(true)
+      expect(result.events.every(Object.isFrozen)).toBe(true)
+      expect(() => declineEjectionOpportunity(result.state, ownerId)).toThrow()
+    }
+  })
+
+  it.each(['owner', 'context', 'assistantId', 'displacedByPlayerId', 'phase'] as const)(
+    'rejects invalid %s atomically', field => {
+      const { state, command, ownerId, playerId } = scenario()
+      const pending = structuredClone(applyTurn(state, command).state)
+      if (pending.phase !== 'regular_play') throw new Error('Expected regular play fixture')
+      const owner = pending.playerBoards.find(board => board.playerId === ownerId)!
+      const invalid: GameState = field === 'phase' ? { ...pending, phase: 'final_round', status: 'in_progress', activePlayerId: playerId, endTriggeredRound: pending.round }
+        : { ...pending, playerBoards: pending.playerBoards.map(board => board !== owner ? board : {
+          ...board, ejectedAssistant: field === 'context' ? null : {
+            ...owner.ejectedAssistant!,
+            assistantId: field === 'assistantId' ? 'wrong-assistant' : owner.ejectedAssistant!.assistantId,
+            displacedByPlayerId: field === 'displacedByPlayerId' ? ownerId : playerId,
+          },
+        }) }
+      const before = structuredClone(invalid)
+      expect(() => declineEjectionOpportunity(invalid, field === 'owner' ? playerId : ownerId)).toThrow()
+      expect(invalid).toEqual(before)
+      expect(Object.isFrozen(invalid)).toBe(false)
+    },
+  )
+})
 
 function scenario() {
   const base = startGameAfterSetup(createGameState(twoPlayerGameConfig, twoPlayerConfigs))

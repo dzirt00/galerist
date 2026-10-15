@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  applyGalleristMovementToGameState, applyTurn, confirmTurnDraft, createTurnDraft,
+  applyGalleristMovementToGameState, applyTurn, confirmTurnDraft, createTurnDraft, declineEjectionOpportunity,
   updateTurnDraft, projectGameForViewer, projectEventsForViewer, restoreGameState,
   type GameState, type ConfirmedTurnCommand, type StartingLocationId,
 } from '../src/index.js'
@@ -13,6 +13,46 @@ const destinations = [
   ['LOC-INTERNATIONAL_MARKET', 'LOC-INTERNATIONAL_MARKET_EJECT'],
   ['LOC-SALES_OFFICE', 'LOC-SALES_OFFICE_EJECT'],
 ] as const
+
+describe('EJECT-003/004: decline gallerist opportunity', () => {
+  it.each(['regular_play', 'ending_current_round'] as const)('returns home after a full turn in %s', phase => {
+    const { state, command, ownerId, playerId } = scenario()
+    const pending = structuredClone(applyTurn(phase === 'regular_play' ? state
+      : { ...state, phase, endTriggeredRound: state.round }, command).state)
+    const before = structuredClone(pending)
+    const result = declineEjectionOpportunity(pending, ownerId)
+    expect(result.state).toEqual({ ...pending, pendingEjectionOpportunity: null,
+      playerBoards: pending.playerBoards.map(board => board.playerId === ownerId
+        ? { ...board, galleristPosition: 'HOME' } : board),
+    })
+    expect(result.events).toEqual([
+      { type: 'EjectionActionDeclined', playerId: ownerId },
+      { type: 'GalleristReturnedHome', playerId: ownerId },
+    ])
+    expect(restoreGameState(JSON.parse(JSON.stringify(result.state)))).toEqual(result.state)
+    for (const viewer of [null, playerId, ownerId]) {
+      expect(projectGameForViewer(result.state, viewer).playerBoards).toEqual(result.state.playerBoards)
+      expect(projectGameForViewer(result.state, viewer).pendingEjectionOpportunity).toBeNull()
+      expect(projectEventsForViewer(result.events, result.state, viewer)).toEqual(result.events)
+    }
+    expect(pending).toEqual(before)
+    expect(Object.isFrozen(pending)).toBe(false)
+    expect(Object.isFrozen(result)).toBe(true)
+    expect(result.state.playerBoards.every(Object.isFrozen)).toBe(true)
+    expect(result.events.every(Object.isFrozen)).toBe(true)
+    expect(() => declineEjectionOpportunity(result.state, ownerId)).toThrow()
+  })
+
+  it.each(['HOME', 'LOC-SALES_OFFICE_EJECT'] as const)('rejects inconsistent position %s atomically', position => {
+    const { state, command, ownerId } = scenario()
+    const pending = applyTurn(state, command).state
+    const invalid: GameState = { ...pending, playerBoards: pending.playerBoards.map(board => board.playerId === ownerId
+      ? { ...board, galleristPosition: position } : board) }
+    const before = structuredClone(invalid)
+    expect(() => declineEjectionOpportunity(invalid, ownerId)).toThrow('Invalid galleristPosition')
+    expect(invalid).toEqual(before)
+  })
+})
 
 function scenario(destination: StartingLocationId = 'LOC-MEDIA_CENTER') {
   const base = startGameAfterSetup(createGameState(twoPlayerGameConfig, twoPlayerConfigs))
