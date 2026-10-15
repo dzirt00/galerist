@@ -1,0 +1,254 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1024" viewBox="0 0 1440 1024"><title>Галерист — настольная концепция</title><defs>
+ <pattern id="felt" width="6" height="6" patternUnits="userSpaceOnUse"><path d="M0 0L6 6M-3 3L3 9M3 -3L9 3" stroke="#A1B3A0" stroke-width=".5" opacity=".11"/></pattern>
+ <pattern id="paper" width="51" height="43" patternUnits="userSpaceOnUse"><path d="M0 4L22 7L34 3M7 24L18 21M33 35L48 39" stroke="#806F48" stroke-width=".5" opacity=".08"/><circle cx="30" cy="17" r="1" fill="#97856C" opacity=".08"/></pattern>
+ <pattern id="oak" width="80" height="20" patternUnits="userSpaceOnUse"><rect width="80" height="20" fill="#DDD0AB"/><path d="M0 3Q30 7 80 2M0 10Q40 15 80 9M0 18Q30 13 80 17" fill="none" stroke="#B5A175" stroke-width=".6" opacity=".5"/></pattern>
+ <pattern id="stone" width="28" height="18" patternUnits="userSpaceOnUse"><rect width="28" height="18" fill="#B2B8AA"/><path d="M0 0H28V18H0ZM0 9H28M14 0V9M6 9V18" fill="none" stroke="#C3C7BA" stroke-width=".7"/></pattern>
+ <pattern id="tiles" width="24" height="16" patternUnits="userSpaceOnUse"><rect width="24" height="16" fill="#E1E0D0"/><path d="M0 0L24 16M-12 0L12 16M12 0L36 16M24 0L0 16M12 0L-12 16M36 0L12 16" stroke="#C5C9B6" stroke-width=".8"/></pattern>
+ <pattern id="parquet" width="36" height="28" patternUnits="userSpaceOnUse"><rect width="36" height="28" fill="#CBB77A"/><path d="M0 0L18 14L36 0M0 7L18 21L36 7M0 14L18 28L36 14M0 21L18 35L36 21" fill="none" stroke="#EEE3B8" stroke-width="1" opacity=".6"/></pattern></defs>
+<rect x="0" y="0" width="1440" height="1024" rx="0" fill="#155054" stroke="none" stroke-width="1"/>
+<rect x="0" y="68" width="1440" height="956" rx="0" fill="url(#felt)" stroke="none" stroke-width="1"/>
+<rect x="0" y="0" width="1440" height="68" rx="0" fill="#EAE5D8" stroke="none" stroke-width="1"/>
+<rect x="0" y="0" width="1440" height="68" rx="0" fill="url(#paper)" stroke="none" stroke-width="1"/>
+<rect x="24" y="17" width="34" height="34" rx="3" fill="#4C6257" stroke="none" stroke-width="1"/>
+<text x="41" y="42" fill="#F8F4E7" font-family="Georgia" font-size="23" font-weight="400" text-anchor="middle">Г</text>
+<text x="72" y="33" fill="#3D4038" font-family="Manrope, Arial, sans-serif" font-size="17" font-weight="700" text-anchor="start">ГАЛЕРИСТ</text>
+<text x="73" y="50" fill="#78796D" font-family="Manrope, Arial, sans-serif" font-size="8" font-weight="600" text-anchor="start">ЗАКРЫТАЯ АЛЬФА</text>
+<text x="380" y="40" fill="#3D4038" font-family="Manrope, Arial, sans-serif" font-size="14" font-weight="600" text-anchor="start">Вечер в галерее</text>
+<text x="665" y="40" fill="#78796D" font-family="Manrope, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="start">Игровое поле</text>
+<text x="810" y="40" fill="#3D4038" font-family="Manrope, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="start">Моя галерея</text>
+<text x="955" y="40" fill="#78796D" font-family="Manrope, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="start">Журнал</text>
+<text x="1070" y="40" fill="#78796D" font-family="Manrope, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="start">Памятка</text>
+<circle cx="1359" cy="34" r="17" fill="#158BB0" stroke="none" stroke-width="1"/>
+<text x="1359" y="39" fill="#FFFFFF" font-family="Manrope, Arial, sans-serif" font-size="13" font-weight="700" text-anchor="middle">А</text>
+<text x="1230" y="39" fill="#3D4038" font-family="Manrope, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="start">Артём</text>
+<text x="25" y="100" fill="#B9C7B9" font-family="Manrope, Arial, sans-serif" font-size="10" font-weight="600" text-anchor="start">РАУНД 4  /  ОБЫЧНАЯ ИГРА</text>
+<text x="24" y="129" fill="#F8F4E7" font-family="Lora, Georgia, serif" font-size="24" font-weight="400" text-anchor="start">Личный планшет · Артём</text>
+<rect x="568" y="91" width="112" height="28" rx="14" fill="#E0BC25" stroke="none" stroke-width="1"/>
+<text x="624" y="110" fill="#3D4038" font-family="Manrope, Arial, sans-serif" font-size="11" font-weight="600" text-anchor="middle">●  Ваш ход</text>
+<text x="707" y="110" fill="#F8F4E7" font-family="Manrope, Arial, sans-serif" font-size="25" font-weight="600" text-anchor="start">24</text>
+<text x="746" y="109" fill="#C9D2C4" font-family="Manrope, Arial, sans-serif" font-size="11" font-weight="400" text-anchor="start">монеты</text>
+<text x="831" y="110" fill="#F8F4E7" font-family="Manrope, Arial, sans-serif" font-size="25" font-weight="600" text-anchor="start">12</text>
+<text x="867" y="109" fill="#C9D2C4" font-family="Manrope, Arial, sans-serif" font-size="11" font-weight="400" text-anchor="start">влияние</text>
+<rect x="968" y="88" width="34" height="24" rx="3" fill="#158BB0" stroke="none" stroke-width="1"/>
+<circle cx="968" cy="100" r="4" fill="#EAE5D3" stroke="none" stroke-width="1"/>
+<circle cx="1002" cy="100" r="4" fill="#EAE5D3" stroke="none" stroke-width="1"/>
+<text x="985" y="104" fill="#FFFFFF" font-family="Manrope, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle">2</text>
+<rect x="1009" y="88" width="34" height="24" rx="3" fill="#A42E7E" stroke="none" stroke-width="1"/>
+<circle cx="1009" cy="100" r="4" fill="#EAE5D3" stroke="none" stroke-width="1"/>
+<circle cx="1043" cy="100" r="4" fill="#EAE5D3" stroke="none" stroke-width="1"/>
+<text x="1026" y="104" fill="#FFFFFF" font-family="Manrope, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle">1</text>
+<rect x="1050" y="88" width="34" height="24" rx="3" fill="#EAE5D3" stroke="none" stroke-width="1"/>
+<circle cx="1050" cy="100" r="4" fill="#EAE5D3" stroke="none" stroke-width="1"/>
+<circle cx="1084" cy="100" r="4" fill="#EAE5D3" stroke="none" stroke-width="1"/>
+<text x="1067" y="104" fill="#FFFFFF" font-family="Manrope, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle">1</text>
+<text x="1148" y="108" fill="#F8F4E7" font-family="Manrope, Arial, sans-serif" font-size="22" font-weight="600" text-anchor="start">02:48</text>
+<text x="1260" y="107" fill="#C9D2C4" font-family="Manrope, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">Ход Артёма</text>
+<rect x="24" y="151" width="1392" height="706" rx="4" fill="#E6DEC6" stroke="#CDC7AC" stroke-width="3"/>
+<rect x="24" y="151" width="1392" height="706" rx="3" fill="url(#paper)" stroke="none" stroke-width="1"/>
+<rect x="24" y="151" width="1392" height="9" rx="0" fill="#158BB0" stroke="none" stroke-width="1"/>
+<text x="47" y="189" fill="#158BB0" font-family="Manrope, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="start">ПЛАНШЕТ ИГРОКА</text>
+<text x="228" y="190" fill="#3D4038" font-family="Lora, Georgia, serif" font-size="27" font-weight="400" text-anchor="start">Галерея Артёма</text>
+<text x="1080" y="188" fill="#4C6257" font-family="Manrope, Arial, sans-serif" font-size="15" font-weight="600" text-anchor="start">24 монеты   /   12 влияния</text>
+<rect x="42" y="211" width="94" height="617" rx="2" fill="#8C967A" stroke="#EFE9D4" stroke-width="1"/>
+<svg x="74" y="222" width="28" height="28" viewBox="0 0 30 30"><g transform="translate(15 15) scale(1) translate(-13 -13)" fill="none" stroke="#F8F4E7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="5" r="3"/><path d="M8 10H18L22 17L18 19L16 15V24H10V15L8 19L4 17Z"/></g></svg>
+<rect x="49" y="263" width="80" height="60" rx="2" fill="#B7BA9C" stroke="#E2DFCB" stroke-width="1"/>
+<g transform="translate(72 294) scale(0.65)"><ellipse cx="4" cy="19" rx="15" ry="5" fill="#283B35" opacity=".26"/><path d="M-5 -8Q-10 -20 0 -20Q10 -20 5 -8L15 -2L18 7L9 9L7 4L9 20H2L0 12L-2 20H-9L-7 4L-10 9L-18 7L-15 -2Z" fill="#158BB0" stroke="#605441" stroke-opacity=".55" stroke-width="1.2"/><path d="M-5 -8L-15 -1L-17 5M-6 5L-8 18" fill="none" stroke="#FFF8E2" stroke-opacity=".5" stroke-width="1.5"/></g>
+<circle cx="111" cy="276" r="10" fill="#946040" stroke="none" stroke-width="1"/>
+<text x="111" y="280" fill="#F8F4E7" font-family="Manrope, Arial, sans-serif" font-size="10" font-weight="700" text-anchor="middle">1</text>
+<rect x="49" y="330" width="80" height="60" rx="2" fill="#B7BA9C" stroke="#E2DFCB" stroke-width="1"/>
+<g transform="translate(72 361) scale(0.65)"><ellipse cx="4" cy="19" rx="15" ry="5" fill="#283B35" opacity=".26"/><path d="M-5 -8Q-10 -20 0 -20Q10 -20 5 -8L15 -2L18 7L9 9L7 4L9 20H2L0 12L-2 20H-9L-7 4L-10 9L-18 7L-15 -2Z" fill="#158BB0" stroke="#605441" stroke-opacity=".55" stroke-width="1.2"/><path d="M-5 -8L-15 -1L-17 5M-6 5L-8 18" fill="none" stroke="#FFF8E2" stroke-opacity=".5" stroke-width="1.5"/></g>
+<circle cx="111" cy="343" r="10" fill="#946040" stroke="none" stroke-width="1"/>
+<text x="111" y="347" fill="#F8F4E7" font-family="Manrope, Arial, sans-serif" font-size="10" font-weight="700" text-anchor="middle">2</text>
+<svg x="101" y="359" width="22" height="22" viewBox="0 0 30 30"><g transform="translate(15 15) scale(1) translate(-13 -13)" fill="none" stroke="#946040" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5H24V10C18 10 18 16 24 16V21H2V16C8 16 8 10 2 10ZM10 5V21M16 5V21"/></g></svg>
+<rect x="49" y="397" width="80" height="60" rx="2" fill="#B7BA9C" stroke="#E2DFCB" stroke-width="1"/>
+<g transform="translate(72 428) scale(0.65)"><ellipse cx="4" cy="19" rx="15" ry="5" fill="#283B35" opacity=".26"/><path d="M-5 -8Q-10 -20 0 -20Q10 -20 5 -8L15 -2L18 7L9 9L7 4L9 20H2L0 12L-2 20H-9L-7 4L-10 9L-18 7L-15 -2Z" fill="#158BB0" stroke="#605441" stroke-opacity=".55" stroke-width="1.2"/><path d="M-5 -8L-15 -1L-17 5M-6 5L-8 18" fill="none" stroke="#FFF8E2" stroke-opacity=".5" stroke-width="1.5"/></g>
+<circle cx="111" cy="410" r="10" fill="#946040" stroke="none" stroke-width="1"/>
+<text x="111" y="414" fill="#F8F4E7" font-family="Manrope, Arial, sans-serif" font-size="10" font-weight="700" text-anchor="middle">2</text>
+<svg x="101" y="426" width="22" height="22" viewBox="0 0 30 30"><g transform="translate(15 15) scale(1) translate(-13 -13)" fill="none" stroke="#C84187" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5H24V10C18 10 18 16 24 16V21H2V16C8 16 8 10 2 10ZM10 5V21M16 5V21"/></g></svg>
+<rect x="49" y="464" width="80" height="60" rx="2" fill="#B7BA9C" stroke="#E2DFCB" stroke-width="1"/>
+<g transform="translate(72 495) scale(0.65)"><ellipse cx="4" cy="19" rx="15" ry="5" fill="#283B35" opacity=".26"/><path d="M-5 -8Q-10 -20 0 -20Q10 -20 5 -8L15 -2L18 7L9 9L7 4L9 20H2L0 12L-2 20H-9L-7 4L-10 9L-18 7L-15 -2Z" fill="#158BB0" stroke="#605441" stroke-opacity=".55" stroke-width="1.2"/><path d="M-5 -8L-15 -1L-17 5M-6 5L-8 18" fill="none" stroke="#FFF8E2" stroke-opacity=".5" stroke-width="1.5"/></g>
+<circle cx="111" cy="477" r="10" fill="#946040" stroke="none" stroke-width="1"/>
+<text x="111" y="481" fill="#F8F4E7" font-family="Manrope, Arial, sans-serif" font-size="10" font-weight="700" text-anchor="middle">3</text>
+<svg x="101" y="493" width="22" height="22" viewBox="0 0 30 30"><g transform="translate(15 15) scale(0.8461538461538461) translate(-11 -10)" fill="none" stroke="#C84187" stroke-width="2.1272727272727274" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="10" r="3"/><path d="M7 16C1 9 6 1 13 1C20 1 25 9 19 16M9 13L7 23H19L17 13M5 19C-4 8 3 -3 13 -3"/></g></svg>
+<rect x="49" y="531" width="80" height="60" rx="2" fill="#B7BA9C" stroke="#E2DFCB" stroke-width="1"/>
+<g transform="translate(72 562) scale(0.65)"><ellipse cx="4" cy="19" rx="15" ry="5" fill="#283B35" opacity=".26"/><path d="M-5 -8Q-10 -20 0 -20Q10 -20 5 -8L15 -2L18 7L9 9L7 4L9 20H2L0 12L-2 20H-9L-7 4L-10 9L-18 7L-15 -2Z" fill="#158BB0" stroke="#605441" stroke-opacity=".55" stroke-width="1.2"/><path d="M-5 -8L-15 -1L-17 5M-6 5L-8 18" fill="none" stroke="#FFF8E2" stroke-opacity=".5" stroke-width="1.5"/></g>
+<circle cx="111" cy="544" r="10" fill="#946040" stroke="none" stroke-width="1"/>
+<text x="111" y="548" fill="#F8F4E7" font-family="Manrope, Arial, sans-serif" font-size="10" font-weight="700" text-anchor="middle">3</text>
+<rect x="49" y="598" width="80" height="60" rx="2" fill="#B7BA9C" stroke="#E2DFCB" stroke-width="1"/>
+<g transform="translate(72 629) scale(0.65)"><ellipse cx="4" cy="19" rx="15" ry="5" fill="#283B35" opacity=".26"/><path d="M-5 -8Q-10 -20 0 -20Q10 -20 5 -8L15 -2L18 7L9 9L7 4L9 20H2L0 12L-2 20H-9L-7 4L-10 9L-18 7L-15 -2Z" fill="#158BB0" stroke="#605441" stroke-opacity=".55" stroke-width="1.2"/><path d="M-5 -8L-15 -1L-17 5M-6 5L-8 18" fill="none" stroke="#FFF8E2" stroke-opacity=".5" stroke-width="1.5"/></g>
+<circle cx="111" cy="611" r="10" fill="#946040" stroke="none" stroke-width="1"/>
+<text x="111" y="615" fill="#F8F4E7" font-family="Manrope, Arial, sans-serif" font-size="10" font-weight="700" text-anchor="middle">4</text>
+<svg x="101" y="627" width="22" height="22" viewBox="0 0 30 30"><g transform="translate(15 15) scale(1) translate(-13 -13)" fill="none" stroke="#F8F4E7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5H24V10C18 10 18 16 24 16V21H2V16C8 16 8 10 2 10ZM10 5V21M16 5V21"/></g></svg>
+<rect x="49" y="665" width="80" height="60" rx="2" fill="#B7BA9C" stroke="#E2DFCB" stroke-width="1"/>
+<g transform="translate(72 696) scale(0.65)"><ellipse cx="4" cy="19" rx="15" ry="5" fill="#283B35" opacity=".26"/><path d="M-5 -8Q-10 -20 0 -20Q10 -20 5 -8L15 -2L18 7L9 9L7 4L9 20H2L0 12L-2 20H-9L-7 4L-10 9L-18 7L-15 -2Z" fill="#158BB0" stroke="#605441" stroke-opacity=".55" stroke-width="1.2"/><path d="M-5 -8L-15 -1L-17 5M-6 5L-8 18" fill="none" stroke="#FFF8E2" stroke-opacity=".5" stroke-width="1.5"/></g>
+<circle cx="111" cy="678" r="10" fill="#946040" stroke="none" stroke-width="1"/>
+<text x="111" y="682" fill="#F8F4E7" font-family="Manrope, Arial, sans-serif" font-size="10" font-weight="700" text-anchor="middle">5</text>
+<rect x="49" y="732" width="80" height="60" rx="2" fill="#B7BA9C" stroke="#E2DFCB" stroke-width="1"/>
+<g transform="translate(72 763) scale(0.65)"><ellipse cx="4" cy="19" rx="15" ry="5" fill="#283B35" opacity=".26"/><path d="M-5 -8Q-10 -20 0 -20Q10 -20 5 -8L15 -2L18 7L9 9L7 4L9 20H2L0 12L-2 20H-9L-7 4L-10 9L-18 7L-15 -2Z" fill="#158BB0" stroke="#605441" stroke-opacity=".55" stroke-width="1.2"/><path d="M-5 -8L-15 -1L-17 5M-6 5L-8 18" fill="none" stroke="#FFF8E2" stroke-opacity=".5" stroke-width="1.5"/></g>
+<circle cx="111" cy="745" r="10" fill="#946040" stroke="none" stroke-width="1"/>
+<text x="111" y="749" fill="#F8F4E7" font-family="Manrope, Arial, sans-serif" font-size="10" font-weight="700" text-anchor="middle">6</text>
+<svg x="101" y="761" width="22" height="22" viewBox="0 0 30 30"><g transform="translate(15 15) scale(1) translate(-13 -13)" fill="none" stroke="#946040" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="13" r="11"/><path d="M17 7H10C6 7 6 12 11 13L15 14C20 16 17 20 10 19M13 4V22"/></g></svg>
+<rect x="154" y="212" width="943" height="307" rx="2" fill="url(#parquet)" stroke="#BBA66D" stroke-width="1"/>
+<text x="174" y="236" fill="#4C6257" font-family="Manrope, Arial, sans-serif" font-size="10" font-weight="700" text-anchor="start">ВЫСТАВЛЕННЫЕ РАБОТЫ</text>
+<path d="M168 466V254L381 277V489Z" fill="#F4EEDF" stroke="#B5B39F" stroke-width="1.6"/><path d="M381 277L389 270V482L381 489Z" fill="#AAAD9B"/><path d="M174 259L377 281" stroke="#FFFDF3" stroke-width="3"/>
+<rect x="196" y="291" width="157" height="118" rx="1" fill="#EAD9B7" stroke="none" stroke-width="1"/>
+<svg x="196" y="291" width="157" height="118" viewBox="0 0 180 120" preserveAspectRatio="none">
+<path d="M0 100Q60 10 180 80V120H0Z" fill="#40594B"/><path d="M0 86Q80 135 180 20V62Q70 160 0 112Z" fill="#B85E41"/><circle cx="124" cy="29" r="19" fill="#D4AE59"/><path d="M36 18V93M43 18V86" stroke="#F6EEDB" stroke-width="4"/>
+</svg>
+<text x="275" y="438" fill="#3D4038" font-family="Manrope, Arial, sans-serif" font-size="11" font-weight="600" text-anchor="middle">Тихая геометрия</text>
+<g transform="translate(263.5 465) scale(0.48)"><ellipse cx="4" cy="19" rx="15" ry="5" fill="#283B35" opacity=".26"/><path d="M-5 -8Q-10 -20 0 -20Q10 -20 5 -8L15 -2L18 7L9 9L7 4L9 20H2L0 12L-2 20H-9L-7 4L-10 9L-18 7L-15 -2Z" fill="#F8F4E7" stroke="#605441" stroke-opacity=".55" stroke-width="1.2"/><path d="M-5 -8L-15 -1L-17 5M-6 5L-8 18" fill="none" stroke="#FFF8E2" stroke-opacity=".5" stroke-width="1.5"/></g>
+<g transform="translate(286.5 465) scale(0.48)"><ellipse cx="4" cy="19" rx="15" ry="5" fill="#283B35" opacity=".26"/><path d="M-5 -8Q-10 -20 0 -20Q10 -20 5 -8L15 -2L18 7L9 9L7 4L9 20H2L0 12L-2 20H-9L-7 4L-10 9L-18 7L-15 -2Z" fill="#946040" stroke="#605441" stroke-opacity=".55" stroke-width="1.2"/><path d="M-5 -8L-15 -1L-17 5M-6 5L-8 18" fill="none" stroke="#FFF8E2" stroke-opacity=".5" stroke-width="1.5"/></g>
+<path d="M398 466V254L611 277V489Z" fill="#F4EEDF" stroke="#B5B39F" stroke-width="1.6"/><path d="M611 277L619 270V482L611 489Z" fill="#AAAD9B"/><path d="M404 259L607 281" stroke="#FFFDF3" stroke-width="3"/>
+<rect x="426" y="291" width="157" height="118" rx="1" fill="#C3CEBF" stroke="none" stroke-width="1"/>
+<svg x="426" y="291" width="157" height="118" viewBox="0 0 180 120" preserveAspectRatio="none">
+<circle cx="89" cy="59" r="41" fill="#F0E9D8"/><path d="M31 120L72 0H100L59 120Z" fill="#3C5D53"/><path d="M85 120L128 0H147L107 120Z" fill="#BE7751"/><path d="M0 88H180" stroke="#293E36" stroke-width="3"/>
+</svg>
+<text x="505" y="438" fill="#3D4038" font-family="Manrope, Arial, sans-serif" font-size="11" font-weight="600" text-anchor="middle">Красная линия</text>
+<g transform="translate(493.5 465) scale(0.48)"><ellipse cx="4" cy="19" rx="15" ry="5" fill="#283B35" opacity=".26"/><path d="M-5 -8Q-10 -20 0 -20Q10 -20 5 -8L15 -2L18 7L9 9L7 4L9 20H2L0 12L-2 20H-9L-7 4L-10 9L-18 7L-15 -2Z" fill="#F8F4E7" stroke="#605441" stroke-opacity=".55" stroke-width="1.2"/><path d="M-5 -8L-15 -1L-17 5M-6 5L-8 18" fill="none" stroke="#FFF8E2" stroke-opacity=".5" stroke-width="1.5"/></g>
+<g transform="translate(516.5 465) scale(0.48)"><ellipse cx="4" cy="19" rx="15" ry="5" fill="#283B35" opacity=".26"/><path d="M-5 -8Q-10 -20 0 -20Q10 -20 5 -8L15 -2L18 7L9 9L7 4L9 20H2L0 12L-2 20H-9L-7 4L-10 9L-18 7L-15 -2Z" fill="#946040" stroke="#605441" stroke-opacity=".55" stroke-width="1.2"/><path d="M-5 -8L-15 -1L-17 5M-6 5L-8 18" fill="none" stroke="#FFF8E2" stroke-opacity=".5" stroke-width="1.5"/></g>
+<path d="M628 466V254L841 277V489Z" fill="#F4EEDF" stroke="#B5B39F" stroke-width="1.6"/><path d="M841 277L849 270V482L841 489Z" fill="#AAAD9B"/><path d="M634 259L837 281" stroke="#FFFDF3" stroke-width="3"/>
+<rect x="690" y="302" width="88" height="69" rx="2" fill="none" stroke="#D0CAB7" stroke-width="1"/>
+<rect x="715" y="406" width="45" height="45" rx="4" fill="#727C6D" stroke="none" stroke-width="1"/>
+<rect x="713" y="403" width="45" height="45" rx="4" fill="#F3F0E3" stroke="#ADAE99" stroke-width="1.3"/>
+<rect x="716" y="406" width="39" height="39" rx="2" fill="none" stroke="#D7D4BF" stroke-width="1"/>
+<svg x="722.9" y="407.95" width="25.200000000000003" height="25.200000000000003" viewBox="0 0 30 30"><g transform="translate(15 15) scale(1) translate(-13 -13)" fill="none" stroke="#724944" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L16 9L24 10L18 16L20 24L13 20L6 24L8 16L2 10L10 9Z"/></g></svg>
+<text x="735.5" y="442.6" fill="#3D4038" font-family="Manrope, Arial, sans-serif" font-size="5.8500000000000005" font-weight="600" text-anchor="middle">2 вл. · 4 мон.</text>
+<text x="735" y="480" fill="#78796D" font-family="Manrope, Arial, sans-serif" font-size="9" font-weight="400" text-anchor="middle">Стартовый жетон</text>
+<path d="M858 466V254L1071 277V489Z" fill="#F4EEDF" stroke="#B5B39F" stroke-width="1.6"/><path d="M1071 277L1079 270V482L1071 489Z" fill="#AAAD9B"/><path d="M864 259L1067 281" stroke="#FFFDF3" stroke-width="3"/>
+<rect x="920" y="302" width="88" height="69" rx="2" fill="none" stroke="#D0CAB7" stroke-width="1"/>
+<circle cx="964" cy="421" r="16" fill="#F8F4E7" stroke="#C7C9BC" stroke-width="1"/>
+<svg x="951" y="408" width="26" height="26" viewBox="0 0 30 30"><g transform="translate(15 15) scale(1) translate(-13 -13)" fill="none" stroke="#724944" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L16 9L24 10L18 16L20 24L13 20L6 24L8 16L2 10L10 9Z"/></g></svg>
+<text x="965" y="461" fill="#78796D" font-family="Manrope, Arial, sans-serif" font-size="10" font-weight="400" text-anchor="middle">Свободная перегородка</text>
+<rect x="1115" y="212" width="175" height="307" rx="3" fill="#CCCFB8" stroke="#B5B89F" stroke-width="1"/>
+<text x="1133" y="237" fill="#4C6257" font-family="Manrope, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="start">ОФИС</text>
+<circle cx="1155" cy="293" r="24" fill="#DFE0C9" stroke="#BBBBA4" stroke-width="1"/>
+<g transform="translate(1155 292) scale(1)"><ellipse cx="4" cy="19" rx="15" ry="5" fill="#283B35" opacity=".26"/><path d="M-5 -8Q-10 -20 0 -20Q10 -20 5 -8L15 -2L18 7L9 9L7 4L9 20H2L0 12L-2 20H-9L-7 4L-10 9L-18 7L-15 -2Z" fill="#158BB0" stroke="#605441" stroke-opacity=".55" stroke-width="1.2"/><path d="M-5 -8L-15 -1L-17 5M-6 5L-8 18" fill="none" stroke="#FFF8E2" stroke-opacity=".5" stroke-width="1.5"/></g>
+<circle cx="1218" cy="293" r="24" fill="#DFE0C9" stroke="#BBBBA4" stroke-width="1"/>
+<g transform="translate(1218 292) scale(1)"><ellipse cx="4" cy="19" rx="15" ry="5" fill="#283B35" opacity=".26"/><path d="M-5 -8Q-10 -20 0 -20Q10 -20 5 -8L15 -2L18 7L9 9L7 4L9 20H2L0 12L-2 20H-9L-7 4L-10 9L-18 7L-15 -2Z" fill="#158BB0" stroke="#605441" stroke-opacity=".55" stroke-width="1.2"/><path d="M-5 -8L-15 -1L-17 5M-6 5L-8 18" fill="none" stroke="#FFF8E2" stroke-opacity=".5" stroke-width="1.5"/></g>
+<circle cx="1155" cy="385" r="24" fill="#DFE0C9" stroke="#BBBBA4" stroke-width="1"/>
+<svg x="1141" y="369" width="29" height="29" viewBox="0 0 30 30"><g transform="translate(15 15) scale(1) translate(-13 -13)" fill="none" stroke="#BBC1AC" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="5" r="3"/><path d="M8 10H18L22 17L18 19L16 15V24H10V15L8 19L4 17Z"/></g></svg>
+<circle cx="1218" cy="385" r="24" fill="#DFE0C9" stroke="#BBBBA4" stroke-width="1"/>
+<svg x="1204" y="369" width="29" height="29" viewBox="0 0 30 30"><g transform="translate(15 15) scale(1) translate(-13 -13)" fill="none" stroke="#BBC1AC" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="5" r="3"/><path d="M8 10H18L22 17L18 19L16 15V24H10V15L8 19L4 17Z"/></g></svg>
+<text x="1203" y="491" fill="#4C6257" font-family="Manrope, Arial, sans-serif" font-size="10" font-weight="600" text-anchor="middle">2 / 4 помощника</text>
+<rect x="1306" y="212" width="91" height="307" rx="2" fill="#858268" stroke="#DED5B5" stroke-width="1"/>
+<text x="1352" y="232" fill="#F8F4E7" font-family="Manrope, Arial, sans-serif" font-size="9" font-weight="700" text-anchor="middle">ПРОДАЖА</text>
+<rect x="1311" y="245" width="81" height="34" rx="1" fill="#766D4F" stroke="#D2CEAF" stroke-width="1"/>
+<circle cx="1327" cy="261" r="11" fill="#946040" stroke="none" stroke-width="1"/>
+<text x="1327" y="265" fill="#F8F4E7" font-family="Manrope, Arial, sans-serif" font-size="10" font-weight="600" text-anchor="middle">20</text>
+<svg x="1344" y="251" width="22" height="22" viewBox="0 0 30 30"><g transform="translate(15 15) scale(1) translate(-13 -13)" fill="none" stroke="#E0BC25" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L16 9L24 10L18 16L20 24L13 20L6 24L8 16L2 10L10 9Z"/></g></svg>
+<rect x="1311" y="282" width="81" height="34" rx="1" fill="#766D4F" stroke="#D2CEAF" stroke-width="1"/>
+<circle cx="1327" cy="298" r="11" fill="#946040" stroke="none" stroke-width="1"/>
+<text x="1327" y="302" fill="#F8F4E7" font-family="Manrope, Arial, sans-serif" font-size="10" font-weight="600" text-anchor="middle">17</text>
+<svg x="1344" y="288" width="22" height="22" viewBox="0 0 30 30"><g transform="translate(15 15) scale(1) translate(-13 -13)" fill="none" stroke="#E0BC25" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L16 9L24 10L18 16L20 24L13 20L6 24L8 16L2 10L10 9Z"/></g></svg>
+<rect x="1366" y="292" width="23" height="13" rx="6" fill="#158BB0" stroke="none" stroke-width="1"/>
+<text x="1377" y="301" fill="#F8F4E7" font-family="Manrope, Arial, sans-serif" font-size="7" font-weight="700" text-anchor="middle">B</text>
+<rect x="1311" y="319" width="81" height="34" rx="1" fill="#766D4F" stroke="#D2CEAF" stroke-width="1"/>
+<circle cx="1327" cy="335" r="11" fill="#946040" stroke="none" stroke-width="1"/>
+<text x="1327" y="339" fill="#F8F4E7" font-family="Manrope, Arial, sans-serif" font-size="10" font-weight="600" text-anchor="middle">14</text>
+<svg x="1344" y="325" width="22" height="22" viewBox="0 0 30 30"><g transform="translate(15 15) scale(1) translate(-13 -13)" fill="none" stroke="#E0BC25" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L16 9L24 10L18 16L20 24L13 20L6 24L8 16L2 10L10 9Z"/></g></svg>
+<rect x="1311" y="356" width="81" height="34" rx="1" fill="#8E9371" stroke="#D2CEAF" stroke-width="1"/>
+<circle cx="1327" cy="372" r="11" fill="#946040" stroke="none" stroke-width="1"/>
+<text x="1327" y="376" fill="#F8F4E7" font-family="Manrope, Arial, sans-serif" font-size="10" font-weight="600" text-anchor="middle">11</text>
+<svg x="1344" y="362" width="22" height="22" viewBox="0 0 30 30"><g transform="translate(15 15) scale(1) translate(-13 -13)" fill="none" stroke="#CCCF77" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L16 9L24 10L18 16L20 24L13 20L6 24L8 16L2 10L10 9Z"/></g></svg>
+<rect x="1311" y="393" width="81" height="34" rx="1" fill="#8E9371" stroke="#D2CEAF" stroke-width="1"/>
+<circle cx="1327" cy="409" r="11" fill="#946040" stroke="none" stroke-width="1"/>
+<text x="1327" y="413" fill="#F8F4E7" font-family="Manrope, Arial, sans-serif" font-size="10" font-weight="600" text-anchor="middle">8</text>
+<svg x="1344" y="399" width="22" height="22" viewBox="0 0 30 30"><g transform="translate(15 15) scale(1) translate(-13 -13)" fill="none" stroke="#CCCF77" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L16 9L24 10L18 16L20 24L13 20L6 24L8 16L2 10L10 9Z"/></g></svg>
+<rect x="1366" y="403" width="23" height="13" rx="6" fill="#A74C5B" stroke="none" stroke-width="1"/>
+<text x="1377" y="412" fill="#F8F4E7" font-family="Manrope, Arial, sans-serif" font-size="7" font-weight="700" text-anchor="middle">R</text>
+<rect x="1311" y="430" width="81" height="34" rx="1" fill="#8E9371" stroke="#D2CEAF" stroke-width="1"/>
+<circle cx="1327" cy="446" r="11" fill="#946040" stroke="none" stroke-width="1"/>
+<text x="1327" y="450" fill="#F8F4E7" font-family="Manrope, Arial, sans-serif" font-size="10" font-weight="600" text-anchor="middle">5</text>
+<svg x="1344" y="436" width="22" height="22" viewBox="0 0 30 30"><g transform="translate(15 15) scale(1) translate(-13 -13)" fill="none" stroke="#CCCF77" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L16 9L24 10L18 16L20 24L13 20L6 24L8 16L2 10L10 9Z"/></g></svg>
+<rect x="1311" y="467" width="81" height="34" rx="1" fill="#8E9371" stroke="#D2CEAF" stroke-width="1"/>
+<circle cx="1327" cy="483" r="11" fill="#946040" stroke="none" stroke-width="1"/>
+<text x="1327" y="487" fill="#F8F4E7" font-family="Manrope, Arial, sans-serif" font-size="10" font-weight="600" text-anchor="middle">0</text>
+<svg x="1344" y="473" width="22" height="22" viewBox="0 0 30 30"><g transform="translate(15 15) scale(1) translate(-13 -13)" fill="none" stroke="#CCCF77" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L16 9L24 10L18 16L20 24L13 20L6 24L8 16L2 10L10 9Z"/></g></svg>
+<rect x="154" y="540" width="355" height="288" rx="3" fill="#9A9E7A" stroke="#E6DFCA" stroke-width="1"/>
+<text x="171" y="566" fill="#F8F4E7" font-family="Manrope, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="start">КЛЕТКИ РЕПУТАЦИИ</text>
+<rect x="170" y="581" width="146" height="63" rx="3" fill="#D6D7BE" stroke="#F2ECD9" stroke-width="1"/>
+<rect x="219" y="589.5" width="52" height="52" rx="4" fill="#727C6D" stroke="none" stroke-width="1"/>
+<rect x="217" y="586.5" width="52" height="52" rx="4" fill="#F3F0E3" stroke="#ADAE99" stroke-width="1.3"/>
+<rect x="220" y="589.5" width="46" height="46" rx="2" fill="none" stroke="#D7D4BF" stroke-width="1"/>
+<svg x="228.44" y="592.22" width="29.120000000000005" height="29.120000000000005" viewBox="0 0 30 30"><g transform="translate(15 15) scale(0.9565217391304348) translate(-12 -12.5)" fill="none" stroke="#724944" stroke-width="1.8818181818181818" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4L9 1L17 11L12 15ZM12 12L22 23M2 24H12M3 21H11V24"/></g></svg>
+<text x="243" y="632.26" fill="#3D4038" font-family="Manrope, Arial, sans-serif" font-size="6.76" font-weight="600" text-anchor="middle">1 вл. · 3 мон.</text>
+<rect x="344" y="581" width="146" height="63" rx="3" fill="#D6D7BE" stroke="#F2ECD9" stroke-width="1"/>
+<svg x="397" y="592.5" width="40" height="40" viewBox="0 0 30 30"><g transform="translate(15 15) scale(1) translate(-13 -13)" fill="none" stroke="#724944" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="5" r="3"/><path d="M8 10H18L22 17L18 19L16 15V24H10V15L8 19L4 17Z"/></g></svg>
+<rect x="170" y="658" width="146" height="63" rx="3" fill="#D6D7BE" stroke="#F2ECD9" stroke-width="1"/>
+<svg x="223" y="669.5" width="40" height="40" viewBox="0 0 30 30"><g transform="translate(15 15) scale(1) translate(-13 -13)" fill="none" stroke="#724944" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="13" r="11"/><path d="M17 7H10C6 7 6 12 11 13L15 14C20 16 17 20 10 19M13 4V22"/></g></svg>
+<rect x="344" y="658" width="146" height="63" rx="3" fill="#D6D7BE" stroke="#F2ECD9" stroke-width="1"/>
+<svg x="397" y="669.5" width="40" height="40" viewBox="0 0 30 30"><g transform="translate(15 15) scale(1) translate(-13 -13)" fill="none" stroke="#724944" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5H24V10C18 10 18 16 24 16V21H2V16C8 16 8 10 2 10ZM10 5V21M16 5V21"/></g></svg>
+<text x="451" y="698" fill="#724944" font-family="Manrope, Arial, sans-serif" font-size="17" font-weight="700" text-anchor="start">2</text>
+<rect x="170" y="735" width="146" height="63" rx="3" fill="#D6D7BE" stroke="#F2ECD9" stroke-width="1"/>
+<svg x="223" y="746.5" width="40" height="40" viewBox="0 0 30 30"><g transform="translate(15 15) scale(0.8461538461538461) translate(-11 -10)" fill="none" stroke="#C84187" stroke-width="2.1272727272727274" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="10" r="3"/><path d="M7 16C1 9 6 1 13 1C20 1 25 9 19 16M9 13L7 23H19L17 13M5 19C-4 8 3 -3 13 -3"/></g></svg>
+<rect x="344" y="735" width="146" height="63" rx="3" fill="#D6D7BE" stroke="#F2ECD9" stroke-width="1"/>
+<svg x="397" y="746.5" width="40" height="40" viewBox="0 0 30 30"><g transform="translate(15 15) scale(1) translate(-13 -12.5)" fill="none" stroke="#724944" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="6" r="3"/><circle cx="19" cy="6" r="3"/><path d="M2 22V14Q7 8 12 14V22ZM14 22V14Q19 8 24 14V22"/></g></svg>
+<rect x="527" y="540" width="640" height="288" rx="3" fill="#A4A88C" stroke="#E7E0CD" stroke-width="1"/>
+<text x="545" y="566" fill="#F8F4E7" font-family="Manrope, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="start">ЗАКАЗЫ · 1 НЕВЫПОЛНЕННЫЙ</text>
+<rect x="545" y="584" width="188" height="221" rx="4" fill="#C5C8AE" stroke="#E7E5D5" stroke-width="1"/>
+<text x="559" y="605" fill="#4C6257" font-family="Manrope, Arial, sans-serif" font-size="10" font-weight="700" text-anchor="start">01</text>
+<svg x="608" y="645" width="62" height="62" viewBox="0 0 30 30"><g transform="translate(15 15) scale(1) translate(-12.5 -13)" fill="none" stroke="#EAECDB" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5H23V24H5ZM2 20V2H20M9 10H19M9 14H19M9 18H16"/></g></svg>
+<g transform="translate(627.5 722) scale(0.55)"><ellipse cx="4" cy="19" rx="15" ry="5" fill="#283B35" opacity=".26"/><path d="M-5 -8Q-10 -20 0 -20Q10 -20 5 -8L15 -2L18 7L9 9L7 4L9 20H2L0 12L-2 20H-9L-7 4L-10 9L-18 7L-15 -2Z" fill="#F8F4E7" stroke="#605441" stroke-opacity=".55" stroke-width="1.2"/><path d="M-5 -8L-15 -1L-17 5M-6 5L-8 18" fill="none" stroke="#FFF8E2" stroke-opacity=".5" stroke-width="1.5"/></g>
+<g transform="translate(650.5 722) scale(0.55)"><ellipse cx="4" cy="19" rx="15" ry="5" fill="#283B35" opacity=".26"/><path d="M-5 -8Q-10 -20 0 -20Q10 -20 5 -8L15 -2L18 7L9 9L7 4L9 20H2L0 12L-2 20H-9L-7 4L-10 9L-18 7L-15 -2Z" fill="#F8F4E7" stroke="#605441" stroke-opacity=".55" stroke-width="1.2"/><path d="M-5 -8L-15 -1L-17 5M-6 5L-8 18" fill="none" stroke="#FFF8E2" stroke-opacity=".5" stroke-width="1.5"/></g>
+<rect x="622" y="766" width="34" height="24" rx="3" fill="#946040" stroke="none" stroke-width="1"/>
+<circle cx="622" cy="778" r="4" fill="#EAE5D3" stroke="none" stroke-width="1"/>
+<circle cx="656" cy="778" r="4" fill="#EAE5D3" stroke="none" stroke-width="1"/>
+<text x="639" y="782" fill="#FFFFFF" font-family="Manrope, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle">1</text>
+<rect x="753" y="584" width="188" height="221" rx="4" fill="#C5C8AE" stroke="#E7E5D5" stroke-width="1"/>
+<text x="767" y="605" fill="#4C6257" font-family="Manrope, Arial, sans-serif" font-size="10" font-weight="700" text-anchor="start">02</text>
+<rect x="780" y="620" width="140" height="172" rx="4" fill="#6B7162" stroke="none" stroke-width="1"/>
+<rect x="777" y="616" width="140" height="172" rx="5" fill="#F8F4E7" stroke="#D1CBB8" stroke-width="1.5"/>
+<rect x="783" y="622" width="128" height="69" rx="3" fill="#743C42" stroke="none" stroke-width="1"/>
+<svg x="820.09" y="629.59" width="53.82" height="53.82" viewBox="0 0 30 30"><g transform="translate(15 15) scale(1) translate(-12 -13)" fill="none" stroke="#F8F4E7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L22 8V18L12 24L2 18V8ZM2 8L12 14L22 8M12 14V24M12 2V14M2 18L12 14L22 18"/></g></svg>
+<rect x="783" y="695" width="128" height="69" rx="3" fill="#E8BFC5" stroke="none" stroke-width="1"/>
+<svg x="820.09" y="702.59" width="53.82" height="53.82" viewBox="0 0 30 30"><g transform="translate(15 15) scale(0.8461538461538461) translate(-11 -10)" fill="none" stroke="#724944" stroke-width="2.1272727272727274" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="10" r="3"/><path d="M7 16C1 9 6 1 13 1C20 1 25 9 19 16M9 13L7 23H19L17 13M5 19C-4 8 3 -3 13 -3"/></g></svg>
+<text x="847" y="780" fill="#3D4038" font-family="Manrope, Arial, sans-serif" font-size="9" font-weight="600" text-anchor="middle">Невыполненный заказ</text>
+<g transform="translate(891 639) scale(0.72)"><ellipse cx="4" cy="19" rx="15" ry="5" fill="#283B35" opacity=".26"/><path d="M-5 -8Q-10 -20 0 -20Q10 -20 5 -8L15 -2L18 7L9 9L7 4L9 20H2L0 12L-2 20H-9L-7 4L-10 9L-18 7L-15 -2Z" fill="#158BB0" stroke="#605441" stroke-opacity=".55" stroke-width="1.2"/><path d="M-5 -8L-15 -1L-17 5M-6 5L-8 18" fill="none" stroke="#FFF8E2" stroke-opacity=".5" stroke-width="1.5"/></g>
+<rect x="961" y="584" width="188" height="221" rx="4" fill="#C5C8AE" stroke="#E7E5D5" stroke-width="1"/>
+<text x="975" y="605" fill="#4C6257" font-family="Manrope, Arial, sans-serif" font-size="10" font-weight="700" text-anchor="start">03</text>
+<svg x="1024" y="645" width="62" height="62" viewBox="0 0 30 30"><g transform="translate(15 15) scale(1) translate(-12.5 -13)" fill="none" stroke="#EAECDB" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5H23V24H5ZM2 20V2H20M9 10H19M9 14H19M9 18H16"/></g></svg>
+<g transform="translate(1043.5 722) scale(0.55)"><ellipse cx="4" cy="19" rx="15" ry="5" fill="#283B35" opacity=".26"/><path d="M-5 -8Q-10 -20 0 -20Q10 -20 5 -8L15 -2L18 7L9 9L7 4L9 20H2L0 12L-2 20H-9L-7 4L-10 9L-18 7L-15 -2Z" fill="#F8F4E7" stroke="#605441" stroke-opacity=".55" stroke-width="1.2"/><path d="M-5 -8L-15 -1L-17 5M-6 5L-8 18" fill="none" stroke="#FFF8E2" stroke-opacity=".5" stroke-width="1.5"/></g>
+<g transform="translate(1066.5 722) scale(0.55)"><ellipse cx="4" cy="19" rx="15" ry="5" fill="#283B35" opacity=".26"/><path d="M-5 -8Q-10 -20 0 -20Q10 -20 5 -8L15 -2L18 7L9 9L7 4L9 20H2L0 12L-2 20H-9L-7 4L-10 9L-18 7L-15 -2Z" fill="#F8F4E7" stroke="#605441" stroke-opacity=".55" stroke-width="1.2"/><path d="M-5 -8L-15 -1L-17 5M-6 5L-8 18" fill="none" stroke="#FFF8E2" stroke-opacity=".5" stroke-width="1.5"/></g>
+<rect x="1038" y="766" width="34" height="24" rx="3" fill="#F8F4E7" stroke="none" stroke-width="1"/>
+<circle cx="1038" cy="778" r="4" fill="#EAE5D3" stroke="none" stroke-width="1"/>
+<circle cx="1072" cy="778" r="4" fill="#EAE5D3" stroke="none" stroke-width="1"/>
+<text x="1055" y="782" fill="#FFFFFF" font-family="Manrope, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle">1</text>
+<rect x="1186" y="540" width="211" height="288" rx="3" fill="#AAA789" stroke="#E3D9BA" stroke-width="1"/>
+<text x="1204" y="566" fill="#F8F4E7" font-family="Manrope, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="start">БИЛЕТЫ</text>
+<rect x="1212" y="598" width="112" height="40" rx="3" fill="#C84187" stroke="#B4AE96" stroke-width="1"/>
+<rect x="1210" y="595" width="112" height="40" rx="3" fill="#C84187" stroke="#B4AE96" stroke-width="1"/>
+<rect x="1208" y="592" width="112" height="40" rx="3" fill="#C84187" stroke="#B4AE96" stroke-width="1"/>
+<rect x="1206" y="589" width="112" height="40" rx="3" fill="#C84187" stroke="#B4AE96" stroke-width="1"/>
+<svg x="1246" y="593" width="32" height="32" viewBox="0 0 30 30"><g transform="translate(15 15) scale(1) translate(-13 -13)" fill="none" stroke="#F8F4E7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5H24V10C18 10 18 16 24 16V21H2V16C8 16 8 10 2 10ZM10 5V21M16 5V21"/></g></svg>
+<text x="1355" y="618" fill="#F8F4E7" font-family="Manrope, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="middle">2</text>
+<rect x="1212" y="669" width="112" height="40" rx="3" fill="#946040" stroke="#B4AE96" stroke-width="1"/>
+<rect x="1210" y="666" width="112" height="40" rx="3" fill="#946040" stroke="#B4AE96" stroke-width="1"/>
+<rect x="1208" y="663" width="112" height="40" rx="3" fill="#946040" stroke="#B4AE96" stroke-width="1"/>
+<rect x="1206" y="660" width="112" height="40" rx="3" fill="#946040" stroke="#B4AE96" stroke-width="1"/>
+<svg x="1246" y="664" width="32" height="32" viewBox="0 0 30 30"><g transform="translate(15 15) scale(1) translate(-13 -13)" fill="none" stroke="#F8F4E7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5H24V10C18 10 18 16 24 16V21H2V16C8 16 8 10 2 10ZM10 5V21M16 5V21"/></g></svg>
+<text x="1355" y="689" fill="#F8F4E7" font-family="Manrope, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="middle">1</text>
+<rect x="1212" y="740" width="112" height="40" rx="3" fill="#F8F4E7" stroke="#B4AE96" stroke-width="1"/>
+<rect x="1210" y="737" width="112" height="40" rx="3" fill="#F8F4E7" stroke="#B4AE96" stroke-width="1"/>
+<rect x="1208" y="734" width="112" height="40" rx="3" fill="#F8F4E7" stroke="#B4AE96" stroke-width="1"/>
+<rect x="1206" y="731" width="112" height="40" rx="3" fill="#F8F4E7" stroke="#B4AE96" stroke-width="1"/>
+<svg x="1246" y="735" width="32" height="32" viewBox="0 0 30 30"><g transform="translate(15 15) scale(1) translate(-13 -13)" fill="none" stroke="#724944" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5H24V10C18 10 18 16 24 16V21H2V16C8 16 8 10 2 10ZM10 5V21M16 5V21"/></g></svg>
+<text x="1355" y="760" fill="#724944" font-family="Manrope, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="middle">1</text>
+<rect x="24" y="877" width="1392" height="96" rx="4" fill="#EAE5D3" stroke="none" stroke-width="1"/>
+<text x="48" y="903" fill="#4C6257" font-family="Manrope, Arial, sans-serif" font-size="10" font-weight="700" text-anchor="start">ЛИЧНЫЕ ЦЕЛИ</text>
+<rect x="220" y="891" width="207" height="64" rx="4" fill="#7A8D80" stroke="#D2D7C5" stroke-width="1"/>
+<svg x="234" y="905" width="35" height="35" viewBox="0 0 30 30"><g transform="translate(15 15) scale(1) translate(-13 -12)" fill="none" stroke="#F8F4E7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 23V7L13 1L24 7V23ZM6 10H20V19H6ZM10 23V19M16 23V19"/></g></svg>
+<text x="286" y="928" fill="#F8F4E7" font-family="Manrope, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="start">Куратор · скрыто</text>
+<rect x="447" y="891" width="207" height="64" rx="4" fill="#7A8D80" stroke="#D2D7C5" stroke-width="1"/>
+<svg x="461" y="905" width="35" height="35" viewBox="0 0 30 30"><g transform="translate(15 15) scale(1) translate(-13 -13)" fill="none" stroke="#F8F4E7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8L8 5L13 8L18 5L24 8L21 18L17 21L11 19L7 21L2 16ZM8 10L13 8L17 12L14 15L10 13M14 15L19 19M10 17L14 20"/></g></svg>
+<text x="513" y="928" fill="#F8F4E7" font-family="Manrope, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="start">Арт-дилер · скрыто</text>
+<g transform="translate(740 925) scale(0.5)"><ellipse cx="4" cy="25" rx="19" ry="7" fill="#283B35" opacity=".28"/><path d="M-16 19Q-8 5 -5 -24H5Q8 5 16 19Q17 28 0 29Q-17 28 -16 19" fill="#158BB0" stroke="#4D493D" stroke-opacity=".5"/><ellipse cy="-24" rx="7" ry="4" fill="#158BB0" stroke="#FFF9E6" stroke-opacity=".45"/><path d="M-12 20Q0 26 12 20M-10 16Q0 22 10 16M-8 11Q0 15 8 11M-5 -20L-9 8" fill="none" stroke="#FFF7D4" stroke-opacity=".25" stroke-width="1.2"/></g>
+<text x="759" y="932" fill="#3D4038" font-family="Manrope, Arial, sans-serif" font-size="10" font-weight="400" text-anchor="start">Галерист</text>
+<g transform="translate(848 925) scale(0.55)"><ellipse cx="4" cy="19" rx="15" ry="5" fill="#283B35" opacity=".26"/><path d="M-5 -8Q-10 -20 0 -20Q10 -20 5 -8L15 -2L18 7L9 9L7 4L9 20H2L0 12L-2 20H-9L-7 4L-10 9L-18 7L-15 -2Z" fill="#158BB0" stroke="#605441" stroke-opacity=".55" stroke-width="1.2"/><path d="M-5 -8L-15 -1L-17 5M-6 5L-8 18" fill="none" stroke="#FFF8E2" stroke-opacity=".5" stroke-width="1.5"/></g>
+<text x="864" y="932" fill="#3D4038" font-family="Manrope, Arial, sans-serif" font-size="10" font-weight="400" text-anchor="start">Помощник</text>
+<g transform="translate(970 925) scale(0.48)"><ellipse cx="4" cy="19" rx="15" ry="5" fill="#283B35" opacity=".26"/><path d="M-5 -8Q-10 -20 0 -20Q10 -20 5 -8L15 -2L18 7L9 9L7 4L9 20H2L0 12L-2 20H-9L-7 4L-10 9L-18 7L-15 -2Z" fill="#F8F4E7" stroke="#605441" stroke-opacity=".55" stroke-width="1.2"/><path d="M-5 -8L-15 -1L-17 5M-6 5L-8 18" fill="none" stroke="#FFF8E2" stroke-opacity=".5" stroke-width="1.5"/></g>
+<g transform="translate(993 925) scale(0.48)"><ellipse cx="4" cy="19" rx="15" ry="5" fill="#283B35" opacity=".26"/><path d="M-5 -8Q-10 -20 0 -20Q10 -20 5 -8L15 -2L18 7L9 9L7 4L9 20H2L0 12L-2 20H-9L-7 4L-10 9L-18 7L-15 -2Z" fill="#946040" stroke="#605441" stroke-opacity=".55" stroke-width="1.2"/><path d="M-5 -8L-15 -1L-17 5M-6 5L-8 18" fill="none" stroke="#FFF8E2" stroke-opacity=".5" stroke-width="1.5"/></g>
+<g transform="translate(1016 925) scale(0.48)"><ellipse cx="4" cy="19" rx="15" ry="5" fill="#283B35" opacity=".26"/><path d="M-5 -8Q-10 -20 0 -20Q10 -20 5 -8L15 -2L18 7L9 9L7 4L9 20H2L0 12L-2 20H-9L-7 4L-10 9L-18 7L-15 -2Z" fill="#C84187" stroke="#605441" stroke-opacity=".55" stroke-width="1.2"/><path d="M-5 -8L-15 -1L-17 5M-6 5L-8 18" fill="none" stroke="#FFF8E2" stroke-opacity=".5" stroke-width="1.5"/></g>
+<text x="1040" y="932" fill="#3D4038" font-family="Manrope, Arial, sans-serif" font-size="10" font-weight="400" text-anchor="start">Посетители</text>
+<text x="24" y="1003" fill="#A8BCAC" font-family="Manrope, Arial, sans-serif" font-size="10" font-weight="400" text-anchor="start">КОНЦЕПТ 03  /  демонстрационные данные</text>
+<text x="1416" y="1003" fill="#A8BCAC" font-family="Manrope, Arial, sans-serif" font-size="10" font-weight="400" text-anchor="end">Иллюстрации и символы созданы заново</text>
+</svg>
