@@ -436,7 +436,11 @@ describe('TURN-003: применение перемещения через пу�
 
   it('перемещает галериста из HOME в любую локацию', () => {
     for (const destination of locations) {
-      const state = scenario('HOME')
+      const base = scenario('HOME')
+      // This scenario checks movement into an empty location; ejection is tested separately.
+      const state: GameState = { ...base, playerBoards: base.playerBoards.map(board => ({
+        ...board, galleristPosition: 'HOME',
+      })) }
       const input = command(state, destination)
 
       const result = applyGalleristMovementToGameState(state, input)

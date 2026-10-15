@@ -68,7 +68,7 @@ describe('EJECT-001: foreign assistant displacement', () => {
     expect(result.state.round).toBe(state.round)
     expect(movement.events).toEqual([
       { type: 'GalleristMoved', playerId, from: departure, to: destination },
-      { type: 'PieceEjected', playerId: ownerId, assistantId, locationId: destination, displacedByPlayerId: playerId },
+      { type: 'PieceEjected', pieceType: 'assistant', playerId: ownerId, assistantId, locationId: destination, displacedByPlayerId: playerId },
     ])
     expect(result.events.slice(0, 2)).toEqual(movement.events)
     expect(result.events.filter(event => event.type === 'PieceEjected')).toHaveLength(1)

@@ -1,4 +1,4 @@
-import { setupComponentCatalog, type StartingLocationId } from './component-catalog.js'
+import { type EjectedGalleristPosition, setupComponentCatalog, type StartingLocationId } from './component-catalog.js'
 import {
   freezeTransition,
   type GameEvent,
@@ -17,6 +17,12 @@ interface AssistantLeavingResult {
   readonly event: GameEvent
 }
 
+const mapGaleristLocation: Record< StartingLocationId, EjectedGalleristPosition > = {
+  'LOC-ARTISTS_COLONY': 'LOC-ARTISTS_COLONY_EJECT',
+  'LOC-MEDIA_CENTER': 'LOC-MEDIA_CENTER_EJECT',
+  'LOC-INTERNATIONAL_MARKET':  'LOC-INTERNATIONAL_MARKET_EJECT',
+  'LOC-SALES_OFFICE': 'LOC-SALES_OFFICE_EJECT',
+}
 /**
  * Проверяет и применяет оставление одного помощника по TURN-004.
  * Вызывающий код уже получил допустимый ход и активного игрока из prepareTurn.
@@ -118,6 +124,9 @@ export function applyGalleristMovementToGameState(
     if (departedLocationId === 'HOME') {
       throw new Error('Assistant cannot be left when moving from HOME')
     }
+    if(departedLocationId !== 'LOC-ARTISTS_COLONY' && departedLocationId !== 'LOC-INTERNATIONAL_MARKET' && departedLocationId !== 'LOC-MEDIA_CENTER' && departedLocationId !== 'LOC-SALES_OFFICE' ) {
+      throw new Error('Invalid departed location')
+    }
     const assistantResult = leaveAssistantAtLocation(
       copiedState,
       preparedTurn.playerId,
@@ -139,6 +148,7 @@ export function applyGalleristMovementToGameState(
     from: departedLocationId,
     to: movement.locationId,
   })
+
   if(!movement.locationId) throw new Error('invalid location id')
 
   const location = copiedState.assistantByLocation[movement.locationId]
@@ -191,7 +201,29 @@ export function applyGalleristMovementToGameState(
       }
     }
 
-    events.push({type: 'PieceEjected', playerId: anotherPlayerBoard.playerId, locationId: movement.locationId, assistantId: anotherPlayerLocationAssistant.assistantId, displacedByPlayerId: command.playerId })
+    events.push({type: 'PieceEjected', pieceType: 'assistant', playerId: anotherPlayerBoard.playerId, locationId: movement.locationId, assistantId: anotherPlayerLocationAssistant.assistantId, displacedByPlayerId: command.playerId })
+  }
+
+  let anotherPlayerBoardFindGalerist = copiedState.playerBoards.find(el => el.galleristPosition === movement.locationId && el.playerId !== command.playerId)
+  let anotherPlayerBoardFindGaleristIndex = copiedState.playerBoards.findIndex(el => el.galleristPosition === movement.locationId && el.playerId !== command.playerId)
+  if(anotherPlayerBoardFindGalerist !== undefined && anotherPlayerBoardFindGaleristIndex !== -1) {
+    const location = anotherPlayerBoardFindGalerist.galleristPosition
+
+    if(location !== 'LOC-ARTISTS_COLONY' && location !== 'LOC-INTERNATIONAL_MARKET' && location !== 'LOC-MEDIA_CENTER' && location !== 'LOC-SALES_OFFICE' ) {
+      throw new Error('Invalid departed location')
+    }
+
+    anotherPlayerBoardFindGalerist = {
+      ...anotherPlayerBoardFindGalerist,
+      galleristPosition: mapGaleristLocation[location]
+    }
+
+    copiedState = {
+      ...copiedState,
+      playerBoards: copiedState.playerBoards.map( ( board, index ) => ( index === anotherPlayerBoardFindGaleristIndex ) ? ( anotherPlayerBoardFindGalerist ?? board ) : board ),
+    }
+
+    events.push( { type: 'PieceEjected', playerId: anotherPlayerBoardFindGalerist.playerId, locationId: movement.locationId, pieceType: 'gallerist', displacedByPlayerId: command.playerId } )
   }
 
 

@@ -22,7 +22,8 @@ export type GameEvent =
   | { readonly type: 'OrderMarketPrepared' }
   | { readonly type: 'ManagementActionStarted', readonly playerId: PlayerId }
   | { readonly type: 'ArtistsPrepared'}
-  | { readonly type: 'PieceEjected', readonly playerId: PlayerId, readonly assistantId: string, readonly locationId: StartingLocationId, readonly displacedByPlayerId: PlayerId}
+  | { readonly type: 'PieceEjected'; readonly pieceType: 'assistant'; readonly assistantId: string; readonly locationId: StartingLocationId, readonly displacedByPlayerId: PlayerId, readonly playerId: PlayerId }
+  | { readonly type: 'PieceEjected'; readonly pieceType: 'gallerist'; readonly locationId: StartingLocationId, readonly displacedByPlayerId: PlayerId, readonly playerId: PlayerId }
   | { readonly type: 'TicketSpent', readonly playerId: PlayerId, readonly color: SetupTicketColor }
   | { readonly type: 'ArtistOpened'; readonly artistId: string }
   | { readonly type: 'ArtistBonusClaimed'; readonly playerId: PlayerId; readonly artistId: string; readonly bonusId: string }

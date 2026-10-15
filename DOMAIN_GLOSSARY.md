@@ -113,7 +113,9 @@
 | `OrderCompleted` | Использованный в продаже заказ перевёрнут в completed; содержит playerId, orderSlot и orderId. |
 | `OrderRewardSideSelected` | Зафиксирована верхняя награда оборота заказа; содержит playerId, orderSlot, orderId и orderRewardSide. Награду не выдаёт. |
 | `'completed'/ 'unfulfilled'`                     | возможный статус заказа                                                                                                                 |
-|`galleristPosition / GalleristPosition`| позиция галериста|
+| `galleristPosition` / `GalleristPosition` | Единственный источник позиции галериста на `PlayerBoard`: `HOME`, основная клетка `StartingLocationId` либо клетка выдворения `EjectedGalleristPosition`. Владелец определяется планшетом. |
+| `EjectedGalleristPosition` | Клетка выдворения той же локации: `LOC-ARTISTS_COLONY_EJECT`, `LOC-MEDIA_CENTER_EJECT`, `LOC-INTERNATIONAL_MARKET_EJECT`, `LOC-SALES_OFFICE_EJECT`. Не является допустимым назначением обычного перемещения. |
+| `PieceEjected` / `pieceType` | Событие выдворения: `playerId` — владелец выдворенной фишки, `locationId` — локация, `displacedByPlayerId` — выдворивший игрок. Вариант `pieceType: 'assistant'` требует `assistantId`; вариант `'gallerist'` не содержит его. |
 ### Критические различия
 
 - `influence` принадлежит игроку и может расходоваться; `fame` принадлежит художнику и задаёт стоимость; `reputationToken` — физический жетон/позиция рынка.

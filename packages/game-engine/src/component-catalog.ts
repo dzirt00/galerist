@@ -9,8 +9,12 @@ export type StartingLocationId =
   | 'LOC-MEDIA_CENTER'
   | 'LOC-INTERNATIONAL_MARKET'
   | 'LOC-SALES_OFFICE'
-
-export type GalleristPosition = StartingLocationId | 'HOME'
+export type EjectedGalleristPosition =
+  | 'LOC-ARTISTS_COLONY_EJECT'
+  | 'LOC-MEDIA_CENTER_EJECT'
+  | 'LOC-INTERNATIONAL_MARKET_EJECT'
+  | 'LOC-SALES_OFFICE_EJECT'
+export type GalleristPosition = StartingLocationId | 'HOME' | EjectedGalleristPosition
 
 export interface HireQueue {
   readonly id: string;

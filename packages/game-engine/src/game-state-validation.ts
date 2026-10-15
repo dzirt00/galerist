@@ -222,7 +222,13 @@ function validatePlayerBoards(state: UnknownRecord, playerIds: ReadonlySet<Playe
       && chooseStartingLocation !== 'LOC-MEDIA_CENTER'
       && chooseStartingLocation !== 'LOC-INTERNATIONAL_MARKET'
       && chooseStartingLocation !== 'LOC-SALES_OFFICE'
-      && chooseStartingLocation !== 'HOME' ) fail('invalid chooseStartingLocation')
+      && chooseStartingLocation !== 'HOME'
+      && chooseStartingLocation !== 'LOC-ARTISTS_COLONY_EJECT'
+      && chooseStartingLocation !== 'LOC-MEDIA_CENTER_EJECT'
+      && chooseStartingLocation !== 'LOC-INTERNATIONAL_MARKET_EJECT'
+      && chooseStartingLocation !== 'LOC-SALES_OFFICE_EJECT'
+
+    ) fail('invalid chooseStartingLocation')
     const assistants = requireRecord(board.assistants, 'assistants')
     const office = requireSafeInteger(assistants.office, 'office')
     const hireQueue = requireSafeInteger(assistants.hireQueue, 'hireQueue')
