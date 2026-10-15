@@ -115,6 +115,7 @@
 | `'completed'/ 'unfulfilled'`                     | возможный статус заказа                                                                                                                 |
 | `galleristPosition` / `GalleristPosition` | Единственный источник позиции галериста на `PlayerBoard`: `HOME`, основная клетка `StartingLocationId` либо клетка выдворения `EjectedGalleristPosition`. Владелец определяется планшетом. |
 | `EjectedGalleristPosition` | Клетка выдворения той же локации: `LOC-ARTISTS_COLONY_EJECT`, `LOC-MEDIA_CENTER_EJECT`, `LOC-INTERNATIONAL_MARKET_EJECT`, `LOC-SALES_OFFICE_EJECT`. Не является допустимым назначением обычного перемещения. |
+| `GalleristReturnedHome` | Публичное событие возврата галериста в `HOME`; `playerId` — владелец возвращённого галериста. В финальном раунде создаётся в конце успешного `applyTurn` после остальных событий хода для галериста из `PieceEjected` этого перемещения. |
 | `PieceEjected` / `pieceType` | Событие выдворения: `playerId` — владелец выдворенной фишки, `locationId` — локация, `displacedByPlayerId` — выдворивший игрок. Вариант `pieceType: 'assistant'` требует `assistantId`; вариант `'gallerist'` не содержит его. |
 ### Критические различия
 

@@ -113,3 +113,116 @@ describe('EJECT-001: foreign gallerist displacement', () => {
     expect(() => restoreGameState(snapshot)).toThrow('invalid chooseStartingLocation')
   })
 })
+
+describe('EJECT-004 / END-004: gallerist returns after the final-round turn', () => {
+  function finalScenario() {
+    const base = scenario()
+    const state: GameState = { ...base.state, phase: 'final_round', round: 2, endTriggeredRound: 1 }
+    return { ...base, state }
+  }
+
+  it.each(['none', 'before_location', 'after_location'] as const)(
+    'returns only after all turn events with management %s', timing => {
+      const { state: base, command: original, playerId, ownerId } = finalScenario()
+      const visitor = { id: 'final-return-visitor', type: 'B' as const }
+      const state: GameState = { ...base, plazaVisitors: [...base.plazaVisitors, visitor],
+        players: base.players.map(player => player.id === playerId
+          ? { ...player, ticketsByColor: { ...player.ticketsByColor, B: 1 } } : player) }
+      const command: ConfirmedTurnCommand = timing === 'none' ? original : { ...original,
+        management: { timing, command: { category: 'management_action', visitorMovementSteps: [
+          { visitorId: visitor.id, destination: 'vestibule' },
+        ] } } }
+      const before = structuredClone({ state, command })
+      expect(restoreGameState(JSON.parse(JSON.stringify(state)))).toEqual(state)
+      const movement = applyGalleristMovementToGameState(state, command)
+      expect(movement.state.playerBoards.find(board => board.playerId === ownerId)!.galleristPosition)
+        .toBe('LOC-MEDIA_CENTER_EJECT')
+      const result = applyTurn(state, command)
+      expect(result.state.playerBoards).toEqual(state.playerBoards.map(board => ({ ...board,
+        galleristPosition: board.playerId === playerId ? 'LOC-MEDIA_CENTER' : 'HOME',
+      })))
+      const actionEvents = ['InfluenceSpent', 'ArtistPromoted', 'TicketReceived', 'ArtistFameIncreased']
+      const managementEvents = ['ManagementActionStarted', 'TicketSpent', 'VisitorMoved']
+      expect(result.events.map(event => event.type)).toEqual(['GalleristMoved', 'PieceEjected',
+        ...(timing === 'before_location' ? [...managementEvents, ...actionEvents]
+          : timing === 'after_location' ? [...actionEvents, ...managementEvents] : actionEvents),
+        'GalleristReturnedHome',
+      ])
+      expect(result.events.at(-1)).toEqual({ type: 'GalleristReturnedHome', playerId: ownerId })
+      expect(result.state.artistMarket).not.toEqual(state.artistMarket)
+      if (timing !== 'none') expect(result.state.vestibuleVisitors)
+        .toContainEqual({ playerId, vestibuleVisitor: visitor })
+      expect(result.state.activePlayerId).toBe(playerId)
+      expect(result.state.round).toBe(state.round)
+      for (const viewer of [null, playerId, ownerId]) {
+        expect(projectGameForViewer(result.state, viewer).playerBoards).toEqual(result.state.playerBoards)
+        expect(projectEventsForViewer(result.events, result.state, viewer)).toEqual(result.events)
+      }
+      expect(restoreGameState(JSON.parse(JSON.stringify(result.state)))).toEqual(result.state)
+      expect({ state, command }).toEqual(before)
+      expect(Object.isFrozen(state)).toBe(false)
+      expect(Object.isFrozen(result)).toBe(true)
+      expect(Object.isFrozen(result.state.playerBoards)).toBe(true)
+      expect(result.state.playerBoards.every(Object.isFrozen)).toBe(true)
+      expect(Object.isFrozen(result.events.at(-1))).toBe(true)
+    },
+  )
+
+  it.each(['regular_play', 'ending_current_round'] as const)('does not return in %s', phase => {
+    const { state: base, command, ownerId } = scenario()
+    const state: GameState = phase === 'regular_play' ? base
+      : { ...base, phase, endTriggeredRound: base.round }
+    const result = applyTurn(state, command)
+    expect(result.state.playerBoards.find(board => board.playerId === ownerId)!.galleristPosition)
+      .toBe('LOC-MEDIA_CENTER_EJECT')
+    expect(result.events.some(event => event.type === 'GalleristReturnedHome')).toBe(false)
+  })
+
+  it.each(['HOME', 'LOC-SALES_OFFICE_EJECT'] as const)(
+    'preserves an owner at %s when this turn ejects no gallerist', position => {
+      const { state: base, command, ownerId } = finalScenario()
+      const state: GameState = { ...base, playerBoards: base.playerBoards.map(board =>
+        board.playerId === ownerId ? { ...board, galleristPosition: position } : board) }
+      const result = applyTurn(state, command)
+      expect(result.state.playerBoards.find(board => board.playerId === ownerId))
+        .toEqual(state.playerBoards.find(board => board.playerId === ownerId))
+      expect(result.events.some(event => event.type === 'GalleristReturnedHome')).toBe(false)
+    },
+  )
+
+  it('does not return a gallerist when the displaced piece is an assistant', () => {
+    const { state: base, command, ownerId } = finalScenario()
+    const owner = base.playerBoards.find(board => board.playerId === ownerId)!
+    const assistantId = owner.assistants.assistantOfficeIds[0]!
+    const state: GameState = { ...base,
+      assistantByLocation: { ...base.assistantByLocation,
+        'LOC-MEDIA_CENTER': { playerId: ownerId, assistantId } },
+      playerBoards: base.playerBoards.map(board => board.playerId !== ownerId ? board : {
+        ...board, galleristPosition: 'LOC-SALES_OFFICE',
+        assistants: { ...board.assistants, office: board.assistants.office - 1,
+          assistantOfficeIds: board.assistants.assistantOfficeIds.slice(1) },
+        locationAssistants: [...board.locationAssistants, { assistantId, locationId: 'LOC-MEDIA_CENTER' }],
+      }),
+    }
+    expect(restoreGameState(JSON.parse(JSON.stringify(state)))).toEqual(state)
+    const result = applyTurn(state, command)
+    const after = result.state.playerBoards.find(board => board.playerId === ownerId)!
+    expect(after.galleristPosition).toBe('LOC-SALES_OFFICE')
+    expect(after.ejectedAssistant).toEqual({ assistantId, displacedByPlayerId: command.playerId })
+    expect(result.events.some(event => event.type === 'PieceEjected' && event.pieceType === 'assistant')).toBe(true)
+    expect(result.events.some(event => event.type === 'GalleristReturnedHome')).toBe(false)
+  })
+
+  it('rejects late management atomically after displacement and the location action', () => {
+    const { state, command: original } = finalScenario()
+    const command: ConfirmedTurnCommand = { ...original, management: {
+      timing: 'after_location', command: { category: 'management_action', visitorMovementSteps: [
+        { visitorId: 'unknown-visitor', destination: 'vestibule' },
+      ] },
+    } }
+    const before = structuredClone({ state, command })
+    expect(() => applyTurn(state, command)).toThrow()
+    expect({ state, command }).toEqual(before)
+    expect(Object.isFrozen(state)).toBe(false)
+  })
+})

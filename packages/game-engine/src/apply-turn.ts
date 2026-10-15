@@ -76,6 +76,25 @@ export function applyTurn(state: GameState, command: ConfirmedTurnCommand): Game
       default: throw new Error('Invalid turn step category')
     }
   }
+  if(next.phase === 'final_round') {
+    const playersBoards = next.playerBoards.map(el => {
+      const event = events.find(el => el.type === 'PieceEjected')
+      if(event !== undefined && event.pieceType === 'gallerist' && event.playerId === el.playerId ) {
+        el = {
+          ...el,
+          galleristPosition: 'HOME'
+        }
+        events.push({type: 'GalleristReturnedHome', playerId: el.playerId})
+      }
+      return el
+    })
+    next = {
+      ...next,
+      playerBoards: [
+        ...playersBoards
+      ]
+    }
+  }
   return freezeTransition(next, events)
 }
 
