@@ -21,6 +21,7 @@ export type GameEvent =
   | { readonly type: 'TicketOfficePrepared' }
   | { readonly type: 'OrderMarketPrepared' }
   | { readonly type: 'ManagementActionStarted', readonly playerId: PlayerId }
+  | { readonly type: 'EjectionOpportunityGranted', readonly playerId: PlayerId, readonly locationId: StartingLocationId}
   | { readonly type: 'GalleristReturnedHome', readonly playerId: PlayerId }
   | { readonly type: 'ArtistsPrepared'}
   | { readonly type: 'PieceEjected'; readonly pieceType: 'assistant'; readonly assistantId: string; readonly locationId: StartingLocationId, readonly displacedByPlayerId: PlayerId, readonly playerId: PlayerId }

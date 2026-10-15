@@ -53,7 +53,7 @@ describe('ORDER-002: регрессия внутренних переходов 
   it('продолжает обновление и отказ из снимка схемы 13', () => {
     const input = scenario()
     const playerId = input.activePlayerId
-    expect(input.stateSchemaVersion).toBe(17)
+    expect(input.stateSchemaVersion).toBe(18)
     expect(restoreGameState(JSON.parse(JSON.stringify(input)))).toEqual(input)
     expect(() => restoreGameState({ ...input, stateSchemaVersion: 10 })).toThrow()
     const begun = changeStatusPlayer(input, playerId).state

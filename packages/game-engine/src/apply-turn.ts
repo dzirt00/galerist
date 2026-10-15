@@ -1,7 +1,7 @@
-import type { ConfirmedTurnCommand, GameState, LocationActionCommand } from './types.js'
+import type { ConfirmedTurnCommand, GameState, LocationActionCommand, PendingEjectionOpportunity } from './types.js'
 import { freezeTransition, type GameEvent, type GameTransition } from './game-events.js'
 import { prepareTurn } from './turn-preparation.js'
-import { applyGalleristMovementToGameState, leaveAssistantAtLocation } from './apply-gallerist-movement-to-game-state.js'
+import { applyGalleristMovementToGameState } from './apply-gallerist-movement-to-game-state.js'
 import { advertisingArtist } from './advertising-artist.js'
 import { applyVisitorMovementTickets } from './apply-visitor-movement-tickets.js'
 import { applyAssistantHiringToGameState } from './apply-assistant-hiring-to-game-state.js'
@@ -27,7 +27,7 @@ export function applyTurn(state: GameState, command: ConfirmedTurnCommand): Game
   const action = command.locationAction
 
   if (action.category !== 'location_action') throw new Error('Invalid location action category')
-
+  if(state.pendingEjectionOpportunity !== null) throw new Error('Invalid pending ejection opportunity')
   const selected = Object.entries(action).filter(([key, value]) => key !== 'category' && value !== undefined)
   const allowed: readonly string[] = locationActions[command.movement.locationId]
 
@@ -111,6 +111,29 @@ export function applyTurn(state: GameState, command: ConfirmedTurnCommand): Game
         ...playersBoards
       ]
     }
+  }
+
+  const findEvent = events.find(el => el.type === 'PieceEjected')
+  if((next.phase === 'ending_current_round' || next.phase === 'regular_play') && findEvent !== undefined && findEvent.playerId !== command.playerId) {
+    let pendingEjectionOpportunity: PendingEjectionOpportunity = (findEvent.pieceType === 'assistant')
+      ? {
+        pieceType: 'assistant',
+        assistantId: findEvent.assistantId,
+        locationId: findEvent.locationId,
+        displacedByPlayerId: findEvent.displacedByPlayerId,
+        playerId: findEvent.playerId,
+      }
+      : {
+        pieceType: findEvent.pieceType,
+        locationId: findEvent.locationId,
+        displacedByPlayerId: findEvent.displacedByPlayerId,
+        playerId: findEvent.playerId,
+      }
+    next = {
+      ...next,
+      pendingEjectionOpportunity: pendingEjectionOpportunity
+    }
+    events.push({type: 'EjectionOpportunityGranted', playerId: findEvent.playerId, locationId: findEvent.locationId})
   }
   return freezeTransition(next, events)
 }

@@ -90,7 +90,7 @@ describe('ORDER-001: регрессия внутренней проверки л
 
   it('схема 13 и публичная проекция сохраняют клетки и решение о лимите', () => {
     const input = scenario(['unfulfilled', 'unfulfilled', 'completed'])
-    expect(input.stateSchemaVersion).toBe(17)
+    expect(input.stateSchemaVersion).toBe(18)
     const restored = restoreGameState(JSON.parse(JSON.stringify(input)))
     expect(restored).toEqual(input)
     const result = changeStatusPlayer(restored, input.activePlayerId)

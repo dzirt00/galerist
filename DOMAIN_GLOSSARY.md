@@ -117,6 +117,9 @@
 | `EjectedGalleristPosition` | Клетка выдворения той же локации: `LOC-ARTISTS_COLONY_EJECT`, `LOC-MEDIA_CENTER_EJECT`, `LOC-INTERNATIONAL_MARKET_EJECT`, `LOC-SALES_OFFICE_EJECT`. Не является допустимым назначением обычного перемещения. |
 | `GalleristReturnedHome` | Публичное событие возврата галериста в `HOME`; `playerId` — владелец возвращённого галериста. В финальном раунде создаётся в конце успешного `applyTurn` после остальных событий хода для галериста из `PieceEjected` этого перемещения. |
 | `PieceEjected` / `pieceType` | Событие выдворения: `playerId` — владелец выдворенной фишки, `locationId` — локация, `displacedByPlayerId` — выдворивший игрок. Вариант `pieceType: 'assistant'` требует `assistantId`; вариант `'gallerist'` не содержит его. |
+| `pendingEjectionOpportunity` / `PendingEjectionOpportunity` | Ожидающая возможность дополнительного действия после успешного `applyTurn` в regular_play или ending_current_round; объект с playerId владельца, locationId, displacedByPlayerId и pieceType, для assistant также обязательным assistantId, либо null. Не является новым обычным ходом. Публична, сохраняется в схеме 18; незавершённая возможность запрещает новый applyTurn. В final_round не создаётся. |
+| `EjectionOpportunityGranted` | Публичное событие выдачи возможности после всех событий обычного хода; содержит playerId владельца выдворенной фишки и locationId. |
+
 ### Критические различия
 
 - `influence` принадлежит игроку и может расходоваться; `fame` принадлежит художнику и задаёт стоимость; `reputationToken` — физический жетон/позиция рынка.

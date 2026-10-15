@@ -95,6 +95,52 @@ function requirePlayerReference(
   return playerId
 }
 
+function validatePendingEjectionOpportunity(state: UnknownRecord): void {
+  if(state.pendingEjectionOpportunity !== null ) {
+    const pendingEjectionOpportunity = requireRecord(state.pendingEjectionOpportunity,'pendingEjectionOpportunity')
+    const pieceType = requireNonEmptyString(pendingEjectionOpportunity.pieceType, 'pieceType')
+    if(pieceType !== 'assistant' && pieceType !== 'gallerist') fail('invalid pieceType')
+    const playerId = requireNonEmptyString(pendingEjectionOpportunity.playerId, 'playerId')
+    const displacedByPlayerId = requireNonEmptyString(pendingEjectionOpportunity.displacedByPlayerId, 'displacedByPlayerId')
+    const locationId = requireNonEmptyString(pendingEjectionOpportunity.locationId, 'locationId')
+    if(locationId !== 'LOC-ARTISTS_COLONY'
+      && locationId !== 'LOC-MEDIA_CENTER'
+      && locationId !== 'LOC-INTERNATIONAL_MARKET'
+      && locationId !== 'LOC-SALES_OFFICE'
+    ) fail('invalid locationId')
+
+    if(pieceType === 'assistant') {
+      const assistantId = requireNonEmptyString( pendingEjectionOpportunity.assistantId, 'assistantId' )
+      if(!Array.isArray(state.playerBoards)) fail('invalid playerBoards')
+      state.playerBoards.forEach(el => {
+        const record = requireRecord(el, 'board')
+        const pi = requireNonEmptyString(record.playerId,'pi')
+        if(pi === playerId) {
+          const ejectedAssistant = requireRecord(record.ejectedAssistant, 'ejectedAssistant')
+          const assId = requireNonEmptyString(ejectedAssistant.assistantId, 'assistantId')
+          const displacedByPlayerIdEl = requireNonEmptyString(ejectedAssistant.displacedByPlayerId, 'displacedByPlayerId')
+          if(assId !==  assistantId) fail(`${assistantId} must be assistant`)
+          if(displacedByPlayerId !== displacedByPlayerIdEl) fail(`${displacedByPlayerId} must be assistant`)
+        }
+      })
+    }
+    if(pieceType === 'gallerist') {
+      if(!Array.isArray(state.playerBoards)) fail('invalid playerBoards')
+      state.playerBoards.forEach(el => {
+        const record = requireRecord(el, 'board')
+        const pi = requireNonEmptyString(record.playerId,'pi')
+        const galleristPosition = requireNonEmptyString(record.galleristPosition, 'galleristPosition')
+        if(pi === playerId && galleristPosition !== `${locationId}_EJECT`) fail( `${ galleristPosition } error` )
+      })
+    }
+
+    const playersIds =   validatePlayers(state)
+    requirePlayerReference(playerId,new Set(playersIds),'player')
+    requirePlayerReference(displacedByPlayerId,new Set(playersIds),'player')
+  }
+
+}
+
 /** Проверяет наличие общих коллекций полного серверного снимка. */
 function validateCommonCollections(state: UnknownRecord): void {
   const objectFields = [
@@ -606,8 +652,8 @@ function validateOrderMarket(orderMarket: unknown) {
 /** Проверяет JSON-снимок по ADR-001/ADR-002 и возвращает независимый замороженный GameState. */
 export function restoreGameState(input: unknown): GameState {
   const state = requireRecord(input, 'state')
-  if (state.stateSchemaVersion !== 17) {
-    fail('stateSchemaVersion must equal 17')
+  if (state.stateSchemaVersion !== 18) {
+    fail('stateSchemaVersion must equal 18')
   }
   const runtimeRng =requireRecord(state.runtimeRng,'runtimeRng')
   const runtimeRngCounters = requireRecord(runtimeRng.runtimeRngCounters,'runtimeRngCounters')
@@ -641,5 +687,10 @@ export function restoreGameState(input: unknown): GameState {
   }
   validateOrderMarket(state.orderMarket)
   validateInternationalMarketState(state as unknown as GameState)
+
+  if(state.pendingEjectionOpportunity !== null ) {
+    validatePendingEjectionOpportunity( state )
+  }
+
   return deepFreeze(structuredClone(state)) as unknown as GameState
 }

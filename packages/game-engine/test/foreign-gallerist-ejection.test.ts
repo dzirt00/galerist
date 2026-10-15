@@ -38,6 +38,22 @@ function scenario(destination: StartingLocationId = 'LOC-MEDIA_CENTER') {
 }
 
 describe('EJECT-001: foreign gallerist displacement', () => {
+  it.each(['HOME', 'LOC-SALES_OFFICE_EJECT'] as const)(
+    'rejects a saved opportunity for a gallerist in %s instead of its ejection space', position => {
+    const { state, command, ownerId } = scenario()
+    const snapshot = JSON.parse(JSON.stringify(applyTurn(state, command).state))
+    expect(snapshot.pendingEjectionOpportunity).toMatchObject({
+      pieceType: 'gallerist', playerId: ownerId, locationId: 'LOC-MEDIA_CENTER',
+    })
+    expect(() => restoreGameState(snapshot)).not.toThrow()
+    const board = snapshot.playerBoards.find((item: { playerId: string }) => item.playerId === ownerId)
+    board.galleristPosition = position
+    const before = structuredClone(snapshot)
+    expect(() => restoreGameState(snapshot)).toThrow()
+    expect(snapshot).toEqual(before)
+    },
+  )
+
   it.each(destinations)('displaces at %s and preserves the saved snapshot', (destination, ejected) => {
     const { state, command, playerId, ownerId } = scenario(destination)
     expect(restoreGameState(JSON.parse(JSON.stringify(state)))).toEqual(state)

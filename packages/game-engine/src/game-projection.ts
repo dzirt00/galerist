@@ -83,6 +83,7 @@ export function projectGameForViewer(
       remainingCuratorGoalCount: state.privateGoals.remainingCuratorGoals.length,
       remainingDealerGoalCount: state.privateGoals.remainingDealerGoals.length,
     },
+    pendingEjectionOpportunity: state.pendingEjectionOpportunity,
     playerBoards: state.playerBoards,
     availableArtworkSales: playerBoard ? getAvailableArtworkSales(playerBoard) : [],
     plazaVisitors: state.plazaVisitors,

@@ -48,6 +48,118 @@ function scenario() {
   return { state, command, playerId, ownerId: owner.playerId, assistantId, otherAssistantId }
 }
 
+describe('EJECT-001: pending ejection opportunity', () => {
+  it('grants and projects a saved opportunity after the successful turn', () => {
+    const { state, command, playerId, ownerId, assistantId } = scenario()
+    const before = structuredClone({ state, command })
+    const result = applyTurn(state, command)
+    const expected = {
+      pieceType: 'assistant', assistantId, locationId: destination,
+      displacedByPlayerId: playerId, playerId: ownerId,
+    }
+    expect(result.state.pendingEjectionOpportunity).toEqual(expected)
+    expect(result.events.at(-1)).toEqual({
+      type: 'EjectionOpportunityGranted', playerId: ownerId, locationId: destination,
+    })
+    const restored = restoreGameState(JSON.parse(JSON.stringify(result.state)))
+    expect(restored).toEqual(result.state)
+    for (const viewer of [null, playerId, ownerId]) {
+      const projection = projectGameForViewer(restored, viewer)
+      expect(projection.pendingEjectionOpportunity).toEqual(expected)
+      expect(projection.pendingEjectionOpportunity).not.toBe(restored.pendingEjectionOpportunity)
+      expect(Object.isFrozen(projection.pendingEjectionOpportunity)).toBe(true)
+    }
+    expect({ state, command }).toEqual(before)
+  })
+
+  it('rejects a new ordinary turn without consuming an existing opportunity', () => {
+    const { state, command } = scenario()
+    const pending = applyTurn(state, command).state
+    const before = structuredClone(pending)
+    const nextCommand = { ...command, movement: { ...command.movement, locationId: departure } }
+    expect(() => applyTurn(pending, nextCommand)).toThrow('Invalid pending ejection opportunity')
+    expect(pending).toEqual(before)
+  })
+
+  it.each(['regular_play', 'ending_current_round'] as const)(
+    'grants after all effects in %s with either management timing', phase => {
+      for (const timing of ['before_location', 'after_location'] as const) {
+        const { state: base, command: original, playerId, ownerId, assistantId } = scenario()
+        const visitor = { id: 'opportunity-visitor', type: 'B' as const }
+        const phased: GameState = phase === 'regular_play' ? base
+          : { ...base, phase, endTriggeredRound: base.round }
+        const state: GameState = {
+          ...phased,
+          plazaVisitors: [...base.plazaVisitors, visitor],
+          players: base.players.map(player => player.id === playerId ? {
+            ...player, ticketsByColor: { ...player.ticketsByColor, B: 1 },
+          } : player),
+        }
+        const command: ConfirmedTurnCommand = { ...original, management: {
+          timing, command: { category: 'management_action', visitorMovementSteps: [
+            { visitorId: visitor.id, destination: 'vestibule' },
+          ] },
+        } }
+        const before = structuredClone({ state, command })
+        const result = applyTurn(state, command)
+        const actionEvents = ['InfluenceSpent', 'ArtistPromoted', 'TicketReceived', 'ArtistFameIncreased']
+        const managementEvents = ['ManagementActionStarted', 'TicketSpent', 'VisitorMoved']
+        expect(result.events.map(event => event.type)).toEqual(['GalleristMoved', 'PieceEjected',
+          ...(timing === 'before_location' ? [...managementEvents, ...actionEvents]
+            : [...actionEvents, ...managementEvents]), 'EjectionOpportunityGranted',
+        ])
+        expect(result.state.pendingEjectionOpportunity).toEqual({ pieceType: 'assistant', assistantId,
+          playerId: ownerId, displacedByPlayerId: playerId, locationId: destination })
+        expect(result.state.activePlayerId).toBe(playerId)
+        expect(result.state.round).toBe(state.round)
+        expect(restoreGameState(JSON.parse(JSON.stringify(result.state)))).toEqual(result.state)
+        expect({ state, command }).toEqual(before)
+
+        const invalidCommand: ConfirmedTurnCommand = { ...command, management: {
+          timing, command: { category: 'management_action', visitorMovementSteps: [
+            { visitorId: 'unknown-visitor', destination: 'vestibule' },
+          ] },
+        } }
+        expect(() => applyTurn(state, invalidCommand)).toThrow()
+        expect({ state, command }).toEqual(before)
+        expect(state.pendingEjectionOpportunity).toBeNull()
+      }
+    },
+  )
+
+  it.each(['playerId', 'displacedByPlayerId'] as const)(
+    'rejects a saved opportunity referencing an unknown %s', field => {
+      const { state, command } = scenario()
+      const snapshot = JSON.parse(JSON.stringify(applyTurn(state, command).state))
+      expect(() => restoreGameState(snapshot)).not.toThrow()
+      snapshot.pendingEjectionOpportunity[field] = 'unknown-player'
+      const before = structuredClone(snapshot)
+      expect(() => restoreGameState(snapshot)).toThrow()
+      expect(snapshot).toEqual(before)
+    },
+  )
+
+  it('rejects a saved opportunity for an assistant that was not ejected', () => {
+    const { state, command } = scenario()
+    const snapshot = JSON.parse(JSON.stringify(applyTurn(state, command).state))
+    expect(() => restoreGameState(snapshot)).not.toThrow()
+    snapshot.pendingEjectionOpportunity.assistantId = 'not-the-ejected-assistant'
+    const before = structuredClone(snapshot)
+    expect(() => restoreGameState(snapshot)).toThrow()
+    expect(snapshot).toEqual(before)
+  })
+
+  it('rejects a saved opportunity whose displacing player contradicts the assistant context', () => {
+    const { state, command, ownerId } = scenario()
+    const snapshot = JSON.parse(JSON.stringify(applyTurn(state, command).state))
+    expect(() => restoreGameState(snapshot)).not.toThrow()
+    snapshot.pendingEjectionOpportunity.displacedByPlayerId = ownerId
+    const before = structuredClone(snapshot)
+    expect(() => restoreGameState(snapshot)).toThrow()
+    expect(snapshot).toEqual(before)
+  })
+})
+
 describe('EJECT-001: foreign assistant displacement', () => {
   it.each(['movement', 'turn'] as const)('preserves displacement through public %s, projections and restoration', entry => {
     const { state, command, playerId, ownerId, assistantId, otherAssistantId } = scenario()
@@ -72,7 +184,7 @@ describe('EJECT-001: foreign assistant displacement', () => {
     ])
     expect(result.events.slice(0, 2)).toEqual(movement.events)
     expect(result.events.filter(event => event.type === 'PieceEjected')).toHaveLength(1)
-    expect(result.events.some(event => (event.type as string) === 'EjectionOpportunityGranted')).toBe(false)
+    expect(result.events.some(event => event.type === 'EjectionOpportunityGranted')).toBe(entry === 'turn')
     if (entry === 'turn') {
       expect(result.events.slice(2).some(event => event.type === 'ArtistPromoted')).toBe(true)
       expect(result.state.artistMarket).not.toEqual(movement.state.artistMarket)
@@ -165,6 +277,7 @@ describe('EJECT-005 / END-004: assistant returns after the final-round turn', ()
     expect(result.state.activePlayerId).toBe(state.activePlayerId)
     expect(result.state.round).toBe(state.round)
     expect(result.state.phase).toBe('final_round')
+    expect(result.state.pendingEjectionOpportunity).toBeNull()
     expect(result.state.artistMarket).not.toEqual(movement.state.artistMarket)
     expect(result.events.map(event => event.type)).toEqual([
       'GalleristMoved', 'PieceEjected', 'InfluenceSpent', 'ArtistPromoted', 'TicketReceived',
@@ -221,6 +334,8 @@ describe('EJECT-005 / END-004: assistant returns after the final-round turn', ()
     expect(owner.ejectedAssistant).toEqual({ assistantId, displacedByPlayerId: playerId })
     expect(owner.assistants).toEqual(state.playerBoards.find(board => board.playerId === ownerId)!.assistants)
     expect(result.events.some(event => event.type === 'AssistantReturnedHome' || event.type === 'AssistantRemovedFromGame')).toBe(false)
+    expect(result.state.pendingEjectionOpportunity).toEqual({ pieceType: 'assistant', assistantId,
+      playerId: ownerId, displacedByPlayerId: playerId, locationId: destination })
   })
 
   it.each([false, true])('does not return an earlier assistant when no new piece is ejected: %s', earlier => {

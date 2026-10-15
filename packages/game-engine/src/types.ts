@@ -141,12 +141,28 @@ export interface LocationAssistant {
   readonly assistantId: string
 }
 
+export type PendingEjectionOpportunity =
+  | {
+  readonly pieceType: 'assistant'
+  readonly assistantId: string
+  readonly locationId: StartingLocationId
+  readonly displacedByPlayerId: PlayerId
+  readonly playerId: PlayerId
+} | {
+  readonly pieceType: 'gallerist'
+  readonly locationId: StartingLocationId
+  readonly displacedByPlayerId: PlayerId
+  readonly playerId: PlayerId
+}
+
+
 export interface GameStateBase {
-  readonly stateSchemaVersion: 17
+  readonly stateSchemaVersion: 18
   readonly id: GameId
   readonly assistantByLocation: Readonly<Record<StartingLocationId, LocationAssistant | null>>
   readonly runtimeRng: RuntimeRngState
   readonly config: Readonly<GameConfig>
+  readonly pendingEjectionOpportunity: PendingEjectionOpportunity | null
   readonly players: readonly PlayerState[]
   readonly orderMarket: Readonly<PreparedOrderMarket>
   readonly ticketOffice: PreparedTicketOffice
