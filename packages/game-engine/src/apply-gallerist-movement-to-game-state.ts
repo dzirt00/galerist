@@ -140,7 +140,10 @@ export function applyGalleristMovementToGameState(
     to: movement.locationId,
   })
   if(!movement.locationId) throw new Error('invalid location id')
-  if (copiedState.assistantByLocation[movement.locationId]?.playerId === command.playerId) {
+
+  const location = copiedState.assistantByLocation[movement.locationId]
+
+  if (location !== null && location.playerId === command.playerId) {
     const assistantId = copiedState.assistantByLocation[movement.locationId]?.assistantId
     if(assistantId === undefined) throw new  Error('invalid assistantId')
     events.push({type: 'OwnAssistantEjected', playerId: command.playerId, assistantId: assistantId, locationId: movement.locationId})
@@ -161,6 +164,38 @@ export function applyGalleristMovementToGameState(
     }
     events.push(...resultAssistantToOffice.events)
   }
+
+  if(location !== null && location.playerId !== command.playerId) {
+    const anotherPlayerLocationAssistant = copiedState.assistantByLocation[movement.locationId]
+
+    if(anotherPlayerLocationAssistant === null) throw new  Error('invalid assistantByLocationAssistant')
+
+    let anotherPlayerBoard = copiedState.playerBoards.find(playerBoard => playerBoard.playerId === anotherPlayerLocationAssistant.playerId)
+    const anotherPlayerBoardIndex = copiedState.playerBoards.findIndex(playerBoard => playerBoard.playerId === anotherPlayerLocationAssistant.playerId)
+
+    if(anotherPlayerBoardIndex < 0 || anotherPlayerBoard === undefined) throw new Error('invalid playerId')
+    anotherPlayerBoard = {
+      ...anotherPlayerBoard,
+      ejectedAssistant: {
+        assistantId: anotherPlayerLocationAssistant.assistantId,
+        displacedByPlayerId: command.playerId,
+      },
+      locationAssistants: anotherPlayerBoard.locationAssistants.filter(el => el.assistantId !== anotherPlayerLocationAssistant.assistantId),
+    }
+    copiedState = {
+      ...copiedState,
+      playerBoards: copiedState.playerBoards.map((board, index) => (index === anotherPlayerBoardIndex) ? (anotherPlayerBoard ?? board) : board),
+      assistantByLocation: {
+        ...copiedState.assistantByLocation,
+        [movement.locationId]: null
+      }
+    }
+
+    events.push({type: 'PieceEjected', playerId: anotherPlayerBoard.playerId, locationId: movement.locationId, assistantId: anotherPlayerLocationAssistant.assistantId, displacedByPlayerId: command.playerId })
+  }
+
+
+
 
   const movingPlayerBoardIndex = copiedState.playerBoards.findIndex(
     board => board.playerId === preparedTurn.playerId,
