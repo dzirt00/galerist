@@ -1,4 +1,5 @@
-import type { EndingCurrentRoundGameState, GameState, PlayerId } from "./types.js";
+import { evaluateEndConditions } from './end-conditions.js'
+import type { GameState, PlayerId } from "./types.js";
 import { applyArtworkPurchaseCostAndMoveVisitors, type ApplyArtworkPurchaseInput, type ArtworkPurchaseType } from "./artwork-purchase-payment.js";
 import { freezeTransition, type GameEvent, type GameTransition } from "./game-events.js";
 import type { OpenArtworkSlot } from "./setup-artworks.js";
@@ -9,7 +10,6 @@ import { applyTicketReward } from './ticket-reward-to-game-state.js'
 import { calculateArtworkSaleValue } from './artwork-sale-value.js'
 import { refillArtworkMarket } from './artwork-market-refill.js'
 import type { ExhibitedArtwork, PlayerBoard } from './player-boards.js'
-import { canTriggerGameEnd, triggerGameEnd } from "./game-lifecycle.js";
 
 export interface ArtworkPurchasePaymentRequest {
   readonly playerId: PlayerId
@@ -181,7 +181,7 @@ function resolveArtworkTicketColors(
   )
   if (colors === undefined) throw new Error('Artwork ticket colors must be selected')
   if (new Set(colors).size !== colors.length) throw new Error('Artwork ticket colors must be unique')
-  // Порядок цветов не важен; количество и состав должны совпадать.
+  /** Сравнивает точный состав билетной награды без учёта порядка выбранных цветов. */
   const hasExact = (...expected: SetupTicketColor[]) => (
     colors.length === expected.length && expected.every(color => colors.includes(color))
   )
@@ -430,7 +430,7 @@ export function applyArtworkPurchaseToGameState(
     ...( capacityChanged ? [ { type: 'ExhibitionCapacityChanged', playerId: availability.player.id, capacity: 4 } as const ] : [] ),
     ...( refill.openArtwork === null ? [] : [ { type: 'ArtworkMarketRefilled', genre: availability.artist.genre, artworkId: refill.openArtwork.artwork.id } as const ] ),
   ]
-  let updateState: GameState = {
+  const updateState: GameState = {
     ...state,
     players,
     playerBoards,
@@ -455,39 +455,7 @@ export function applyArtworkPurchaseToGameState(
     intermediateScoringStatus: ticketResult.intermediateScoringStatus
   }
 
-  let updateGameTransition: GameTransition<EndingCurrentRoundGameState> | null = null
-
-  let ticketState = 0
-  for ( const val of Object.values(state.ticketOffice.ticketsByColor) ) {
-    ticketState += val
-  }
-  let updateTicketState = 0
-  for ( const val of Object.values(updateState.ticketOffice.ticketsByColor) ) {
-    updateTicketState += val
-  }
-  let endConditionReachedEvent: GameEvent | null = null
-  if(!state.ticketOfficeEmptyReached && updateTicketState === 0 && ticketState !== 0) {
-
-    updateState = {
-      ...updateState,
-      ticketOfficeEmptyReached: true
-    }
-    endConditionReachedEvent = {type: 'EndConditionReached'}
-  }
-
-  if(endConditionReachedEvent !== null) {
-    events.push(endConditionReachedEvent)
-  }
-
-  if ( state.phase === 'regular_play'  && canTriggerGameEnd( updateState )) {
-    updateGameTransition = triggerGameEnd( updateState )
-  }
-
-  updateState = ( updateGameTransition !== null ) ? updateGameTransition.state : updateState
-
-  if(updateGameTransition !== null) events.push(...updateGameTransition.events)
-
-  return freezeTransition( updateState, events )
+  return evaluateEndConditions(state, updateState, events)
 }
 /** Применяет только оплату и перенос посетителей уже разрешённой покупки, без размещения работы. */
 export function applyArtworkPurchasePaymentToGameState(

@@ -8,9 +8,11 @@ import { applyOrderRewardEffect } from '../src/order-reward-effect.js'
 import { createGameState, startGameAfterSetup } from './helpers.js'
 import { twoPlayerConfigs, twoPlayerGameConfig } from './fixtures.js'
 
+/** Готовит принятый заказ в выбранном слоте и помощника для получения его награды. */
 function fixture(orderSlot: 1 | 2 | 3 = 2, orderId = 'ORDER-03') {
   const initial = startGameAfterSetup(createGameState(twoPlayerGameConfig, twoPlayerConfigs))
   const previous = initial.orderMarket.visibleOrders[1]!
+  /** Меняет местами два заказа во всех зонах рынка, сохраняя уникальность карт. */
   const swap = (id: string) => id === orderId ? previous : id === previous ? orderId : id
   const market = initial.orderMarket
   const input: GameState = { ...initial, orderMarket: {
@@ -29,6 +31,7 @@ function fixture(orderSlot: 1 | 2 | 3 = 2, orderId = 'ORDER-03') {
   return { state, playerId, boardIndex, assistantId, orderSlot }
 }
 
+/** Переносит посетителей из мешочка в выбранную галерею и согласует представления мешочка. */
 function withGallery(state: GameState, boardIndex: number, types: readonly VisitorType[]): GameState {
   const remaining = [...state.visitorBag.visitors]
   const visitors = types.map(type => {
@@ -43,6 +46,7 @@ function withGallery(state: GameState, boardIndex: number, types: readonly Visit
   })
 }
 
+/** Рекурсивно проверяет ожидаемый признак заморозки объектов. */
 function expectFrozen(value: unknown, frozen: boolean): void {
   if (!value || typeof value !== 'object') return
   expect(Object.isFrozen(value)).toBe(frozen)
@@ -50,8 +54,9 @@ function expectFrozen(value: unknown, frozen: boolean): void {
 }
 
 describe('MGMT-004: completed order back reward', () => {
+  /** Готовит завершённый заказ с выбранной стороной награды вместо награды лицевой стороны. */
   function completed(side: 'coins' | 'influence', slot: 1 | 2 | 3 = 2) {
-    // ORDER-05 has a visitor front reward: the back must ignore that effect.
+    // Лицевая сторона ORDER-05 даёт посетителя; оборотная сторона не должна применять этот эффект.
     const data = fixture(slot, 'ORDER-05')
     const base = withGallery(data.state, data.boardIndex, ['B', 'B', 'R', 'W'])
     const state: GameState = { ...base, playerBoards: base.playerBoards.map((board, index) =>

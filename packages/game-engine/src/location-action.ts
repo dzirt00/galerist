@@ -16,7 +16,7 @@ const locationActions = {
   'LOC-INTERNATIONAL_MARKET': ['claimReputationToken', 'placeAuctionBid'],
 } as const
 
-/** Shared by ordinary turns and the paid ejection action. */
+/** Проверяет выбор ровно одного действия, допустимого для локации; используется обычным ходом и выдворением. */
 export function validateLocationAction(locationId: StartingLocationId, action: LocationActionCommand): void {
   if (!action || typeof action !== 'object' || Array.isArray(action) || action.category !== 'location_action') {
     throw new Error('Invalid location action category')
@@ -30,8 +30,9 @@ export function validateLocationAction(locationId: StartingLocationId, action: L
   if (!request || typeof request !== 'object' || Array.isArray(request)) throw new Error('Invalid location action request')
 }
 
+/** Вызывает готовую команду выбранного действия локации с исполнителем, подтверждённым внешним оркестратором. */
 export function applyLocationAction(state: GameState, playerId: PlayerId, action: LocationActionCommand): GameTransition<GameState> {
-  // The outer command owns the acting player, including all nested choices.
+  // Вложенный запрос не может подменить исполнителя: внешний playerId записывается после его остальных полей.
   if (action.advertisingArtist !== undefined) return advertisingArtist(state, { ...action.advertisingArtist, playerId })
   if (action.hireAssistants !== undefined) return applyAssistantHiringToGameState(state, { ...action.hireAssistants, playerId })
   if (action.artworkSale !== undefined) return applyArtworkSaleToGameState(state, { ...action.artworkSale, playerId })

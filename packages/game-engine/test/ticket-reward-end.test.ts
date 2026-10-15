@@ -10,6 +10,7 @@ import {
 import { twoPlayerConfigs, twoPlayerGameConfig } from './fixtures.js'
 import { createGameState, startGameAfterSetup } from './helpers.js'
 
+/** Создаёт седьмой раунд с завершённым промежуточным подсчётом для проверки билетных триггеров. */
 function regularState(): RegularPlayGameState {
   return {
     ...structuredClone(startGameAfterSetup(createGameState(twoPlayerGameConfig, twoPlayerConfigs))),

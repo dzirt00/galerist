@@ -7,6 +7,7 @@ import {
 import { createGameState, startGameAfterSetup } from './helpers.js'
 import { twoPlayerConfigs, twoPlayerGameConfig } from './fixtures.js'
 
+/** Готовит замену завершённого заказа с помощником при заданной заполненности офиса. */
 function scenario(slot: '1' | '2' | '3' = '3', office = 3,
   status: StatusPlayer = 'WAITING', mode: 'draw' | 'reveal' = 'draw') {
   const base = startGameAfterSetup(createGameState(twoPlayerGameConfig, twoPlayerConfigs))
@@ -38,6 +39,7 @@ function scenario(slot: '1' | '2' | '3' = '3', office = 3,
   return { input, playerId, assistantId, oldOrderId }
 }
 
+/** Собирает помощников игрока из офиса, очереди найма и карт заказов для проверки сохранности. */
 function assistantLocations(state: GameState, playerId: string) {
   const board = state.playerBoards.find(item => item.playerId === playerId)!
   return [...board.assistants.assistantOfficeIds, ...board.assistants.assistantHireQueueIds,
@@ -92,7 +94,7 @@ describe('ORDER-003 / EJECT-005: помощник заменяемого зак�
             expect(result.events.every(Object.isFrozen)).toBe(true)
             const restored = restoreGameState(JSON.parse(JSON.stringify(result.state)))
             expect(restored).toEqual(result.state)
-            expect(restored.stateSchemaVersion).toBe(18)
+            expect(restored.stateSchemaVersion).toBe(19)
             for (const viewer of [null, ...input.players.map(player => player.id)]) {
               const projection = projectGameForViewer(restored, viewer)
               expect(projection.playerBoards).toEqual(restored.playerBoards)

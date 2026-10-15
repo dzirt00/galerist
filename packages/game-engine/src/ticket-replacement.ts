@@ -99,6 +99,8 @@ export function replaceUnavailableTicket(
   const requiredInDiscard = ticketCount(discard, input.requiredColor)
   const officeHasTickets = Object.values(office).some(count => count > 0)
 
+  // Обмен возможен только при наличии нужного цвета в сбросе и другого билета в кассе.
+  // Иначе награда не выдаётся; произвольный цвет вместо требуемого игрок не получает.
   if (!officeHasTickets) {
     return createResult(office, discard, null, false)
   }
@@ -115,6 +117,7 @@ export function replaceUnavailableTicket(
   if (ticketCount(office, input.replacementColor) === 0) {
     throw new Error('Replacement ticket is unavailable in office')
   }
+  // Билет другого цвета уходит из кассы в сброс, а нужный цвет выдаётся из сброса игроку.
   return createResult(
     {
       ...office,

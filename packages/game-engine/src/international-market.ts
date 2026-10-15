@@ -6,6 +6,7 @@ import { calculateCoinsFromInfluenceSpend } from './influence-spending.js'
 import { applyOrderRewardEffect, type OrderRewardChoices } from './order-reward-effect.js'
 import type { GameState, PlayerId } from './types.js'
 import { validateInternationalMarketState } from './international-market-validation.js'
+import { evaluateEndConditions } from './end-conditions.js'
 
 export interface MarketActionRequest {
   readonly playerId: PlayerId
@@ -22,7 +23,7 @@ export interface PlaceAuctionBidRequest extends MarketActionRequest {
   readonly targetInfluence?: number
 }
 
-/** MARKET-001: only the player's vestibule contributes to column access. */
+/** Определяет доступные колонки по посетителям только собственного вестибюля (MARKET-001). */
 export function determineAvailableMarketColumns(state: Readonly<GameState>, playerId: PlayerId): readonly MarketColumn[] {
   if (!state.players.some(player => player.id === playerId)) throw new Error('Invalid market player')
   const visitors = state.vestibuleVisitors.filter(item => item.playerId === playerId).map(item => item.vestibuleVisitor.type)
@@ -33,6 +34,7 @@ export function determineAvailableMarketColumns(state: Readonly<GameState>, play
   return Object.freeze(columns)
 }
 
+/** Проверяет фазу, доступ к колонке, свободную ячейку и принадлежность выбранного помощника его источнику. */
 function validateAction(state: Readonly<GameState>, request: Readonly<MarketActionRequest>, column: MarketColumn): void {
   if (!request || typeof request !== 'object' || Array.isArray(request)) throw new Error('Invalid market request')
   if (!['regular_play', 'ending_current_round', 'final_round'].includes(state.phase)) throw new Error('Market requires a playing phase')
@@ -59,6 +61,7 @@ function validateAction(state: Readonly<GameState>, request: Readonly<MarketActi
   }
 }
 
+/** Переносит помощника из офиса, локации или выдворения на рынок, сохраняя ставку либо null для репутации. */
 function placeAssistant(state: GameState, request: Readonly<MarketActionRequest>, bid: 1 | 3 | 6 | null): GameState {
   return { ...state,
     playerBoards: state.playerBoards.map(board => {
@@ -75,6 +78,7 @@ function placeAssistant(state: GameState, request: Readonly<MarketActionRequest>
   }
 }
 
+/** Начисляет влияние колонки до оплаты действия, чтобы его можно было сразу использовать в платеже. */
 function receiveColumnInfluence(state: GameState, playerId: PlayerId, column: MarketColumn): GameTransition<GameState> {
   const player = state.players.find(item => item.id === playerId)!
   const updated = applyInfluenceGainToPlayer(player, 4 - column)
@@ -82,7 +86,10 @@ function receiveColumnInfluence(state: GameState, playerId: PlayerId, column: Ma
     events: [{ type: 'InfluenceReceived', playerId, gainedInfluence: updated.influence - player.influence }] }
 }
 
-/** MARKET-002/003: claim, chosen board reward, return visitor, then place assistant. */
+/**
+ * Атомарно получает репутацию по MARKET-002/003: влияние колонки, жетон,
+ * награда выбранной клетки планшета, возврат посетителя и размещение помощника.
+ */
 export function claimReputationToken(state: Readonly<GameState>, request: Readonly<ClaimReputationTokenRequest>): GameTransition<GameState> {
   if (!request || typeof request !== 'object') throw new Error('Invalid reputation request')
   const cell = state.internationalMarket.marketReputationCells.find(item => item.cellId === request.cellId)
@@ -118,10 +125,10 @@ export function claimReputationToken(state: Readonly<GameState>, request: Readon
   events.push(...reward.events, { type: 'VisitorMoved', visitorId: request.visitorId, from: 'vestibule', to: 'plaza', playerId: request.playerId, fromPlayerId: request.playerId })
   next = placeAssistant(next, request, null)
   events.push({ type: 'AssistantPlacedOnMarket', playerId: request.playerId, cellId: cell.cellId, assistantId: request.assistantId })
-  return freezeTransition(next, events)
+  return evaluateEndConditions(state, next, events)
 }
 
-/** MARKET-004/005: influence → payment → assistant → cell reward, atomically. */
+/** Атомарно применяет MARKET-004/005: влияние колонки → оплата → помощник → награда аукционной ячейки. */
 export function placeAuctionBid(state: Readonly<GameState>, request: Readonly<PlaceAuctionBidRequest>): GameTransition<GameState> {
   if (!request || typeof request !== 'object') throw new Error('Invalid auction request')
   const cell = setupComponentCatalog.marketBidCells.find(item => item.id === request.cellId)

@@ -1,3 +1,4 @@
+import { expectRestoredFixture } from './helpers.js'
 import { describe, expect, it } from 'vitest'
 import {
   advertisingArtist, projectEventsForViewer, projectGameForViewer, restoreGameState,
@@ -6,10 +7,12 @@ import {
 import { createGameState, startGameAfterSetup } from './helpers.js'
 import { twoPlayerConfigs, twoPlayerGameConfig } from './fixtures.js'
 
+/** Создаёт состояние для рекламы художника с заданными известностью и уровнем продвижения. */
 function scenario(level = 0, fame = 3) {
   const initial = startGameAfterSetup(createGameState(twoPlayerGameConfig, twoPlayerConfigs))
   const artist = initial.artistMarket.slots.find(slot => slot.initialPromotion === 0)!
   const tokenId = level === 0 ? null : initial.promotionSupply.tokenIdsByLevel[level as 1 | 2 | 3 | 4 | 5][0]!
+  /** Исключает занятый жетон продвижения из запаса соответствующего уровня. */
   const remainingTokens = (level: 1 | 2 | 3 | 4 | 5) => initial.promotionSupply.tokenIdsByLevel[level].filter(id => id !== tokenId)
   const state: GameState = {
     ...initial,
@@ -21,6 +24,7 @@ function scenario(level = 0, fame = 3) {
   return { state, request, artist }
 }
 
+/** Размещает тестовых посетителей в галерее и согласует число коллекционеров с продажами. */
 function visitors(state: GameState, types: readonly VisitorInstance['type'][]): GameState {
   const selected = types.map((type, index) => ({ id: `gallery-${type}-${index}`, type }))
   return { ...state,
@@ -47,7 +51,7 @@ describe('PROMO-001/PROMO-002: public atomic promotion', () => {
       const ids = [...Object.values(state.promotionSupply.tokenIdsByLevel).flat(), artist.promotionTokenId!]
       expect(ids).toHaveLength(20)
       expect(new Set(ids).size).toBe(20)
-      expect(restoreGameState(state)).toEqual(state)
+      expectRestoredFixture(state)
     }
   })
 
@@ -90,7 +94,7 @@ describe('PROMO-001/PROMO-002: public atomic promotion', () => {
     expect(Object.isFrozen(result.state.players[0])).toBe(true)
     expect(Object.isFrozen(result.state.promotionSupply.tokenIdsByLevel[1])).toBe(true)
     expect(Object.isFrozen(result.events)).toBe(true)
-    expect(restoreGameState(result.state)).toEqual(result.state)
+    expectRestoredFixture(result.state)
     expect(projectGameForViewer(result.state, null).artistMarket.slots).toEqual(result.state.artistMarket.slots)
     expect(projectEventsForViewer(result.events, result.state, null)).toEqual(result.events)
   })
@@ -103,7 +107,7 @@ describe('PROMO-001/PROMO-002: public atomic promotion', () => {
     const result = advertisingArtist(state, { playerId: state.players[0]!.id, artistId: artist.artistId })
     expect(result.state.artistMarket.slots.find(slot => slot.artistId === artist.artistId)!.promotionLevel).toBe(2)
     expect(result.state.promotionSupply.tokenIdsByLevel[1]).toEqual(state.promotionSupply.tokenIdsByLevel[1])
-    expect(restoreGameState(result.state)).toEqual(result.state)
+    expectRestoredFixture(result.state)
   })
 
   it('returns the installed token, grants influence, then spends the updated influence including target zero', () => {
@@ -120,7 +124,7 @@ describe('PROMO-001/PROMO-002: public atomic promotion', () => {
     expect(result.events.map(event => event.type)).toEqual(['InfluenceSpent', 'ArtistPromoted', 'InfluenceReceived', 'ArtistFameIncreased', 'InfluenceSpent', 'ArtistFameIncreased'])
     expect(result.state.promotionSupply.tokenIdsByLevel[1]).toHaveLength(4)
     expect(result.state.promotionSupply.tokenIdsByLevel[2]).toHaveLength(3)
-    expect(restoreGameState(result.state)).toEqual(result.state)
+    expectRestoredFixture(result.state)
   })
 
   it('caps the influence reward and reports only its actual gain', () => {
@@ -184,7 +188,7 @@ describe('PROMO-001/PROMO-002: public atomic promotion', () => {
     expect(result.state.playerBoards[1]!.gallery.artworkSlots[0]).toMatchObject({ saleValue: 8, isMasterpiece: false })
     expect(result.events).toContainEqual({ type: 'ArtworkSaleValuesChanged', artistId: artist.artistId, saleValue: 8 })
     expect(result.events.some(event => event.type === 'ArtistBecameSuperstar')).toBe(false)
-    expect(restoreGameState(result.state)).toEqual(result.state)
+    expectRestoredFixture(result.state)
   })
 
   it('pays the coin reward from gallery investors and collectors, excluding the vestibule', () => {
@@ -218,7 +222,7 @@ describe('PROMO-001/PROMO-002: public atomic promotion', () => {
       'ArtworkSaleValuesChanged', 'ArtistBecameSuperstar', 'CoinsReceived', 'ArtworkBecameMasterpiece', 'ArtworkBecameMasterpiece'])
     expect(result.events[3]).toMatchObject({ previousFame: 16, fame: 19 })
     expect(state).toEqual(before)
-    expect(restoreGameState(result.state)).toEqual(result.state)
+    expectRestoredFixture(result.state)
   })
 
   it('uses the bag only when the plaza is empty and preserves the hidden bag order in projection', () => {
@@ -309,7 +313,7 @@ describe('END-001: ticket office achievement through advertisingArtist', () => {
     expect(Object.isFrozen(result.state.ticketOffice.ticketsByColor)).toBe(true)
     expect(Object.isFrozen(result.events)).toBe(true)
     expect(result.events.every(Object.isFrozen)).toBe(true)
-    expect(restoreGameState(result.state)).toEqual(result.state)
+    expectRestoredFixture(result.state)
     for (const viewerId of [null, ...state.players.map(player => player.id)]) {
       expect(projectGameForViewer(result.state, viewerId).ticketOfficeEmptyReached).toBe(true)
       expect(projectEventsForViewer(result.events, result.state, viewerId)).toEqual(result.events)

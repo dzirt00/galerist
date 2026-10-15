@@ -6,6 +6,11 @@ import type { PreparedOrderMarket } from "./setup-orders.js";
 type KeyOrderMarket = 1 | 2 | 3 | 4
 const marketKeys: KeyOrderMarket[] = [ 1, 2, 3, 4 ]
 
+/**
+ * Обновляет четыре открытые позиции заказов по ORDER-002.
+ * При нехватке закрытых карт перерабатывает доступные заказы детерминированным runtime-RNG,
+ * сохраняет его счётчик и возвращает события переработки перед событием обновления.
+ */
 export function refreshOrderMarket(
   state: GameState,
   playerID: PlayerId
@@ -25,6 +30,7 @@ export function refreshOrderMarket(
   let runtimeRng = null
   let events: GameEvent[] = []
 
+  // В переработку входят сброс, открытые карты, карты под ними и остаток колоды; заказы игроков исключены.
   if ( remainingOrderIds.length < 4 ) {
     const orderForShuffle: string[] = []
     orderDiscard.forEach( el => {
@@ -87,6 +93,7 @@ export function refreshOrderMarket(
     if ( state.orderMarket.remainingOrderIds.length < 4 ) throw new Error( 'Invalid order market remainingOrderIds' )
     for ( const key of marketKeys ) {
       const order = visibleOrders[ key ];
+      // Старый открытый заказ остаётся под новой картой своей позиции и может раскрыться при последующем получении.
       if ( order !== null ) {
         orderMarket[ key ].push( order );
       }

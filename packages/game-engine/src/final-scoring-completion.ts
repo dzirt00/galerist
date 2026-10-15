@@ -2,15 +2,21 @@ import type { FinishedGameState, GameState } from "./types.js";
 import { freezeTransition, type GameTransition } from "./game-events.js";
 import { determineWinners } from "./winner-determination.js";
 import { deepFreeze } from "./component-catalog.js";
+import { countAssistantsInPlay } from './final-scoring.js'
 
 
 
-/** Проверяет итоговых кандидатов, определяет победителей и переводит партию в finished. */
+/** Сравнивает два упорядоченных набора ID с учётом длины и повторов. */
 
 function arraysEqual  (a: string[], b: string[]): boolean {
   return a.length === b.length && a.every((val, i) => val === b[i]);
 }
 
+/**
+ * Завершает SCORE-007 после всех выплат финального подсчёта.
+ * Собирает показатели ничьей из актуального GameState, сохраняет winnerIds
+ * и возвращает переход в finished с итоговыми событиями без изменения входа.
+ */
 export function completeFinalScoring(
   state: Readonly<GameState>,
 ): GameTransition<Readonly<FinishedGameState>> {
@@ -22,6 +28,8 @@ export function completeFinalScoring(
   if ( !state.finalInfluenceScored ) {
     throw new Error( 'Is final_scoring' )
   }
+  // Одного флага выплаты влияния недостаточно: стадия также должна подтверждать прохождение всех этапов.
+  if (state.finalScoringStage !== 'complete') throw new Error('Previous final scoring stages are incomplete')
 
   const coinsPlayers = state.players.map(player => {
     return {
@@ -46,6 +54,7 @@ export function completeFinalScoring(
     return 0
   })
 
+  // Сортировка нужна только для проверки состава; исходная очередность players сохраняется для полной ничьей.
   if(!arraysEqual(playerBoards.map(el => el.playerId), coinsPlayers.map(player => player.playersID))) {
     throw new Error( 'Invalid candidates' )
   }
@@ -64,7 +73,7 @@ export function completeFinalScoring(
       playerId: playerState.id,
       coins: playerState.coins,
       galleryVisitorCount: playerBoard.visitorsInGallery.length,
-      assistantsInPlayCount: playerBoard.assistants.office,
+      assistantsInPlayCount: countAssistantsInPlay(state, playerState.id),
       acquiredArtworkCount: playerState.acquiredArtworkCount
     }
 

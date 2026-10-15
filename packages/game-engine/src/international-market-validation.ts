@@ -1,13 +1,15 @@
 import { setupComponentCatalog } from './component-catalog.js'
 import type { GameState } from './types.js'
 
-/** Validates saved market placements and unique component ownership. */
+/** Проверяет сохраняемые размещения рынка и единственное расположение каждого физического жетона и помощника. */
 export function validateInternationalMarketState(state: Readonly<GameState>): void {
+  /** Отклоняет снимок с нарушенной структурой или согласованностью международного рынка. */
   const fail = (): never => { throw new Error('Invalid game state: international market') }
   const market = state.internationalMarket
   if (!Array.isArray(market.marketAssistants) || !Array.isArray(market.marketReputationCells)) fail()
   const cells = new Set<string>()
   const tokens = new Set<string>()
+  /** Регистрирует одно физическое расположение каталожного жетона и запрещает повтор его ID. */
   const addToken = (id: unknown) => {
     if (typeof id !== 'string' || !setupComponentCatalog.reputationTokenIds.includes(id) || tokens.has(id)) fail()
     tokens.add(id as string)
@@ -38,7 +40,10 @@ export function validateInternationalMarketState(state: Readonly<GameState>): vo
       || !Array.isArray(board.locationAssistants) || board.ejectedAssistant === undefined) fail()
     const entries = Object.entries(board.boardReputationTokens)
     if (entries.length > 1) fail()
-    if (market.marketAssistants.filter(item => item.playerId === board.playerId && item.bid === null).length !== entries.length) fail()
+    // Жетон планшета может быть стартовым и не требовать помощника на рынке; обратное несоответствие запрещено.
+    if (market.marketAssistants.filter(item => item.playerId === board.playerId && item.bid === null).length > entries.length) fail()
+    if (board.thirdPartitionReputationTokenId !== null) addToken(board.thirdPartitionReputationTokenId)
+    for (const token of Object.keys(board.reputationTokenArtworkIds ?? {})) addToken(token)
     for (const [id, token] of entries) {
       if (!setupComponentCatalog.boardReputationCells.some(item => item.id === id)) fail()
       addToken(token)

@@ -3,7 +3,7 @@ import { applyVisitorMovementTickets, type VisitorMovementStep } from './apply-v
 import type { GameTransition } from './game-events.js'
 import { completeEjectionOpportunity, requireEjectionOpportunity } from './ejection-opportunity.js'
 
-/** EJECT-003: resolve one ticket management action, then return the ejected piece. */
+/** Выполняет одно билетное управление при выдворении, затем закрывает возможность и возвращает фишку по EJECT-003–005. */
 export function applyEjectionVisitorMovement(
   state: GameState, playerId: PlayerId, steps: readonly VisitorMovementStep[],
 ): GameTransition<GameState> {

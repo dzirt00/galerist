@@ -5,9 +5,11 @@ import { createGameState, startGameAfterSetup } from './helpers.js'
 import { twoPlayerConfigs, twoPlayerGameConfig } from './fixtures.js'
 
 type Status = 'completed' | 'unfulfilled' | null
+/** Размещает три заказа с заданными статусами для проверки лимита невыполненных заказов. */
 function scenario(statuses: readonly [Status, Status, Status] = [null, null, null]) {
   const base = startGameAfterSetup(createGameState(twoPlayerGameConfig, twoPlayerConfigs))
   const ids = base.orderMarket.remainingOrderIds.slice(0, 3)
+  /** Создаёт пустой либо занятый слот в соответствии с заданным статусом заказа. */
   const slot = (index: number) => ({
     orderId: statuses[index] === null ? null : ids[index]!,
     orderStatus: statuses[index]!, assistant: null,
@@ -90,7 +92,7 @@ describe('ORDER-001: регрессия внутренней проверки л
 
   it('схема 13 и публичная проекция сохраняют клетки и решение о лимите', () => {
     const input = scenario(['unfulfilled', 'unfulfilled', 'completed'])
-    expect(input.stateSchemaVersion).toBe(18)
+    expect(input.stateSchemaVersion).toBe(19)
     const restored = restoreGameState(JSON.parse(JSON.stringify(input)))
     expect(restored).toEqual(input)
     const result = changeStatusPlayer(restored, input.activePlayerId)

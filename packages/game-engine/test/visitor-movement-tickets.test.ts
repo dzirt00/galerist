@@ -1,3 +1,4 @@
+import { expectRestoredFixture, conserveFixtureComponents } from './helpers.js'
 import { describe, expect, it } from 'vitest'
 import {
   applyVisitorMovementTickets, projectEventsForViewer, projectGameForViewer, restoreGameState,
@@ -6,6 +7,7 @@ import {
 import { createGameState, startGameAfterSetup } from './helpers.js'
 import { twoPlayerConfigs, twoPlayerGameConfig } from './fixtures.js'
 
+/** Размещает посетителя выбранного типа на площади либо в своём или чужом вестибюле. */
 function scenario(type: VisitorInstance['type'] = 'B', source: 'plaza' | 'own' | 'other' = 'plaza') {
   const base = startGameAfterSetup(createGameState(twoPlayerGameConfig, twoPlayerConfigs))
   const playerId = base.players[0]!.id
@@ -21,6 +23,7 @@ function scenario(type: VisitorInstance['type'] = 'B', source: 'plaza' | 'own' |
   return { state, playerId, otherId, visitor }
 }
 
+/** Рекурсивно проверяет заморозку результата перемещения и всех вложенных объектов. */
 function expectDeepFrozen(value: unknown): void {
   if (value === null || typeof value !== 'object') return
   expect(Object.isFrozen(value)).toBe(true)
@@ -57,7 +60,7 @@ describe('MGMT-002/MGMT-003: public atomic visitor movement', () => {
     expect(Object.isFrozen(state)).toBe(false)
     expect(Object.isFrozen(state.players[0]!.ticketsByColor)).toBe(false)
     expectDeepFrozen(result)
-    expect(restoreGameState(JSON.parse(JSON.stringify(result.state)))).toEqual(result.state)
+    expectRestoredFixture(result.state)
     for (const viewer of [null, playerId, otherId]) {
       const projection = projectGameForViewer(result.state, viewer)
       expect(projection.playerBoards).toEqual(result.state.playerBoards)
@@ -94,7 +97,7 @@ describe('MGMT-002/MGMT-003: public atomic visitor movement', () => {
     ])
     expect(result.events.filter(event => event.type === 'VisitorMoved').map(event => event.visitorId))
       .toEqual([second.id, visitor.id])
-    expect(restoreGameState(result.state)).toEqual(result.state)
+    expectRestoredFixture(result.state)
     expect(projectGameForViewer(result.state, null).vestibuleVisitors).toEqual(result.state.vestibuleVisitors)
   })
 
@@ -135,7 +138,7 @@ describe('MGMT-002/MGMT-003: public atomic visitor movement', () => {
       { visitorId: nextVisitor.id, destination: 'vestibule' }, { visitorId: nextVisitor.id, destination: 'gallery' },
     ])).toThrow('Collector capacity exceeded')
     expect(full).toEqual(before)
-    expect(restoreGameState(result.state)).toEqual(result.state)
+    expectRestoredFixture(result.state)
   })
 
   it('checks capacity against preceding entries in the same command', () => {
@@ -189,7 +192,7 @@ describe('MGMT-002/MGMT-003: public atomic visitor movement', () => {
 
   it('accepts frozen inputs and does not freeze or change caller steps', () => {
     const { state, playerId, visitor } = scenario()
-    const frozen = restoreGameState(state)
+    const frozen = restoreGameState(conserveFixtureComponents(state))
     const steps: VisitorMovementStep[] = [{ visitorId: visitor.id, destination: 'vestibule' }]
     const before = structuredClone(steps)
     const result = applyVisitorMovementTickets(frozen, playerId, steps)

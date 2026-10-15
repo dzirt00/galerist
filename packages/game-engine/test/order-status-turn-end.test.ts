@@ -3,9 +3,10 @@ import {
   advanceTurn, receiveOrder, triggerGameEnd, restoreGameState, projectGameForViewer, projectEventsForViewer,
   type GameState,
 } from '../src/index.js'
-import { createGameState, startGameAfterSetup, withGameEndConditions } from './helpers.js'
+import { createGameState, startGameAfterSetup, withGameEndConditions, conserveFixtureComponents } from './helpers.js'
 import { twoPlayerConfigs, twoPlayerGameConfig } from './fixtures.js'
 
+/** Готовит завершение хода в выбранной фазе с границей раунда и отложенным доходом. */
 function scenario(phase: 'regular_play' | 'ending_current_round' | 'final_round' = 'regular_play',
   boundary = false, pendingIncome = false): GameState {
   const base = startGameAfterSetup(createGameState(twoPlayerGameConfig, twoPlayerConfigs))
@@ -29,7 +30,7 @@ describe('ORDER-001/002/003 и TURN-005: сброс этапа получени�
   for (const phase of ['regular_play', 'ending_current_round', 'final_round'] as const) {
     for (const boundary of [false, true]) {
       it.each([false, true])(`${phase}, граница раунда=${boundary}, pending доход=%s: сохраняет доход и сбрасывает всех игроков`, pendingIncome => {
-        const input = restoreGameState(JSON.parse(JSON.stringify(scenario(phase, boundary, pendingIncome))))
+        const input = restoreGameState(conserveFixtureComponents(scenario(phase, boundary, pendingIncome)))
         const before = structuredClone(input)
         const activeIndex = input.players.findIndex(player => player.id === input.activePlayerId)
         const nextPlayerId = input.players[(activeIndex + 1) % input.players.length]!.id
@@ -45,8 +46,8 @@ describe('ORDER-001/002/003 и TURN-005: сброс этапа получени�
         expect(result.state.activePlayerId).toBe(isFinalScoring ? null : nextPlayerId)
         expect(result.state.round).toBe(isFinalScoring ? input.round : input.round + (boundary ? 1 : 0))
         expect(result.events).toEqual([
-          { type: 'TurnEnded', playerId: input.activePlayerId },
           ...(pendingIncome ? input.players.map(player => ({ type: 'IntermediateIncomeAwarded', playerId: player.id })) : []),
+          { type: 'TurnEnded', playerId: input.activePlayerId },
           ...(boundary ? [{ type: 'RoundEnded', round: input.round }] : []),
           ...(isFinalScoring ? [{ type: 'FinalRoundEnded' }, { type: 'FinalScoringStarted' }]
             : [...(boundary ? [{ type: 'RoundStarted', round: input.round + 1 }] : []),

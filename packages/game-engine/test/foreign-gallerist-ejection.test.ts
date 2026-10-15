@@ -1,3 +1,4 @@
+import { expectRestoredFixture } from './helpers.js'
 import { describe, expect, it } from 'vitest'
 import {
   applyGalleristMovementToGameState, applyTurn, confirmTurnDraft, createTurnDraft, declineEjectionOpportunity,
@@ -29,7 +30,7 @@ describe('EJECT-003/004: decline gallerist opportunity', () => {
       { type: 'EjectionActionDeclined', playerId: ownerId },
       { type: 'GalleristReturnedHome', playerId: ownerId },
     ])
-    expect(restoreGameState(JSON.parse(JSON.stringify(result.state)))).toEqual(result.state)
+    expectRestoredFixture(result.state)
     for (const viewer of [null, playerId, ownerId]) {
       expect(projectGameForViewer(result.state, viewer).playerBoards).toEqual(result.state.playerBoards)
       expect(projectGameForViewer(result.state, viewer).pendingEjectionOpportunity).toBeNull()
@@ -54,6 +55,7 @@ describe('EJECT-003/004: decline gallerist opportunity', () => {
   })
 })
 
+/** Готовит ход в локацию чужого галериста для проверки вытеснения и ответного действия. */
 function scenario(destination: StartingLocationId = 'LOC-MEDIA_CENTER') {
   const base = startGameAfterSetup(createGameState(twoPlayerGameConfig, twoPlayerConfigs))
   const playerId = base.activePlayerId!
@@ -96,7 +98,7 @@ describe('EJECT-001: foreign gallerist displacement', () => {
 
   it.each(destinations)('displaces at %s and preserves the saved snapshot', (destination, ejected) => {
     const { state, command, playerId, ownerId } = scenario(destination)
-    expect(restoreGameState(JSON.parse(JSON.stringify(state)))).toEqual(state)
+    expectRestoredFixture(state)
     const before = structuredClone({ state, command })
     const result = applyGalleristMovementToGameState(state, command)
     const expected: GameState = { ...state, playerBoards: state.playerBoards.map(board => ({
@@ -112,7 +114,7 @@ describe('EJECT-001: foreign gallerist displacement', () => {
       expect(projectGameForViewer(result.state, viewer).playerBoards).toEqual(expected.playerBoards)
       expect(projectEventsForViewer(result.events, result.state, viewer)).toEqual(result.events)
     }
-    expect(restoreGameState(JSON.parse(JSON.stringify(result.state)))).toEqual(result.state)
+    expectRestoredFixture(result.state)
     expect({ state, command }).toEqual(before)
     expect(Object.isFrozen(state)).toBe(false)
     expect(Object.isFrozen(result)).toBe(true)
@@ -135,7 +137,7 @@ describe('EJECT-001: foreign gallerist displacement', () => {
     expect(result.events.filter(event => event.type === 'PieceEjected')).toHaveLength(1)
     expect(result.events.slice(2).some(event => event.type === 'ArtistPromoted')).toBe(true)
     expect(result.state.artistMarket).not.toEqual(movement.state.artistMarket)
-    expect(restoreGameState(JSON.parse(JSON.stringify(result.state)))).toEqual(result.state)
+    expectRestoredFixture(result.state)
     expect({ state, command }).toEqual(before)
   })
 
@@ -159,7 +161,7 @@ describe('EJECT-001: foreign gallerist displacement', () => {
     expect(result.events).toHaveLength(1)
     expect(result.state.playerBoards.find(board => board.playerId === ownerId))
       .toEqual(state.playerBoards.find(board => board.playerId === ownerId))
-    expect(restoreGameState(JSON.parse(JSON.stringify(result.state)))).toEqual(result.state)
+    expectRestoredFixture(result.state)
   })
 
   it('rejects an unknown saved position', () => {
@@ -171,6 +173,7 @@ describe('EJECT-001: foreign gallerist displacement', () => {
 })
 
 describe('EJECT-004 / END-004: gallerist returns after the final-round turn', () => {
+  /** Переводит сценарий вытеснения галериста в финальный раунд. */
   function finalScenario() {
     const base = scenario()
     const state: GameState = { ...base.state, phase: 'final_round', round: 2, endTriggeredRound: 1 }
@@ -189,7 +192,7 @@ describe('EJECT-004 / END-004: gallerist returns after the final-round turn', ()
           { visitorId: visitor.id, destination: 'vestibule' },
         ] } } }
       const before = structuredClone({ state, command })
-      expect(restoreGameState(JSON.parse(JSON.stringify(state)))).toEqual(state)
+      expectRestoredFixture(state)
       const movement = applyGalleristMovementToGameState(state, command)
       expect(movement.state.playerBoards.find(board => board.playerId === ownerId)!.galleristPosition)
         .toBe('LOC-MEDIA_CENTER_EJECT')
@@ -214,7 +217,7 @@ describe('EJECT-004 / END-004: gallerist returns after the final-round turn', ()
         expect(projectGameForViewer(result.state, viewer).playerBoards).toEqual(result.state.playerBoards)
         expect(projectEventsForViewer(result.events, result.state, viewer)).toEqual(result.events)
       }
-      expect(restoreGameState(JSON.parse(JSON.stringify(result.state)))).toEqual(result.state)
+      expectRestoredFixture(result.state)
       expect({ state, command }).toEqual(before)
       expect(Object.isFrozen(state)).toBe(false)
       expect(Object.isFrozen(result)).toBe(true)
@@ -260,7 +263,7 @@ describe('EJECT-004 / END-004: gallerist returns after the final-round turn', ()
         locationAssistants: [...board.locationAssistants, { assistantId, locationId: 'LOC-MEDIA_CENTER' }],
       }),
     }
-    expect(restoreGameState(JSON.parse(JSON.stringify(state)))).toEqual(state)
+    expectRestoredFixture(state)
     const result = applyTurn(state, command)
     const after = result.state.playerBoards.find(board => board.playerId === ownerId)!
     expect(after.galleristPosition).toBe('LOC-SALES_OFFICE')

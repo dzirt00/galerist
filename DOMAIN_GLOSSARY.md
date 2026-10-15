@@ -13,11 +13,23 @@
 
 ## Жизненный цикл и состояние
 
+| Каноническое имя | Значение |
+| --- | --- |
+| `FinalScoringStage` / `finalScoringStage` | Сохраняемый следующий этап финального подсчёта: market_leadership → reputation → exhibition → auction → curator → dealer → influence → complete. |
+| `advanceFinalScoring` | Публично выполнить следующий этап; на аукционе принять выбор только очередного игрока. Последний этап вызывает completeFinalScoring. |
+| `AuctionAward` / `auctionAwards` | Сохраняемая выдача аукционной работы: playerId, artworkId и единственный goalType curator/dealer. |
+| `determineAuctionOrder` | Положительные ставки, затем ставки колонок 3/2/1, затем круг от firstPlayerId. |
+| `calculateGoalCardCoins` | Максимальная выплата карты целей при запрете повторного использования работ; у дилера оплачивается каждый полный набор. |
+| `MarketLeadershipScored`, `ReputationTokensScored`, `ExhibitionScored`, `AuctionResolved`, `ExceptionalArtworkAwarded`, `CuratorCardScored`, `DealerCardScored` | Публичные события последовательных этапов SCORE-002–005. |
+| `visitorBagEmptyReached` / `twoSuperstarsReached` | Сохраняемые однократные индикаторы пустого мешочка и минимум двух суперзвёзд. |
+| `resolveStartingReputation` / `StartingReputationRequest` | Разрешение активированного стартового жетона перед выдворением и завершением хода: boardCellId, visitorId и choices награды. |
+| `ReputationTokenRemoved` | Стартовый жетон удалён, поскольку легальная клетка получения недоступна. |
+
 | Каноническое имя                              | Значение                                                                              |
 |-----------------------------------------------|---------------------------------------------------------------------------------------|
 | `game`                                        | Партия как выполняемый игровой процесс.                                               |
 | `gameState` / `GameState`                     | Полный серверный снимок состояния партии.                                             |
-| `stateSchemaVersion`                          | Версия формы сохраняемого `GameState`, не версия правил. Текущая схема 17 включает глобальное размещение помощников по локациям; схема 16 отклоняется без миграции.                              |
+| `stateSchemaVersion` | Версия сохраняемого GameState. Текущая схема 19 включает три индикатора окончания, auctionAwards и сохраняемый finalScoringStage; прежние схемы отклоняются без миграции. |
 | `setup`                                       | Подготовка партии до начала первого раунда.                                           |
 | `regularPlay` / `regular_play`                | Обычная фаза игры; camelCase в идентификаторе, snake_case в строковом дискриминаторе. |
 | `endingCurrentRound` / `ending_current_round` | Доигрывание раунда, в котором сработал конец партии.                                  |
@@ -259,7 +271,7 @@
 | `AuctionBidPlaced` | Зафиксированная ставка playerId в cellId с точным bid. |
 | `AssistantPlacedOnMarket` | Постоянное размещение выбранного assistantId игрока playerId в cellId рынка. |
 
-Схема состояния 16 требует эти коллекции, включая пустые, и ejectedAssistant: null при отсутствии выдворения. Схема 15 отклоняется без миграции.
+Схема состояния 19 требует эти коллекции, включая пустые, и ejectedAssistant: null при отсутствии выдворения. Предыдущие схемы отклоняются без миграции.
 
 ## Добавление нового термина
 

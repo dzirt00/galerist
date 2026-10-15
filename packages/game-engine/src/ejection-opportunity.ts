@@ -1,8 +1,11 @@
 import type { GameState, PendingEjectionOpportunity, PlayerId } from './types.js'
 import { freezeTransition, type GameEvent, type GameTransition } from './game-events.js'
 import { returnAssistantToOffice } from './return-assistant-to-office.js'
+import { hasPendingStartingReputation } from './starting-reputation.js'
 
+/** Проверяет право игрока на ожидающее действие выдворения и согласованность его фишки с сохранённым контекстом. */
 export function requireEjectionOpportunity(state: GameState, playerId: PlayerId): PendingEjectionOpportunity {
+  if (hasPendingStartingReputation(state)) throw new Error('Resolve starting reputation before ejection')
   if (state.status !== 'in_progress'
     || (state.phase !== 'regular_play' && state.phase !== 'ending_current_round')) {
     throw new Error('Ejection action requires regular play or ending current round')
@@ -30,7 +33,11 @@ export function requireEjectionOpportunity(state: GameState, playerId: PlayerId)
   return opportunity
 }
 
-/** Only an unused ejected piece returns; the action may already have placed its assistant. */
+/**
+ * Закрывает возможность выдворения после отказа или выполненного действия.
+ * Возвращает только неиспользованную фишку: помощник, уже назначенный на заказ
+ * или рынок, остаётся там и не возвращается в офис повторно.
+ */
 export function completeEjectionOpportunity(
   state: GameState, opportunity: PendingEjectionOpportunity, actionEvents: readonly GameEvent[],
 ): GameTransition<GameState> {

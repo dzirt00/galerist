@@ -1,10 +1,10 @@
+import { evaluateEndConditions } from './end-conditions.js'
 import type { GameState,  PlayerId } from "./types.js";
-import { freezeTransition, type GameEvent, type GameTransition } from "./game-events.js";
+import { type GameEvent, type GameTransition } from "./game-events.js";
 import { deepFreeze, type HireQueue, setupComponentCatalog, type SetupTicketColor } from "./component-catalog.js";
 import { hireAssistants, type HireQueueEntry } from "./hiring.js";
 import { applyTicketReward, type TicketRewardApplicationInput } from "./ticket-reward-to-game-state.js";
 import { applyInfluenceGainToPlayer } from "./influence-gain-award.js";
-import { canTriggerGameEnd, triggerGameEnd } from "./game-lifecycle.js";
 
 export interface ApplyAssistantHiringToGameStateRequest {
   readonly playerId: PlayerId
@@ -14,6 +14,11 @@ export interface ApplyAssistantHiringToGameStateRequest {
   readonly replacementColorsByRequestedColor?: Readonly<Partial<Record<SetupTicketColor, SetupTicketColor>>>
 }
 const TOTAL_COUNT_HIRE_QUEUE = 8
+/**
+ * Атомарно нанимает выбранное число помощников по HIRE-001/002.
+ * Сначала проверяет вместимость и оплачивает весь найм, затем переносит помощников
+ * и последовательно применяет их награды к уже обновлённым ресурсам игрока.
+ */
 export function applyAssistantHiringToGameState(
   state: GameState,
   request: ApplyAssistantHiringToGameStateRequest
@@ -33,17 +38,17 @@ export function applyAssistantHiringToGameState(
   if (boardIndex === -1) throw new Error('Invalid board')
   let boardPlayer = stateCopy.playerBoards[boardIndex]
   if(boardPlayer === undefined) throw new Error('Invalid board')
-  const assistantOfficeIds = boardPlayer.assistants.assistantOfficeIds.map(el => el)
+
   const assistantHireQueueIds = boardPlayer.assistants.assistantHireQueueIds.map(el => el)
   const componentCatalogHireQueue =  setupComponentCatalog.hireQueue
-  const visitorGallery = {...boardPlayer.gallery.visitors}
   let ticketOffice = {...stateCopy.ticketOffice}
   let ticketDiscard = {...stateCopy.ticketDiscard}
-  let events: GameEvent[] = []
-  let hireQueuePlayer = boardPlayer.assistants.hireQueue
-  let bonusAssistant: HireQueue[] = []
+  const events: GameEvent[] = []
+  const hireQueuePlayer = boardPlayer.assistants.hireQueue
+  const bonusAssistant: HireQueue[] = []
 
   for ( let i = 0; i < assistantHireQueueIds.length; i++ ) {
+    // Оставшаяся очередь короче исходных восьми клеток: её начало сдвигается в каталоге цен и наград.
     const index = TOTAL_COUNT_HIRE_QUEUE - hireQueuePlayer + i
     const hireQueue = componentCatalogHireQueue[ index ]
     if(hireQueue === undefined) throw new Error('invalid hireQueue')
@@ -71,6 +76,7 @@ export function applyAssistantHiringToGameState(
     targetInfluence: targetInfluence
   })
 
+  // Оплата предшествует наградам: нельзя финансировать текущий найм его будущими билетами или монетами.
   const hireAssistantsResult = hireAssistants(hireAssistantsInput)
 
   player = {
@@ -97,11 +103,12 @@ export function applyAssistantHiringToGameState(
   const bonusesAfterHire =  (hireAssistantsResult.hired.filter(el => el.reward !== null)).map(el => el.reward)
 
 
+  // Следующая награда получает остаток кассы, сброса и ресурсы после предыдущей награды.
   bonusesAfterHire.forEach((el) => {
     if(player === undefined) throw new Error('Invalid player')
 
     if(el === 'TICKET-ANY' || el === 'TICKET-B' || el === 'TICKET-R'){
-      let requestedColors: SetupTicketColor[] = []
+      const requestedColors: SetupTicketColor[] = []
       if(el === 'TICKET-B') requestedColors.push('B')
       if(el === 'TICKET-R') requestedColors.push('R')
       if(el === 'TICKET-ANY') {
@@ -191,32 +198,6 @@ export function applyAssistantHiringToGameState(
     ticketOffice: {...ticketOffice},
     ticketDiscard: {...ticketDiscard},
   }
-  let stateTicketCount: number = 0
-  let copyStateTicketCount: number = 0
-  for(let el of Object.values(state.ticketOffice.ticketsByColor)) {
-    stateTicketCount += el
-  }
-  for(let el of Object.values(stateCopy.ticketOffice.ticketsByColor)) {
-    copyStateTicketCount += el
-  }
-
-  if(!state.ticketOfficeEmptyReached && stateTicketCount !== 0 && copyStateTicketCount === 0) {
-    stateCopy = {
-      ...stateCopy,
-      ticketOfficeEmptyReached: true
-    }
-    events.push({type: 'EndConditionReached'})
-  }
-  if(stateCopy.phase === 'regular_play' && canTriggerGameEnd(stateCopy)) {
-    const endingCurrentRoundGameState = triggerGameEnd(stateCopy)
-    events.push(...endingCurrentRoundGameState.events)
-    stateCopy = {
-      ...stateCopy,
-      phase: endingCurrentRoundGameState.state.phase,
-      endTriggeredRound: endingCurrentRoundGameState.state.endTriggeredRound,
-    }
-  }
-
-  return freezeTransition(stateCopy,events)
+  return evaluateEndConditions(state, stateCopy, events)
 
 }

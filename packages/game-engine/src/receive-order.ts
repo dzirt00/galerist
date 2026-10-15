@@ -5,6 +5,11 @@ import { changeStatusPlayer } from "./change-status-player.js";
 import type { SetupTicketColor } from "./component-catalog.js";
 
 
+/**
+ * Начинает или продолжает отдельное действие получения заказа через actionOrderMarket.
+ * При WAITING проверяет лимит один раз; при PENDING/REFRESH сохраняет уже пройденный этап.
+ * Возвращает все эффекты выбранного получения, обновления или отказа без передачи обычного хода.
+ */
 export function receiveOrder(
   state: GameState,
   playerId:PlayerId,

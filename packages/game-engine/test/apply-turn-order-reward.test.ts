@@ -7,10 +7,12 @@ import {
 import { createGameState, startGameAfterSetup } from './helpers.js'
 import { twoPlayerConfigs, twoPlayerGameConfig } from './fixtures.js'
 
+/** Готовит ход с наймом и наградой заказа до либо после действия локации. */
 function scenario(timing: 'before_location' | 'after_location', orderId = 'ORDER-03') {
   const initial = startGameAfterSetup(createGameState(twoPlayerGameConfig, twoPlayerConfigs))
   const market = initial.orderMarket
   const previous = market.visibleOrders[1]!
+  /** Меняет местами два идентификатора, сохраняя состав колоды при подготовке нужного заказа. */
   const swap = (id: string) => id === orderId ? previous : id === previous ? orderId : id
   const input: GameState = { ...initial, orderMarket: {
     ...market,
@@ -46,6 +48,7 @@ function scenario(timing: 'before_location' | 'after_location', orderId = 'ORDER
   return { state, command, assistantId, board }
 }
 
+/** Рекурсивно проверяет ожидаемый признак заморозки всех вложенных объектов. */
 function expectFrozen(value: unknown, frozen: boolean): void {
   if (!value || typeof value !== 'object') return
   expect(Object.isFrozen(value)).toBe(frozen)

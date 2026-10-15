@@ -1,3 +1,4 @@
+import { expectRestoredFixture } from './helpers.js'
 import { describe, expect, it } from 'vitest'
 import {
   advanceTurn, applyTurn, applyEjectionLocationAction, applyEjectionOrderReward, applyEjectionVisitorMovement,
@@ -13,6 +14,41 @@ import { twoPlayerGameConfig, twoPlayerConfigs } from './fixtures.js'
 const actor = 'player-1'
 const owner = 'player-2'
 
+describe('MID-001 and FAME-002 through ejection then turn completion', () => {
+  it('triggers income during paid ejection hiring and awards it before the next player', () => {
+    const initial = scenario().state
+    const state: GameState = { ...initial, intermediateScoringStatus: 'not_triggered', ticketOffice: { ticketsByColor: { B: 1, R: 2, W: 2 } },
+      playerBoards: initial.playerBoards.map(board => board.playerId === owner ? { ...board, gallery: { ...board.gallery, visitors: [{ id: 'income-investor', type: 'B' }] } } : board) }
+    const result = applyEjectionLocationAction(state, owner, { category: 'location_action', hireAssistants: { playerId: actor, countAssistants: 2 } })
+    expect(result.state.intermediateScoringStatus).toBe('pending')
+    expect(result.events.some(event => event.type === 'IntermediateScoringTriggered')).toBe(true)
+    expect(result.events.some(event => event.type === 'IntermediateIncomeAwarded')).toBe(false)
+    const end = advanceTurn(result.state)
+    expect(end.state.intermediateScoringStatus).toBe('completed')
+    expect(end.state.players.find(player => player.id === owner)!.coins).toBe(result.state.players.find(player => player.id === owner)!.coins + 2)
+    expect(end.events.findIndex(event => event.type === 'IntermediateIncomeAwarded')).toBeLessThan(end.events.findIndex(event => event.type === 'TurnStarted'))
+  })
+  it('uses the gallery changed by ejection ticket movement for the pending income', () => {
+    const state = { ...scenario().state, intermediateScoringStatus: 'pending' as const }
+    const result = applyEjectionVisitorMovement(state, owner, [
+      { visitorId: 'ejection-ticket-visitor', destination: 'vestibule' },
+      { visitorId: 'ejection-ticket-visitor', destination: 'gallery' },
+    ])
+    const end = advanceTurn(result.state)
+    expect(end.state.players.find(player => player.id === owner)!.coins).toBe(result.state.players.find(player => player.id === owner)!.coins + 2)
+    expect(advanceTurn(end.state).events.some(event => event.type === 'IntermediateIncomeAwarded')).toBe(false)
+  })
+  it('awards superstar coins only to the ejected player who performs the promotion', () => {
+    const initial = scenario()
+    const state: GameState = { ...initial.state, artistMarket: { ...initial.state.artistMarket, slots: initial.state.artistMarket.slots.map(artist => artist.artistId === initial.artistId ? { ...artist, fame: 18 } : artist) } }
+    const result = applyEjectionLocationAction(state, owner, { category: 'location_action', advertisingArtist: { playerId: actor, artistId: initial.artistId } })
+    expect(result.state.players.find(player => player.id === owner)!.coins).toBe(state.players.find(player => player.id === owner)!.coins + 5)
+    expect(result.state.players.find(player => player.id === actor)!.coins).toBe(state.players.find(player => player.id === actor)!.coins)
+    expect(result.events).toContainEqual({ type: 'CoinsReceived', playerId: owner, coinsReceived: 5 })
+  })
+})
+
+/** Создаёт вытеснение галериста либо помощника с заданными локацией и заполненностью офиса. */
 function scenario(locationId: StartingLocationId = 'LOC-MEDIA_CENTER', pieceType: 'gallerist' | 'assistant' = 'gallerist', office = 2) {
   const initial = startGameAfterSetup(createGameState(twoPlayerGameConfig, twoPlayerConfigs))
   const ownerBoard = initial.playerBoards.find(board => board.playerId === owner)!
@@ -57,8 +93,9 @@ function scenario(locationId: StartingLocationId = 'LOC-MEDIA_CENTER', pieceType
   return { state: structuredClone(applyTurn(base, command).state), assistantId, command, artistId: artist.artistId }
 }
 
+/** Проверяет восстановление, публичные проекции и заморозку результата действия после вытеснения. */
 function expectPublic(result: GameTransition<GameState>) {
-  expect(restoreGameState(JSON.parse(JSON.stringify(result.state)))).toEqual(result.state)
+  expectRestoredFixture(result.state)
   for (const viewer of [null, actor, owner]) {
     expect(projectGameForViewer(result.state, viewer).pendingEjectionOpportunity).toBeNull()
     expect(projectGameForViewer(result.state, viewer).playerBoards).toEqual(result.state.playerBoards)
@@ -69,6 +106,7 @@ function expectPublic(result: GameTransition<GameState>) {
   expect(result.events.every(Object.isFrozen)).toBe(true)
 }
 
+/** Переносит заказ с рынка владельцу вытесненной фигуры и при необходимости завершает его. */
 function withOrder(state: GameState, completed = false): GameState {
   const orderId = state.orderMarket.visibleOrders[1]!
   return { ...state,
@@ -177,6 +215,7 @@ describe('EJECT-003: influence payment and location actions', () => {
       purchaseType: 'regular', requestedTicketColors: colors }).state
     const orderId = setupComponentCatalog.orders.find(order => order.genre === artist.genre)!.id
     const oldId = purchased.orderMarket.visibleOrders[1]!
+    /** Меняет местами идентификаторы заказов без потери карт при настройке тестовой награды. */
     const swap = (id: string) => id === orderId ? oldId : id === oldId ? orderId : id
     const market = purchased.orderMarket
     const prepared: GameState = { ...purchased, orderMarket: { ...market,

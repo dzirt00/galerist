@@ -1,8 +1,8 @@
+import { evaluateEndConditions } from './end-conditions.js'
 import type { SetupTicketColor } from './component-catalog.js'
-import { freezeTransition, type GameEvent, type GameTransition } from './game-events.js'
+import { type GameEvent, type GameTransition } from './game-events.js'
 import { replaceUnavailableTicket } from './ticket-replacement.js'
-import type { EndingCurrentRoundGameState, GameState, IntermediateScoringStatus, PlayerId } from './types.js'
-import { canTriggerGameEnd, triggerGameEnd } from "./game-lifecycle.js";
+import type { GameState, IntermediateScoringStatus, PlayerId } from './types.js'
 
 export interface TicketRewardRequest {
   readonly playerId: PlayerId
@@ -88,7 +88,7 @@ export function applyTicketRewardToGameState(
   const players = [...state.players]
   players[playerIndex] = result.player
 
-  let updateState = {
+  const updateState = {
     ...state,
     players: [
     ...players,
@@ -98,49 +98,7 @@ export function applyTicketRewardToGameState(
     intermediateScoringStatus: result.intermediateScoringStatus
   }
 
-  let updateGameTransition:  GameTransition<EndingCurrentRoundGameState> | null = null
-
-  let countTicketPreperad = 0
-  let countTicketCurrent = 0
-  for (const ticket of Object.values(state.ticketOffice.ticketsByColor)) {
-    countTicketPreperad += ticket
-  }
-  for (const ticket of Object.values(updateState.ticketOffice.ticketsByColor)) {
-    countTicketCurrent += ticket
-  }
-  let eventEndConditionReached: GameEvent | null = null
-
-    if(countTicketPreperad !== 0 && countTicketCurrent === 0 && !state.ticketOfficeEmptyReached) {
-      eventEndConditionReached = { type: 'EndConditionReached' }
-      updateState = {
-        ...updateState,
-        ticketOfficeEmptyReached: true
-      }
-    }
-
-  if(updateState.phase === 'regular_play' && canTriggerGameEnd(updateState)) {
-    updateGameTransition = triggerGameEnd(updateState)
-  }
-
-  const events = (updateGameTransition !== null)
-    ? (eventEndConditionReached !== null)
-      ? [...result.events, eventEndConditionReached, ...updateGameTransition.events]
-      : [...result.events,...updateGameTransition.events]
-    : (eventEndConditionReached !== null)
-      ? [...result.events,eventEndConditionReached]
-      : [...result.events]
-
-  updateState = (updateGameTransition !== null)
-    ? {
-      ...updateGameTransition.state,
-      players: [...updateGameTransition.state.players]
-    }
-    : updateState;
-
-  return freezeTransition(
-    updateState,
-    events,
-  )
+  return evaluateEndConditions(state, updateState, result.events)
 }
 
 /** Применяет билетную награду к переданным ресурсам без сборки GameState. */

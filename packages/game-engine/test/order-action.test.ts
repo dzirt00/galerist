@@ -7,6 +7,7 @@ import { changeStatusPlayer } from '../src/change-status-player.js'
 import { createGameState, startGameAfterSetup } from './helpers.js'
 import { twoPlayerConfigs, twoPlayerGameConfig } from './fixtures.js'
 
+/** Создаёт обычную фазу партии для проверки последовательности действий с заказами. */
 function scenario() {
   return startGameAfterSetup(createGameState(twoPlayerGameConfig, twoPlayerConfigs))
 }
@@ -16,6 +17,7 @@ describe('ORDER-002: регрессия внутренних переходов 
     const input = scenario()
     const before = structuredClone(input)
     const playerId = input.activePlayerId
+    /** Читает статус выбранного игрока после очередного шага действия. */
     const stage = (state: typeof input | ReturnType<typeof changeStatusPlayer>['state']) =>
       state.players.find(player => player.id === playerId)!.status
     expect(stage(input)).toBe('WAITING')
@@ -53,7 +55,7 @@ describe('ORDER-002: регрессия внутренних переходов 
   it('продолжает обновление и отказ из снимка схемы 13', () => {
     const input = scenario()
     const playerId = input.activePlayerId
-    expect(input.stateSchemaVersion).toBe(18)
+    expect(input.stateSchemaVersion).toBe(19)
     expect(restoreGameState(JSON.parse(JSON.stringify(input)))).toEqual(input)
     expect(() => restoreGameState({ ...input, stateSchemaVersion: 10 })).toThrow()
     const begun = changeStatusPlayer(input, playerId).state

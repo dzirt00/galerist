@@ -1,3 +1,4 @@
+import { expectRestoredFixture } from './helpers.js'
 import { describe, expect, it } from 'vitest'
 import {
   applyArtworkPurchaseToGameState,
@@ -13,7 +14,7 @@ import { createGameState, startGameAfterSetup } from './helpers.js'
 
 type Scenario = 'tickets_and_bag' | 'tickets_and_superstars' | 'bag_and_superstars' | 'all' | 'one'
 
-/** Each successful scenario reaches its second indicator through this purchase. */
+/** Готовит покупку, достигающую выбранного сочетания условий завершения партии. */
 function purchaseScenario(scenario: Scenario) {
   const base = structuredClone(startGameAfterSetup(createGameState(twoPlayerGameConfig, twoPlayerConfigs)))
   const artist = base.artistMarket.slots.find(slot => slot.isOpen)!
@@ -79,14 +80,19 @@ describe('END-002: automatic game end after artwork purchase', () => {
       expect(transition.events.filter(event => event.type === 'GameEndTriggered')).toEqual([{ type: 'GameEndTriggered' }])
       expect(transition.events.at(-1)).toEqual({ type: 'GameEndTriggered' })
       const emptiesTickets = scenario !== 'bag_and_superstars'
+      const expectedConditions = [
+        ...(emptiesTickets ? [{ type: 'EndConditionReached' }] : []),
+        ...(scenario === 'bag_and_superstars' ? [{ type: 'EndConditionReached', condition: 'visitor_bag_empty' }] : []),
+        ...(['bag_and_superstars','all'].includes(scenario) ? [{ type: 'EndConditionReached', condition: 'two_superstars' }] : []),
+      ]
       expect(transition.state.ticketOfficeEmptyReached).toBe(emptiesTickets)
       expect(transition.events.filter(event => event.type === 'EndConditionReached'))
-        .toEqual(emptiesTickets ? [{ type: 'EndConditionReached' }] : [])
-      if (emptiesTickets) expect(transition.events.at(-2)).toEqual({ type: 'EndConditionReached' })
+        .toEqual(expectedConditions)
+      expect(transition.events.at(-2)).toEqual(expectedConditions.at(-1))
       expect(transition.events.findIndex(event => event.type === 'ArtworkExhibited')).toBeLessThan(transition.events.length - 1)
       if (scenario === 'bag_and_superstars') {
         expect(transition.state.visitorBag.visitors).toEqual([])
-        expect(transition.events.at(-2)?.type).toBe('ArtworkMarketRefilled')
+        expect(transition.events.findIndex(event => event.type === 'ArtworkMarketRefilled')).toBeLessThan(transition.events.findIndex(event => event.type === 'EndConditionReached'))
       }
       for (const viewer of [null, request.playerId]) {
         expect(projectEventsForViewer(transition.events, transition.state, viewer).at(-1)).toEqual({ type: 'GameEndTriggered' })
@@ -94,9 +100,9 @@ describe('END-002: automatic game end after artwork purchase', () => {
         expect(projectGameForViewer(transition.state, viewer).ticketOfficeEmptyReached).toBe(emptiesTickets)
         expect(projectEventsForViewer(transition.events, transition.state, viewer)
           .filter(event => event.type === 'EndConditionReached'))
-          .toEqual(emptiesTickets ? [{ type: 'EndConditionReached' }] : [])
+          .toEqual(expectedConditions)
       }
-      expect(restoreGameState(transition.state)).toEqual(transition.state)
+      expectRestoredFixture(transition.state)
       expect(Object.isFrozen(transition)).toBe(true)
       expect(Object.isFrozen(transition.state)).toBe(true)
       expect(Object.isFrozen(transition.state.playerBoards[0]!.gallery.artworkSlots)).toBe(true)
@@ -142,8 +148,8 @@ describe('END-002: automatic game end after artwork purchase', () => {
       const transition = applyArtworkPurchaseToGameState(state, request)
       expect(transition.state).toMatchObject({ phase, endTriggeredRound: 2 })
       expect(transition.state.ticketOfficeEmptyReached).toBe(true)
-      expect(transition.events.at(-1)).toEqual({ type: 'EndConditionReached' })
-      expect(transition.events.filter(event => event.type === 'EndConditionReached')).toHaveLength(1)
+      expect(transition.events.at(-1)).toEqual({ type: 'EndConditionReached', condition: 'two_superstars' })
+      expect(transition.events.filter(event => event.type === 'EndConditionReached')).toHaveLength(2)
       expect(transition.state.players.find(player => player.id === request.playerId)!.acquiredArtworkCount).toBe(1)
       expect(transition.events.some(event => event.type === 'ArtworkExhibited')).toBe(true)
       expect(transition.events.some(event => event.type === 'GameEndTriggered')).toBe(false)

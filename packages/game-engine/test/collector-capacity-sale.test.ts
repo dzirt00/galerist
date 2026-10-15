@@ -7,6 +7,7 @@ import {
 import { createGameState, startGameAfterSetup } from './helpers.js'
 import { twoPlayerConfigs, twoPlayerGameConfig } from './fixtures.js'
 
+/** Готовит покупки и продажи для проверки изменения вместимости галереи для коллекционеров. */
 function fixture() {
   const initial = startGameAfterSetup(createGameState(twoPlayerGameConfig, twoPlayerConfigs))
   const artist = initial.artistMarket.slots.find(item => item.isOpen)!
@@ -44,6 +45,7 @@ function fixture() {
   return { state, artist, collectors, investors, orders }
 }
 
+/** Покупает работу выбранного художника с допустимыми цветами билетной награды. */
 function buy(state: GameState, artistId: string): GameState {
   const artist = state.artistMarket.slots.find(item => item.artistId === artistId)!
   const reward = state.artworkMarket.openArtworksByGenre[artist.genre]!.artwork.ticketReward
@@ -53,6 +55,7 @@ function buy(state: GameState, artistId: string): GameState {
   return applyArtworkPurchaseToGameState(state, { playerId: 'player-1', artistId, purchaseType: 'regular', requestedTicketColors }).state
 }
 
+/** Проверяет отказ во входе коллекционеру при превышении вместимости без изменения состояния. */
 function expectCollectorRejected(state: GameState, visitorId: string) {
   const before = structuredClone(state)
   expect(() => applyVisitorMovementTickets(state, 'player-1', [{ visitorId, destination: 'gallery' }]))

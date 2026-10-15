@@ -1,3 +1,4 @@
+import { expectRestoredFixture } from './helpers.js'
 import { describe, expect, it } from 'vitest'
 import {
   applyTurn, confirmTurnDraft, createTurnDraft, updateTurnDraft,
@@ -7,6 +8,7 @@ import {
 import { createGameState, startGameAfterSetup } from './helpers.js'
 import { twoPlayerConfigs, twoPlayerGameConfig } from './fixtures.js'
 
+/** Готовит продажу через полный ход с посетителем либо с явным выбором стороны награды. */
 function scenario(withVisitor = true) {
   const initial = startGameAfterSetup(createGameState(twoPlayerGameConfig, twoPlayerConfigs))
   const playerId = initial.activePlayerId!
@@ -79,7 +81,7 @@ describe('TURN-002: sale through the public turn command', () => {
     expect(Object.isFrozen(result.events)).toBe(true)
     expect(projectGameForViewer(result.state, command.playerId).availableArtworkSales).toEqual([])
     expect(projectEventsForViewer(result.events, result.state, null)).toEqual(result.events)
-    expect(restoreGameState(JSON.parse(JSON.stringify(result.state)))).toEqual(result.state)
+    expectRestoredFixture(result.state)
   })
 
   it.each(['before_location', 'after_location'] as const)('preserves sale and ticket effects at %s', timing => {
@@ -104,7 +106,7 @@ describe('TURN-002: sale through the public turn command', () => {
     expect(result.state.players.find(item => item.id === command.playerId)!.soldArtworkCount).toBe(1)
     expect(result.events).toContainEqual({ type: 'TicketSpent', playerId: command.playerId, color: moved.type })
     expect({ state, command }).toEqual(before)
-    expect(restoreGameState(JSON.parse(JSON.stringify(result.state)))).toEqual(result.state)
+    expectRestoredFixture(result.state)
   })
 
   it('does not expose a future sale visitor to management before the location action', () => {

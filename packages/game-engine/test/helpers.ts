@@ -1,4 +1,71 @@
 import { expect } from 'vitest'
+import { restoreGameState, setupComponentCatalog } from '../src/index.js'
+
+/**
+ * Согласует неиспользованные запасы старой изолированной фикстуры перед проверкой JSON-восстановления.
+ * Такие сценарии напрямую задают ресурсы и размещения для проверки отдельного действия.
+ * Помощник меняет только тестовую копию; тесты повреждённых снимков вызывают restoreGameState напрямую.
+ */
+export function conserveFixtureComponents<T extends GameState>(input: T): T {
+  let state = structuredClone(input)
+  const activeVisitors = [...state.plazaVisitors, ...state.vestibuleVisitors.map(item => item.vestibuleVisitor),
+    ...state.playerBoards.flatMap(board => board.gallery.visitors)]
+  const visitorIds = new Set(activeVisitors.map(item => item.id))
+  const counts = Object.fromEntries(setupComponentCatalog.ticketColors.map(color => [color, activeVisitors.filter(item => item.type === color).length]))
+  /** Сохраняет фонового посетителя только при свободном ID и наличии места в физическом пуле его цвета. */
+  const keepVisitor = (visitor: import('../src/index.js').VisitorInstance) => {
+    if (visitorIds.has(visitor.id) || counts[visitor.type]! >= setupComponentCatalog.visitorPools[state.config.playerCount][visitor.type]) return false
+    visitorIds.add(visitor.id); counts[visitor.type]!++; return true
+  }
+  state = { ...state, artistSetup: { ...state.artistSetup, slots: state.artistSetup.slots.map(slot => ({ ...slot, collector: slot.collector && keepVisitor(slot.collector) ? slot.collector : null })) },
+    artworkMarket: { ...state.artworkMarket, openArtworksByGenre: Object.fromEntries(Object.entries(state.artworkMarket.openArtworksByGenre).map(([genre, slot]) => [genre, slot ? { ...slot, visitors: slot.visitors.filter(keepVisitor) } : null])) as GameState['artworkMarket']['openArtworksByGenre'] } }
+  state = { ...state, visitorBag: { visitors: state.visitorBag.visitors.filter(keepVisitor) } }
+  // Билеты, явно выданные игрокам и сбросу, вычитаются из кассы, а не добавляются поверх полного запаса.
+  const tickets = { ...state.ticketOffice.ticketsByColor }
+  for (const color of setupComponentCatalog.ticketColors) tickets[color] = Math.max(0, setupComponentCatalog.ticketsPerColor[state.config.playerCount]
+    - state.ticketDiscard[color] - state.players.reduce((sum, player) => sum + player.ticketsByColor[color], 0))
+  const used = new Set(state.masterpieceAuction.artworks.map(item => item.id))
+  /** Сопоставляет условную работу фикстуры со свободным каталожным экземпляром, не дублируя аукционные работы. */
+  const remap = (id: string): string => {
+    let candidate = setupComponentCatalog.artworks.find(item => item.id === id && !used.has(id))
+    candidate ??= setupComponentCatalog.artworks.find(item => !used.has(item.id))
+    if (!candidate) throw new Error('Synthetic artwork fixture exceeds catalog')
+    used.add(candidate.id); return candidate.id
+  }
+  state = { ...state, ticketOffice: { ticketsByColor: tickets }, playerBoards: state.playerBoards.map(board => {
+    const soldArtworkIds = board.soldArtworkIds.map(remap)
+    const artworkSlots = board.gallery.artworkSlots.map(item => item ? { ...item, artworkId: remap(item.artworkId) } : null) as unknown as typeof board.gallery.artworkSlots
+    const pending = board.reputationTokenArtworkIds
+    return { ...board, soldArtworkIds, gallery: { ...board.gallery, artworkSlots },
+      reputationTokenArtworkIds: pending && Object.fromEntries(Object.entries(pending).map(([token, id]) => [token, id])) }
+  }) }
+  // Приоритет у явно заданных работ игроков и аукциона; их копии удаляются из фоновых стопок рынка.
+  state = { ...state, artworkMarket: { ...state.artworkMarket,
+    openArtworksByGenre: Object.fromEntries(Object.entries(state.artworkMarket.openArtworksByGenre).map(([genre, slot]) => {
+      if (!slot || used.has(slot.artwork.id)) return [genre, null]
+      used.add(slot.artwork.id); return [genre, slot]
+    })) as GameState['artworkMarket']['openArtworksByGenre'],
+    remainingArtworksByGenre: Object.fromEntries(Object.entries(state.artworkMarket.remainingArtworksByGenre).map(([genre, artworks]) => [genre, artworks.filter(artwork => {
+      if (used.has(artwork.id)) return false
+      used.add(artwork.id); return true
+    })])) as unknown as GameState['artworkMarket']['remainingArtworksByGenre'] } }
+  // Помощники, явно размещённые сценарием, сокращают неиспользованную очередь до общего лимита десять.
+  state = { ...state, playerBoards: state.playerBoards.map(board => {
+    const deployed = board.assistants.assistantOfficeIds.length + board.locationAssistants.length
+      + Object.values(board.boardOrders).filter(item => item.assistant !== null).length
+      + state.internationalMarket.marketAssistants.filter(item => item.playerId === board.playerId).length
+      + (board.ejectedAssistant ? 1 : 0)
+    const ids = board.assistants.assistantHireQueueIds.slice(0, Math.max(0, 10 - deployed))
+    return { ...board, assistants: { ...board.assistants, assistantHireQueueIds: ids, hireQueue: ids.length } }
+  }) }
+  return state as T
+}
+
+/** Проверяет JSON-восстановление изолированной фикстуры после согласования её фоновых запасов. */
+export function expectRestoredFixture(input: GameState): void {
+  const state = conserveFixtureComponents(input)
+  expect(restoreGameState(JSON.parse(JSON.stringify(state)))).toEqual(state)
+}
 import {
   advanceTurn,
   chooseStartingLocation,

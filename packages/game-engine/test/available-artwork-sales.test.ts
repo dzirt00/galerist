@@ -8,6 +8,7 @@ const artworks = setupComponentCatalog.artworks.filter(artwork => artwork.genre 
 const otherArtwork = setupComponentCatalog.artworks.find(artwork => artwork.genre === 'P')!
 const artists = setupComponentCatalog.artists.filter(artist => artist.genre === 'D')
 
+/** Готовит разные жанры работ и статусы заказов для поиска доступных продаж. */
 function saleState(): RegularPlayGameState {
   const initial = startGameAfterSetup(createGameState(twoPlayerGameConfig, twoPlayerConfigs))
   return {

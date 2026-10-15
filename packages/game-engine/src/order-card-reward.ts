@@ -4,7 +4,11 @@ import { applyOrderRewardEffect, type OrderRewardChoices } from './order-reward-
 import type { BoardOrders } from './player-boards.js'
 import type { GameState, PlayerId } from './types.js'
 
-/** MGMT-004: assign an available assistant, then apply the active order side's reward. */
+/**
+ * Получает награду выбранной стороны заказа по MGMT-004 после назначения доступного помощника.
+ * Помощник может прийти из офиса, локации или текущего выдворения;
+ * награда использует состояние после его перемещения и освобождения места в офисе.
+ */
 export function orderCardReward(
   state: Readonly<GameState>,
   playerId: PlayerId,

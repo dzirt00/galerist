@@ -11,6 +11,7 @@ import {
   type GameTransition,
 } from './game-events.js'
 import { getFirstPlayerIndex } from './turn-order.js'
+import { hasPendingStartingReputation } from './starting-reputation.js'
 import type { PlayerBoard } from "./player-boards.js";
 import { applyIntermediateIncomeToPlayers, type IntermediateIncomeAwardInput } from "./intermediate-income-award.js";
 
@@ -123,6 +124,7 @@ export function advanceTurn(
 ): GameTransition<FinalRoundGameState | FinalScoringGameState>
 export function advanceTurn(state: EndingSequenceGameState): GameTransition<EndingSequenceGameState>
 export function advanceTurn( state: GameState): GameTransition<GameState>
+/** Завершает разрешённый ход: начисляет отложенный доход, закрывает этапы заказов и переводит инициативу, раунд или фазу. */
 export function advanceTurn(state: GameState): GameTransition<GameState> {
   if (state.status !== 'in_progress') {
     throw new Error('Turns can only be advanced while game is in progress')
@@ -142,6 +144,7 @@ export function advanceTurn(state: GameState): GameTransition<GameState> {
   if (state.pendingEjectionOpportunity !== null) {
     throw new Error('Cannot advance turn with a pending ejection opportunity')
   }
+  if (hasPendingStartingReputation(state)) throw new Error('Resolve starting reputation before advancing turn')
   let updatePlayersState:  readonly Readonly<PlayerState>[] | null = null
   let eventsIntermediateIncomeAwarded:GameEvent[] | null = null
   let intermediateScoringStatus = state.intermediateScoringStatus
@@ -186,15 +189,15 @@ export function advanceTurn(state: GameState): GameTransition<GameState> {
   const eventFinalRoundStarted = { type: 'FinalRoundStarted'} satisfies GameEvent
   const eventRoundEnded =  { type: 'RoundEnded', round: state.round } satisfies GameEvent
   const eventRoundStarted =  { type: 'RoundStarted', round: nextRoundNumber } satisfies GameEvent
-  // Отложенный доход следует за TurnEnded, но предшествует границе раунда и следующему ходу.
+  // Все отложенные эффекты предшествуют TurnEnded, границе раунда и следующему ходу.
   let events: GameEvent[]
 
   if(isNewRound && state.phase === 'ending_current_round') {
-    events = [eventTurnEnded, ...addEventsIntermediateIncomeAwardInput,eventRoundEnded, eventRoundStarted, eventFinalRoundStarted, eventTurnStarted]
+    events = [...addEventsIntermediateIncomeAwardInput, eventTurnEnded,eventRoundEnded, eventRoundStarted, eventFinalRoundStarted, eventTurnStarted]
   } else if(isNewRound) {
-    events = [eventTurnEnded, ...addEventsIntermediateIncomeAwardInput,eventRoundEnded, eventRoundStarted, eventTurnStarted]
+    events = [...addEventsIntermediateIncomeAwardInput, eventTurnEnded,eventRoundEnded, eventRoundStarted, eventTurnStarted]
   } else {
-    events = [eventTurnEnded, ...addEventsIntermediateIncomeAwardInput, eventTurnStarted]
+    events = [...addEventsIntermediateIncomeAwardInput, eventTurnEnded, eventTurnStarted]
   }
 
   // После последнего финального хода следующего TurnStarted уже нет: начинается подсчёт.
@@ -220,8 +223,9 @@ export function advanceTurn(state: GameState): GameTransition<GameState> {
         playerBoards: playerBoards,
         endTriggeredRound: state.endTriggeredRound,
         intermediateScoringStatus: intermediateScoringStatus,
-        finalInfluenceScored: false
-      },[ eventTurnEnded, ...addEventsIntermediateIncomeAwardInput, eventRoundEnded, { type: 'FinalRoundEnded'}, { type: 'FinalScoringStarted'}
+        finalInfluenceScored: false,
+        finalScoringStage: 'market_leadership',
+      },[ ...addEventsIntermediateIncomeAwardInput, eventTurnEnded, eventRoundEnded, { type: 'FinalRoundEnded'}, { type: 'FinalScoringStarted'}
       ])
     }
     return freezeTransition({
@@ -268,15 +272,16 @@ export function advanceTurn(state: GameState): GameTransition<GameState> {
   },events)
 }
 
+/** Проверяет наличие любой пары из трёх индикаторов окончания, учитывая текущие запасы и уже сохранённые достижения. */
 export function canTriggerGameEnd(state: GameState): boolean  {
 
-  const isEmptyVisitorsBagCount = state.visitorBag.visitors.length === 0
-  const isHaveTwoArtistSuperstar = state.artistMarket.slots.filter(el => el.isSuperstar ).length >= 2
+  const isEmptyVisitorsBagCount = state.visitorBagEmptyReached || state.visitorBag.visitors.length === 0
+  const isHaveTwoArtistSuperstar = state.twoSuperstarsReached || state.artistMarket.slots.filter(el => el.isSuperstar ).length >= 2
   let countTickets = 0
   for(const ticket of Object.values(state.ticketOffice.ticketsByColor)) {
     countTickets += ticket
   }
-  const isEmptyTicket = countTickets === 0
+  const isEmptyTicket = state.ticketOfficeEmptyReached || countTickets === 0
 
   if((!isEmptyTicket && !isEmptyVisitorsBagCount)
     || (!isEmptyTicket && !isHaveTwoArtistSuperstar)

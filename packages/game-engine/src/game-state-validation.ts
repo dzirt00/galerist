@@ -1,6 +1,8 @@
 import { deepFreeze, setupComponentCatalog } from './component-catalog.js'
 import type { GamePhase, GameState, PlayerId } from './types.js'
 import { validateInternationalMarketState } from './international-market-validation.js'
+import { validateComponentSupply } from './component-supply.js'
+import { determineAuctionOrder } from './final-scoring.js'
 
 type UnknownRecord = Record<string, unknown>
 
@@ -95,6 +97,7 @@ function requirePlayerReference(
   return playerId
 }
 
+/** Сверяет участников, локацию и вид выдворенной фишки с сохранённым контекстом ожидающего действия. */
 function validatePendingEjectionOpportunity(state: UnknownRecord): void {
   if(state.pendingEjectionOpportunity !== null ) {
     const pendingEjectionOpportunity = requireRecord(state.pendingEjectionOpportunity,'pendingEjectionOpportunity')
@@ -189,6 +192,7 @@ function validateCommonCollections(state: UnknownRecord): void {
   // Каждый физический рекламный жетон находится либо в запасе, либо на художнике.
   const tokens = new Map(setupComponentCatalog.promotionTokens.map(token => [token.id, token]))
   const locatedTokens = new Set<string>()
+  /** Проверяет уровень физического рекламного жетона и регистрирует его единственное расположение. */
   const locateToken = (value: unknown, level: number): void => {
     const id = requireNonEmptyString(value, 'promotionTokenId')
     if (tokens.get(id)?.level !== level) fail('promotion token must match its level')
@@ -394,6 +398,7 @@ function validateAssistantsByLocation(
     ...setupComponentCatalog.assistantsPerPlayer.assistantHireQueueIds,
   ])
   const locatedIdsByPlayer = new Map<PlayerId, Set<string>>()
+  /** Регистрирует размещение помощника по паре владелец + локальный ID, запрещая дубли внутри набора игрока. */
   const locateAssistant = (playerId: PlayerId, assistantId: string): void => {
     let locatedIds = locatedIdsByPlayer.get(playerId)
     if (!locatedIds) {
@@ -613,6 +618,7 @@ function validatePhase(
     requireSafeInteger(state.endTriggeredRound, 'endTriggeredRound')
   }
 }
+/** Проверяет четыре открытые позиции заказов, карты под ними, сброс и остаток закрытой колоды снимка. */
 function validateOrderMarket(orderMarket: unknown) {
 
   const orderMarketR =  requireRecord(orderMarket, 'orderMarket')
@@ -652,8 +658,8 @@ function validateOrderMarket(orderMarket: unknown) {
 /** Проверяет JSON-снимок по ADR-001/ADR-002 и возвращает независимый замороженный GameState. */
 export function restoreGameState(input: unknown): GameState {
   const state = requireRecord(input, 'state')
-  if (state.stateSchemaVersion !== 18) {
-    fail('stateSchemaVersion must equal 18')
+  if (state.stateSchemaVersion !== 19) {
+    fail('stateSchemaVersion must equal 19')
   }
   const runtimeRng =requireRecord(state.runtimeRng,'runtimeRng')
   const runtimeRngCounters = requireRecord(runtimeRng.runtimeRngCounters,'runtimeRngCounters')
@@ -668,6 +674,8 @@ export function restoreGameState(input: unknown): GameState {
 
   requireNonEmptyString(state.id, 'id')
   requireBoolean(state.ticketOfficeEmptyReached,'ticketOfficeEmptyReached')
+  requireBoolean(state.visitorBagEmptyReached, 'visitorBagEmptyReached')
+  requireBoolean(state.twoSuperstarsReached, 'twoSuperstarsReached')
   const config = requireRecord(state.config, 'config')
   if (config.playerCount !== 2 && config.playerCount !== 3 && config.playerCount !== 4) {
     fail('config.playerCount must be 2, 3, or 4')
@@ -687,6 +695,28 @@ export function restoreGameState(input: unknown): GameState {
   }
   validateOrderMarket(state.orderMarket)
   validateInternationalMarketState(state as unknown as GameState)
+  if (!Array.isArray(state.auctionAwards)) fail('auctionAwards must be an array')
+  const awards = state.auctionAwards.map(item => requireRecord(item, 'auction award'))
+  // Порядок выдач обязан быть началом вычисленной очереди аукциона, а не произвольным набором игроков.
+  const auctionOrder = state.phase === 'setup' ? [] : determineAuctionOrder(state as unknown as GameState)
+  const awardIds = new Set<string>()
+  awards.forEach((award, index) => {
+    const id = requireNonEmptyString(award.artworkId, 'auction artworkId')
+    const auction = state.masterpieceAuction as GameState['masterpieceAuction']
+    if (awardIds.has(id) || !auction.artworks.some(item => item.id === id)
+      || award.playerId !== auctionOrder[index] || award.goalType !== 'curator' && award.goalType !== 'dealer') fail('Invalid auction award')
+    awardIds.add(id)
+  })
+  if (state.phase === 'final_scoring') {
+    const stages = ['market_leadership', 'reputation', 'exhibition', 'auction', 'curator', 'dealer', 'influence', 'complete']
+    if (!stages.includes(state.finalScoringStage as string)) fail('Invalid finalScoringStage')
+    // До аукциона выдач нет; после него их число равно количеству доступных работ и допущенных игроков.
+    // Флаг выплаты влияния истинен только на последней стадии, чтобы снимок не позволял пропустить выплату.
+    const stage = stages.indexOf(state.finalScoringStage as string)
+    if (stage < 3 && awards.length !== 0 || stage > 3 && awards.length !== Math.min(auctionOrder.length, (state.masterpieceAuction as GameState['masterpieceAuction']).artworks.length)
+      || state.finalInfluenceScored !== (stage === 7)) fail('Inconsistent final scoring progress')
+  } else if (state.phase !== 'finished' && awards.length > 0) fail('Auction awards outside final scoring')
+  validateComponentSupply(state as unknown as GameState)
 
   if(state.pendingEjectionOpportunity !== null ) {
     validatePendingEjectionOpportunity( state )

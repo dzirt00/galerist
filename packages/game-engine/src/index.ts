@@ -1,4 +1,6 @@
 export * from './types.js'
+export { resolveStartingReputation, type StartingReputationRequest } from './starting-reputation.js'
+export { advanceFinalScoring, determineAuctionOrder, calculateGoalCardCoins } from './final-scoring.js'
 export { applyArtworkSaleToGameState, type ArtworkSaleRequest } from './artwork-sale-state.js'
 export { getAvailableArtworkSales } from './available-artwork-sales.js'
 export { applyVisitorMovementTickets, type VisitorMovementDestination, type VisitorMovementStep } from './apply-visitor-movement-tickets.js'

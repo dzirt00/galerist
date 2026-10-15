@@ -7,6 +7,7 @@ import {
 import { twoPlayerConfigs, twoPlayerGameConfig } from './fixtures.js'
 import { createGameState, startGameAfterSetup } from './helpers.js'
 
+/** Создаёт обычную фазу партии для независимой настройки условий её завершения. */
 function createRegularState(): RegularPlayGameState {
   return startGameAfterSetup(createGameState(twoPlayerGameConfig, twoPlayerConfigs))
 }

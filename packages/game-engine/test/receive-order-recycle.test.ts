@@ -4,6 +4,7 @@ import { createGameState, startGameAfterSetup } from './helpers.js'
 import { twoPlayerConfigs, twoPlayerGameConfig } from './fixtures.js'
 import { expectOrderRecycled } from './order-recycle-assertions.js'
 
+/** Готовит принятие либо замену заказа при пустой колоде для проверки рециклинга. */
 function scenario(slot: '1' | '2' | '3', key: '1' | '2' | '3' | '4',
   occupied: boolean, status: StatusPlayer = 'WAITING'): GameState {
   const base = startGameAfterSetup(createGameState(twoPlayerGameConfig, twoPlayerConfigs))

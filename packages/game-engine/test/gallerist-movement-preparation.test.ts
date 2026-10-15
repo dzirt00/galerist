@@ -13,6 +13,7 @@ const locations: readonly StartingLocationId[] = [
   'LOC-INTERNATIONAL_MARKET', 'LOC-SALES_OFFICE',
 ]
 
+/** Размещает активного галериста в заданной исходной позиции. */
 function scenario(position: StartingLocationId | 'HOME') {
   const base = startGameAfterSetup(createGameState(twoPlayerGameConfig, twoPlayerConfigs))
   return {
@@ -22,6 +23,7 @@ function scenario(position: StartingLocationId | 'HOME') {
   }
 }
 
+/** Собирает подтверждённое перемещение с необязательным оставлением помощника. */
 function command(
   state: GameState,
   locationId: StartingLocationId,
@@ -398,6 +400,7 @@ describe('TURN-004: оставление помощника через публ�
   })
 })
 
+/** Проверяет отказ в перемещении без изменения состояния и команды. */
 function expectRejectedWithoutChanges(state: GameState, input: ConfirmedTurnCommand): void {
   const snapshot = structuredClone({ state, input })
   expect(() => applyGalleristMovementToGameState(state, input)).toThrow()
@@ -437,7 +440,7 @@ describe('TURN-003: применение перемещения через пу�
   it('перемещает галериста из HOME в любую локацию', () => {
     for (const destination of locations) {
       const base = scenario('HOME')
-      // This scenario checks movement into an empty location; ejection is tested separately.
+      // Здесь проверяется вход в пустую локацию; сценарии вытеснения проверяются отдельно.
       const state: GameState = { ...base, playerBoards: base.playerBoards.map(board => ({
         ...board, galleristPosition: 'HOME',
       })) }

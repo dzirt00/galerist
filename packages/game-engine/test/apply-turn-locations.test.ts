@@ -1,3 +1,4 @@
+import { expectRestoredFixture } from './helpers.js'
 import { describe, expect, it } from 'vitest'
 import {
   applyTurn, applyGalleristMovementToGameState, applyVisitorMovementTickets,
@@ -10,6 +11,7 @@ import {
 import { createGameState, startGameAfterSetup } from './helpers.js'
 import { threePlayerConfigs } from './fixtures.js'
 
+/** Создаёт состояние трёх игроков с ресурсами для проверки полного хода в разных локациях. */
 function fixture(): GameState {
   const initial = startGameAfterSetup(createGameState({ playerCount: 3, seed: 42 }, threePlayerConfigs))
   return structuredClone({ ...initial, activePlayerId: 'player-1',
@@ -18,6 +20,7 @@ function fixture(): GameState {
     plazaVisitors: [...initial.plazaVisitors, { id: 'turn-visitor', type: 'B' as const }],
   })
 }
+/** Выбирает допустимый набор цветов для указанной билетной награды тестового произведения. */
 function colors(reward: string): readonly SetupTicketColor[] {
   if (reward === '—') return []
   if (reward === 'B' || reward === 'R' || reward === 'W') return [reward]
@@ -32,12 +35,14 @@ type Scenario = {
   action: LocationActionCommand
   run: (state: GameState) => GameTransition<GameState>
 }
+/** Собирает действие локации и его прямой вызов для сравнения с исполнением полного хода. */
 function scenario(kind: string): Scenario {
   let state = fixture()
   if (kind === 'order') {
     const orderId = state.orderMarket.visibleOrders[1]!
     return { state, locationId: 'LOC-SALES_OFFICE',
       action: { category: 'location_action', receiveOrder: { orderActions: [{ typeAction: 'ACCEPT_ORDER', orderId, orderSlot: 1 }] } },
+      /** Принимает заказ напрямую для сравнения с результатом полного хода. */
       run: next => receiveOrder(next, 'player-1', 'ACCEPT_ORDER', orderId, '1') }
   }
   if (kind === 'open') {
@@ -47,6 +52,7 @@ function scenario(kind: string): Scenario {
       slot.artistId === artist.artistId ? { ...slot, bonus } : slot) } }
     const request = { playerId: 'player-2', artistId: artist.artistId }
     return { state, locationId: 'LOC-ARTISTS_COLONY', action: { category: 'location_action', openArtist: request },
+      /** Открывает художника от имени активного игрока для сравнения с полным ходом. */
       run: next => openArtist(next, { ...request, playerId: 'player-1' }) }
   }
   if (kind === 'purchase') {
@@ -55,6 +61,7 @@ function scenario(kind: string): Scenario {
     const request = { playerId: 'player-2', artistId: artist.artistId, purchaseType: 'regular' as const,
       requestedTicketColors: colors(artwork.ticketReward) }
     return { state, locationId: 'LOC-ARTISTS_COLONY', action: { category: 'location_action', artworkPurchase: request },
+      /** Покупает произведение от имени активного игрока для сравнения с полным ходом. */
       run: next => applyArtworkPurchaseToGameState(next, { ...request, playerId: 'player-1' }) }
   }
   state = { ...state, vestibuleVisitors: [...state.vestibuleVisitors.filter(item => item.playerId !== 'player-1'),
@@ -66,13 +73,16 @@ function scenario(kind: string): Scenario {
     const request = { playerId: 'player-2', cellId: 'MARKET-BID-C1-B3', assistantId: 'ASSISTANT-1', assistantSource: 'office' as const,
       choices: { requestedTicketColors: ['B'] as const } }
     return { state, locationId: 'LOC-INTERNATIONAL_MARKET', action: { category: 'location_action', placeAuctionBid: request },
+      /** Размещает ставку активного игрока для сравнения с полным ходом. */
       run: next => placeAuctionBid(next, { ...request, playerId: 'player-1' }) }
   }
   const request = { playerId: 'player-2', cellId: 'MARKET-REP-C1-D', assistantId: 'ASSISTANT-1', assistantSource: 'office' as const,
     boardCellId: 'BOARD-REP-R2-L', visitorId: 'market-visitor' }
   return { state, locationId: 'LOC-INTERNATIONAL_MARKET', action: { category: 'location_action', claimReputationToken: request },
+    /** Получает жетон репутации активным игроком для сравнения с полным ходом. */
     run: next => claimReputationToken(next, { ...request, playerId: 'player-1' }) }
 }
+/** Подтверждает черновик хода с перемещением и действием выбранного сценария. */
 function commandFor(s: Scenario): ConfirmedTurnCommand {
   return confirmTurnDraft(updateTurnDraft(updateTurnDraft(createTurnDraft('player-1'), {
     type: 'set_movement', movement: { category: 'movement', locationId: s.locationId },
@@ -91,6 +101,7 @@ describe('TURN-002 all location actions', () => {
       const movement = applyGalleristMovementToGameState(s.state, command)
       let next = movement.state
       const events = [...movement.events]
+      /** Выполняет управленческое перемещение посетителей и собирает события в ожидаемом порядке. */
       const management = () => {
         events.push({ type: 'ManagementActionStarted', playerId: 'player-1' })
         const result = applyVisitorMovementTickets(next, 'player-1', steps)
@@ -106,7 +117,7 @@ describe('TURN-002 all location actions', () => {
       expect(result).toEqual({ state: next, events })
       expect(result.state.activePlayerId).toBe('player-1')
       expect(result.state.playerBoards[0]!.galleristPosition).toBe(s.locationId)
-      expect(restoreGameState(JSON.parse(JSON.stringify(result.state)))).toEqual(result.state)
+      expectRestoredFixture(result.state)
       for (const viewer of [null, 'player-1', 'player-2']) {
         expect(projectGameForViewer(result.state, viewer)).toEqual(projectGameForViewer(next, viewer))
         expect(projectEventsForViewer(result.events, result.state, viewer)).toEqual(events)

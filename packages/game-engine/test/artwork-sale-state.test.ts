@@ -1,3 +1,4 @@
+import { expectRestoredFixture } from './helpers.js'
 import { describe, expect, it } from 'vitest'
 import {
   applyArtworkSaleToGameState, applyArtworkPurchaseToGameState, projectGameForViewer,
@@ -8,6 +9,7 @@ import {
 import { createGameState, startGameAfterSetup } from './helpers.js'
 import { twoPlayerConfigs, twoPlayerGameConfig } from './fixtures.js'
 
+/** Готовит выставленную работу и подходящий заказ для продажи с посетителем либо без него. */
 function fixture(withVisitor = false) {
   const initial = startGameAfterSetup(createGameState(twoPlayerGameConfig, twoPlayerConfigs))
   const artist = initial.artistMarket.slots.find(item => item.isOpen)!
@@ -67,7 +69,7 @@ describe('SALE-002 public artwork sale', () => {
     expect(projectGameForViewer(result.state, 'player-1').availableArtworkSales).toEqual([])
     expect(projectGameForViewer(result.state, null).playerBoards[0]!.soldArtworkIds).toEqual([artwork.artworkId])
     expect(projectEventsForViewer(result.events, result.state, null)).toEqual(result.events)
-    expect(restoreGameState(JSON.parse(JSON.stringify(result.state)))).toEqual(result.state)
+    expectRestoredFixture(result.state)
   })
 
   it('compacts the remaining slots in their original order and closes the last masterpiece partition', () => {
@@ -148,7 +150,7 @@ describe('SALE-002 public artwork sale', () => {
     expect(result.state.players[0]!.coins).toBe(state.players[0]!.coins + artwork.saleValue)
     expect(result.state.players[0]!.soldArtworkCount).toBe(1)
     expect(result.state.players[0]!.acquiredArtworkCount).toBe(1)
-    expect(restoreGameState(result.state)).toEqual(result.state)
+    expectRestoredFixture(result.state)
   })
 
   it.each([undefined, ['missing'], ['WORK-D-01', 'WORK-D-01']])('rejects invalid saved soldArtworkIds=%j', soldArtworkIds => {
@@ -198,7 +200,7 @@ describe('SALE-003 completion integrated with sale', () => {
       { type: 'OrderRewardSideSelected', playerId: 'player-1', orderSlot: 1, orderId: request.orderId, orderRewardSide: expectedSide },
     ])
     expect(projectGameForViewer(result.state, null).playerBoards[0]!.orderRewardSides).toEqual({ 1: expectedSide })
-    expect(restoreGameState(result.state)).toEqual(result.state)
+    expectRestoredFixture(result.state)
   })
 
   it.each([false, true])('office full=%s returns or permanently removes the assistant', full => {
@@ -222,7 +224,7 @@ describe('SALE-003 completion integrated with sale', () => {
     expect(nextBoard.assistants.assistantHireQueueIds).toEqual(queueIds)
     expect(result.events.slice(-3).map(event => event.type)).toEqual(['OrderCompleted', full ? 'AssistantRemovedFromGame' : 'AssistantReturnedHome', 'OrderRewardSideSelected'])
     expect(input).toEqual(before)
-    expect(restoreGameState(result.state)).toEqual(result.state)
+    expectRestoredFixture(result.state)
     expect(projectEventsForViewer(result.events, result.state, null)).toEqual(result.events)
   })
 
@@ -266,7 +268,7 @@ describe('SALE-003 completion integrated with sale', () => {
     const replaced = receiveOrder(sold, 'player-1', 'ACCEPT_ORDER', replacement, '3').state
     expect(replaced.playerBoards[0]!.orderRewardSides).toEqual({})
     expect(replaced.playerBoards[0]!.boardOrders[3].orderStatus).toBe('unfulfilled')
-    expect(restoreGameState(replaced)).toEqual(replaced)
+    expectRestoredFixture(replaced)
   })
 
   it.each([undefined, { 1: 'unknown' }, { 4: 'coins' }, { 1: 'coins' }])('rejects damaged saved reward orientations %j', orderRewardSides => {

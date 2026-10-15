@@ -1,7 +1,7 @@
+import { evaluateEndConditions } from './end-conditions.js'
 import { setupComponentCatalog, type SetupTicketColor } from './component-catalog.js'
 import { applyArtistFameEffects } from './artist-fame-effects.js'
-import { freezeTransition, type GameEvent, type GameTransition } from './game-events.js'
-import { canTriggerGameEnd, triggerGameEnd } from './game-lifecycle.js'
+import { type GameEvent, type GameTransition } from './game-events.js'
 import { calculateIntermediateIncome } from './intermediate-income.js'
 import { applyInfluenceGainToPlayer } from './influence-gain-award.js'
 import { applyTicketRewardToGameState } from './ticket-reward-to-game-state.js'
@@ -131,10 +131,5 @@ export function openArtist(state: Readonly<GameState>, request: Readonly<OpenArt
       ? { ...board, contract: { artistId: artist.artistId, signatureTokenId } } : board),
   }
   events.push({ type: 'ContractSigned', playerId: player.id, artistId: artist.artistId, signatureTokenId })
-  if (next.phase === 'regular_play' && canTriggerGameEnd(next)) {
-    const end = triggerGameEnd(next)
-    next = end.state
-    events.push(...end.events)
-  }
-  return freezeTransition(next, events)
+  return evaluateEndConditions(state, next, events)
 }

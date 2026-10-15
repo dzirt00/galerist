@@ -104,6 +104,11 @@ export function leaveAssistantAtLocation(
   }
 }
 
+/**
+ * Применяет перемещение галериста и необязательное оставление помощника по TURN-003/004.
+ * Возвращает своего помощника из назначения или переводит чужую фишку в выдворение;
+ * право дополнительного действия после полного хода выдаёт внешний applyTurn.
+ */
 export function applyGalleristMovementToGameState(
   state: GameState,
   command: ConfirmedTurnCommand,
@@ -151,6 +156,7 @@ export function applyGalleristMovementToGameState(
 
   if(!movement.locationId) throw new Error('invalid location id')
 
+  // Назначение проверяется после оставления помощника: выбранная фишка могла уйти из него в покидаемую локацию.
   const location = copiedState.assistantByLocation[movement.locationId]
 
   if (location !== null && location.playerId === command.playerId) {

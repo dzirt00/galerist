@@ -1,6 +1,6 @@
+import { evaluateEndConditions } from './end-conditions.js'
 import { setupComponentCatalog, type SetupTicketColor } from './component-catalog.js'
-import { freezeTransition, type GameEvent, type GameTransition } from './game-events.js'
-import { canTriggerGameEnd, triggerGameEnd } from './game-lifecycle.js'
+import { type GameEvent, type GameTransition } from './game-events.js'
 import { applyInfluenceGainToPlayer } from './influence-gain-award.js'
 import { applyAdditionalFameSpend } from './influence-fame-spending-award.js'
 import { applyTicketReward } from './ticket-reward-to-game-state.js'
@@ -144,26 +144,5 @@ export function advertisingArtist(
   nextState = fameResult.state
   events.push(...fameResult.events)
 
-  let ticketsInState = 0
-  let ticketsInNextState = 0
-  for(let val of Object.values(state.ticketOffice.ticketsByColor)) {
-    ticketsInState +=  val
-  }
-  for(let val of Object.values(nextState.ticketOffice.ticketsByColor)) {
-    ticketsInNextState += val
-  }
-  if(!state.ticketOfficeEmptyReached && ticketsInState !== 0 && ticketsInNextState === 0) {
-    nextState = {
-      ...nextState,
-      ticketOfficeEmptyReached: true
-    }
-    events.push({type: 'EndConditionReached'})
-  }
-
-  if (nextState.phase === 'regular_play' && canTriggerGameEnd(nextState)) {
-    const end = triggerGameEnd(nextState)
-    nextState = end.state
-    events.push(...end.events)
-  }
-  return freezeTransition(nextState, events)
+  return evaluateEndConditions(state, nextState, events)
 }

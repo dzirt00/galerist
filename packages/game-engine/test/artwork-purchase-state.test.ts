@@ -42,6 +42,7 @@ describe('acquiredArtworkCount purchase contract', () => {
   })
 })
 
+/** Выбирает допустимые цвета билетной награды для тестовой покупки. */
 function colorsForReward(reward: string): readonly SetupTicketColor[] {
   if (reward === '—') return []
   if (reward === 'B' || reward === 'R' || reward === 'W') return [reward]
@@ -65,6 +66,7 @@ function regularRequest(state: GameState): ArtworkPurchaseRequest {
 }
 
 describe('FAME-003: покупка у состоявшейся суперзвезды', () => {
+  /** Готовит контрактную покупку у суперзвезды с отсутствующим, подходящим либо чужим контрактом. */
   function superstarPurchase(contract: 'none' | 'matching' | 'other', fameGain: 'X' | 1 = 1) {
     const initial = createGameState(twoPlayerGameConfig, twoPlayerConfigs)
     const artist = initial.artistMarket.slots.find(slot => slot.isOpen)!
@@ -178,6 +180,7 @@ describe('applyArtworkPurchaseToGameState', () => {
     const open = baseState.artworkMarket.openArtworksByGenre[artist.genre]!
     const signatureTokenId = baseState.artistSetup.slots.find(slot => slot.artistId === artist.artistId)!
       .availableSignatureTokenIds[0]!
+    /** Создаёт уже выставленное произведение для проверки вместимости галереи и места шедевра. */
     const existing = (index: number) => ({
       artworkId: `existing-${index}`,
       artistId: `other-artist-${index}`,

@@ -3,6 +3,7 @@ import type { GameTransition } from './game-events.js'
 import { orderCardReward } from './order-card-reward.js'
 import { completeEjectionOpportunity, requireEjectionOpportunity } from './ejection-opportunity.js'
 
+/** Выполняет награду заказа как единственное управление при выдворении и возвращает неиспользованную фишку. */
 export function applyEjectionOrderReward(
   state: GameState, playerId: PlayerId, command: Readonly<OrderCardReward>,
 ): GameTransition<GameState> {

@@ -1,8 +1,10 @@
+import { expectRestoredFixture } from './helpers.js'
 import { describe, expect, it } from 'vitest'
 import { applyAssistantHiringToGameState, projectGameForViewer, restoreGameState, type GameState, type VisitorInstance } from '../src/index.js'
 import { createGameState, startGameAfterSetup } from './helpers.js'
 import { twoPlayerConfigs, twoPlayerGameConfig } from './fixtures.js'
 
+/** Создаёт состояние для найма с заданным числом монет у первого игрока. */
 function scenario(coins = 5) {
   const initial = structuredClone(startGameAfterSetup(createGameState(twoPlayerGameConfig, twoPlayerConfigs)))
   const playerId = initial.players[0]!.id
@@ -11,6 +13,7 @@ function scenario(coins = 5) {
 }
 
 // Состав после предыдущих наймов; помощники вне офиса не участвуют в этом действии.
+/** Настраивает оставшуюся очередь найма, заполненность офиса и монеты тестового игрока. */
 function remainingQueue(remaining: number, office = 0, coins = 50) {
   const { state, playerId } = scenario(coins)
   const board = state.playerBoards[0]!
@@ -23,6 +26,7 @@ function remainingQueue(remaining: number, office = 0, coins = 50) {
   return { state, playerId }
 }
 
+/** Переносит посетителей нужных типов из мешочка в галерею, сохраняя их идентификаторы. */
 function galleryVisitors<T extends GameState>(state: T, types: readonly VisitorInstance['type'][]): T {
   const pool = [...state.visitorBag.visitors]
   const selected = types.map(type => {
@@ -36,6 +40,7 @@ function galleryVisitors<T extends GameState>(state: T, types: readonly VisitorI
   }
 }
 
+/** Проверяет отказ в найме без изменения или дополнительной заморозки входных данных. */
 function expectAtomicRejection(state: GameState, request: Parameters<typeof applyAssistantHiringToGameState>[1]) {
   const before = structuredClone(state)
   const requestBefore = structuredClone(request)
@@ -64,7 +69,7 @@ describe('HIRE-001/HIRE-002: публичная команда найма', () =
     expect(result.state.players[1]).toEqual(before.players[1])
     expect(Object.isFrozen(result.state.playerBoards[0]!.assistants.assistantOfficeIds)).toBe(true)
     expect(projectGameForViewer(result.state, null).playerBoards[0]!.assistants).toEqual(result.state.playerBoards[0]!.assistants)
-    expect(restoreGameState(result.state)).toEqual(result.state)
+    expectRestoredFixture(result.state)
   })
 
   it('сохраняет выбранную цель влияния 0 и баланс оплаты до наград', () => {
@@ -130,7 +135,7 @@ describe('HIRE-001/HIRE-002: публичная команда найма', () =
     expect(result.state.playerBoards[0]!.assistants.assistantHireQueueIds).toEqual(initialIds.slice(count))
     expect(result.state.players[0]!.coins).toBe(50 - [0, 1, 3, 5, 8][count]!)
     expect(state).toEqual(before)
-    expect(restoreGameState(result.state)).toEqual(result.state)
+    expectRestoredFixture(result.state)
   })
 
   it.each([
@@ -156,7 +161,7 @@ describe('HIRE-001/HIRE-002: публичная команда найма', () =
     })
     expect(result.state.players[0]!.ticketsByColor.R).toBe(state.players[0]!.ticketsByColor.R + 1)
     expect(result.events.map(event => event.type)).toEqual(['AssistantsHired', 'CoinsSpent', 'TicketReceived'])
-    expect(restoreGameState(result.state)).toEqual(result.state)
+    expectRestoredFixture(result.state)
   })
 
   it.each(['B', 'R', 'W'] as const)('выдаёт ровно один выбранный билет %s с шестой клетки', color => {
@@ -170,7 +175,7 @@ describe('HIRE-001/HIRE-002: публичная команда найма', () =
     expect(result.state.ticketOffice.ticketsByColor[color]).toBe(state.ticketOffice.ticketsByColor[color] - 1)
     expect(result.events.filter(event => event.type === 'TicketReceived')).toEqual([{ type: 'TicketReceived', playerId, color }])
     expect(request.requestedTicketColors).toEqual([color])
-    expect(restoreGameState(result.state)).toEqual(result.state)
+    expectRestoredFixture(result.state)
   })
 
   it.each([undefined, [], ['B', 'R'], ['B', 'B']] as const)('отклоняет неверное число цветов без частичной оплаты (%j)', colors => {
@@ -222,7 +227,7 @@ describe('HIRE-001/HIRE-002: публичная команда найма', () =
     expect(result.events.filter(event => event.type === 'InfluenceReceived')).toEqual(gained > 0
       ? [{ type: 'InfluenceReceived', playerId, gainedInfluence: gained }] : [])
     expect(result.state.players[0]!.coins).toBe(47)
-    expect(restoreGameState(result.state)).toEqual(result.state)
+    expectRestoredFixture(result.state)
   })
 
   it('начисляет награду влиянием после его расхода на оплату', () => {
@@ -246,7 +251,7 @@ describe('HIRE-001/HIRE-002: публичная команда найма', () =
       { type: 'CoinsReceived', playerId, coinsReceived: 5 },
     ])
     expect(result.state.playerBoards[0]!.assistants.hireQueue).toBe(0)
-    expect(restoreGameState(result.state)).toEqual(result.state)
+    expectRestoredFixture(result.state)
   })
 
   it.each([5, 1])('не выдаёт награду за посетителя вестибюля при остатке %i', remaining => {
@@ -271,7 +276,7 @@ describe('HIRE-001/HIRE-002: публичная команда найма', () =
     expect(result.state.playerBoards[0]!.assistants.office).toBe(4)
     expect(result.state.playerBoards[0]!.assistants.assistantHireQueueIds).toEqual([])
     expect(result.events.map(event => event.type)).toEqual(['AssistantsHired', 'CoinsSpent', 'TicketReceived', 'CoinsReceived'])
-    expect(restoreGameState(result.state)).toEqual(result.state)
+    expectRestoredFixture(result.state)
   })
 
   it.each(['ending_current_round', 'final_round'] as const)('разрешает найм в %s без повторного запуска завершения', phase => {
@@ -294,7 +299,7 @@ describe('HIRE-001/HIRE-002: публичная команда найма', () =
     const { state: initial, playerId } = scenario()
     const state: GameState = phase === 'finished'
       ? { ...initial, phase, status: 'finished', activePlayerId: null, endTriggeredRound: initial.round, winnerIds: [playerId] }
-      : { ...initial, phase, activePlayerId: null, endTriggeredRound: initial.round, finalInfluenceScored: false }
+      : { ...initial, phase, activePlayerId: null, endTriggeredRound: initial.round, finalInfluenceScored: false, finalScoringStage: 'market_leadership' }
     expectAtomicRejection(state, { playerId, countAssistants: 1 })
   })
 

@@ -1,3 +1,4 @@
+import { expectRestoredFixture } from './helpers.js'
 import { describe, expect, it } from 'vitest'
 import {
   applyTurn, applyAssistantHiringToGameState, confirmTurnDraft, createTurnDraft, updateTurnDraft,
@@ -23,6 +24,7 @@ it('counts defined location actions rather than optional keys with undefined val
   expect({ state, command: withAbsentActions }).toEqual(before)
 })
 
+/** Готовит подтверждённый ход рекламы художника из домашней позиции. */
 function scenario() {
   const base = startGameAfterSetup(createGameState(twoPlayerGameConfig, twoPlayerConfigs))
   const artist = base.artistMarket.slots.find(slot => slot.initialPromotion === 0)!
@@ -44,6 +46,7 @@ function scenario() {
 }
 
 describe('TURN-002: atomic movement and promotion through public API', () => {
+  /** Добавляет перемещение посетителя до либо после рекламы для проверки порядка получения билетов. */
   function managementScenario(timing: 'before_location' | 'after_location', tickets = 0) {
     const { state: base, command: original } = scenario()
     const visitor = { id: 'turn-red-visitor', type: 'R' as const }
@@ -86,7 +89,7 @@ describe('TURN-002: atomic movement and promotion through public API', () => {
       expect({ state, command }).toEqual(before)
       expect(Object.isFrozen(command.management!.command.visitorMovementSteps)).toBe(false)
       expect(Object.isFrozen(result.state.vestibuleVisitors)).toBe(true)
-      expect(restoreGameState(JSON.parse(JSON.stringify(result.state)))).toEqual(result.state)
+      expectRestoredFixture(result.state)
       expect(projectGameForViewer(result.state, null).vestibuleVisitors).toEqual(result.state.vestibuleVisitors)
       expect(projectEventsForViewer(result.events, result.state, null)).toEqual(result.events)
     },
@@ -173,7 +176,7 @@ describe('TURN-002: atomic movement and promotion through public API', () => {
     expect(Object.isFrozen(result)).toBe(true)
     expect(Object.isFrozen(result.state.players)).toBe(true)
     expect(Object.isFrozen(result.events)).toBe(true)
-    expect(restoreGameState(JSON.parse(JSON.stringify(result.state)))).toEqual(result.state)
+    expectRestoredFixture(result.state)
     expect(projectGameForViewer(result.state, null).playerBoards.find(board => board.playerId === command.playerId)!.galleristPosition).toBe('LOC-MEDIA_CENTER')
     expect(projectEventsForViewer(result.events, result.state, null)).toEqual(result.events)
   })
@@ -227,10 +230,11 @@ describe('TURN-002: atomic movement and promotion through public API', () => {
 })
 
 describe('TURN-002: hiring within a confirmed media-center turn', () => {
+  /** Готовит найм с заполненным офисом и управлением, способным изменить доступные ресурсы. */
   function hiringScenario(timing?: 'before_location' | 'after_location', tickets = 0) {
     const initial = startGameAfterSetup(createGameState(twoPlayerGameConfig, twoPlayerConfigs))
     const playerId = initial.activePlayerId!
-    // Two prior hires make BOARD-HIRE-3 the next cell and fill the office.
+    // Два предыдущих найма заполняют офис и делают BOARD-HIRE-3 следующей ячейкой очереди.
     const base = applyAssistantHiringToGameState(initial, { playerId, countAssistants: 2 }).state
     const board = base.playerBoards.find(board => board.playerId === playerId)!
     const visitor = base.visitorBag.visitors.find(visitor => visitor.type === 'R')!
@@ -302,7 +306,7 @@ describe('TURN-002: hiring within a confirmed media-center turn', () => {
       expect(Object.isFrozen(updatedBoard.assistants.assistantOfficeIds)).toBe(true)
       expect(Object.isFrozen(result.events)).toBe(true)
       expect(result.events.every(Object.isFrozen)).toBe(true)
-      expect(restoreGameState(JSON.parse(JSON.stringify(result.state)))).toEqual(result.state)
+      expectRestoredFixture(result.state)
       expect(projectGameForViewer(result.state, null).playerBoards.find(board => board.playerId === command.playerId)!.assistants)
         .toEqual(updatedBoard.assistants)
       expect(projectEventsForViewer(result.events, result.state, null)).toEqual(result.events)

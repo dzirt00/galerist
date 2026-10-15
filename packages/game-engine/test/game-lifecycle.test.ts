@@ -100,7 +100,7 @@ it.each(['все пустые', 'смешанный набор'] as const)(
         thirdPartitionReputationTokenId: scenario === 'смешанный набор' && index === 1
           ? board.thirdPartitionReputationTokenId
           : null,
-        reputationTokenArtworkIds: index === 0 ? { 'REP-ON-ARTWORK': 'WORK-ON-DISPLAY' } : null,
+        reputationTokenArtworkIds: null,
       })),
     }
     const snapshot = structuredClone(state)
@@ -1209,7 +1209,7 @@ it('отклоняет передачу хода в фазе итогового 
     players: twoPlayerStates,
     firstPlayerId: 'player-1',
     endTriggeredRound: 1,
-    finalInfluenceScored: false,
+    finalInfluenceScored: false, finalScoringStage: 'market_leadership',
   }
 
   expect(() => advanceTurn(state)).toThrow('Turns can only be advanced while game is in progress')
@@ -1667,11 +1667,11 @@ it('исполняет pending промежуточный подсчёт пер�
   expect(transition.state.intermediateScoringStatus).toBe('completed')
   expect(transition.state.playerBoards).toEqual(state.playerBoards)
   expect(transition.events).toEqual([
-    { type: 'TurnEnded', playerId: state.activePlayerId },
     ...state.players.map(player => ({
       type: 'IntermediateIncomeAwarded' as const,
       playerId: player.id,
     })),
+    { type: 'TurnEnded', playerId: state.activePlayerId },
     { type: 'TurnStarted', playerId: nextPlayerId },
   ])
   expect(projectEventsForViewer(transition.events, transition.state, null)).toEqual(
@@ -1696,11 +1696,11 @@ it('начисляет промежуточный доход до событий
   const transition = advanceTurn(state)
 
   expect(transition.events).toEqual([
-    { type: 'TurnEnded', playerId: state.activePlayerId },
     ...state.players.map(player => ({
       type: 'IntermediateIncomeAwarded' as const,
       playerId: player.id,
     })),
+    { type: 'TurnEnded', playerId: state.activePlayerId },
     { type: 'RoundEnded', round: state.round },
     { type: 'RoundStarted', round: state.round + 1 },
     { type: 'TurnStarted', playerId: state.firstPlayerId },
@@ -1851,11 +1851,11 @@ it('начисляет промежуточный доход перед FinalRou
   const transition = advanceTurn(state)
 
   expect(transition.events).toEqual([
-    { type: 'TurnEnded', playerId: state.activePlayerId },
     ...state.players.map(player => ({
       type: 'IntermediateIncomeAwarded' as const,
       playerId: player.id,
     })),
+    { type: 'TurnEnded', playerId: state.activePlayerId },
     { type: 'RoundEnded', round: state.round },
     { type: 'RoundStarted', round: state.round + 1 },
     { type: 'FinalRoundStarted' },
@@ -1886,11 +1886,11 @@ it('начисляет pending промежуточный доход до пер
   const transition = advanceTurn(state)
 
   expect(transition.events).toEqual([
-    { type: 'TurnEnded', playerId: state.activePlayerId },
     ...state.players.map(player => ({
       type: 'IntermediateIncomeAwarded' as const,
       playerId: player.id,
     })),
+    { type: 'TurnEnded', playerId: state.activePlayerId },
     { type: 'RoundEnded', round: state.round },
     { type: 'FinalRoundEnded' },
     { type: 'FinalScoringStarted' },

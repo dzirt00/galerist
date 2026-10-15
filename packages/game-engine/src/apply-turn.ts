@@ -7,9 +7,15 @@ import { orderCardReward } from './order-card-reward.js'
 import { returnAssistantToOffice } from "./return-assistant-to-office.js";
 
 import { applyLocationAction, validateLocationAction } from './location-action.js'
+import { hasPendingStartingReputation } from './starting-reputation.js'
 
-/** Applies movement, one matching location action and optional management atomically. */
+/**
+ * Атомарно применяет подтверждённый ход: перемещение, одно действие новой локации
+ * и необязательное управление в выбранный момент. После успеха выдаёт возможность
+ * выдворения либо возвращает фишку в финальном раунде; инициативу не передаёт.
+ */
 export function applyTurn(state: GameState, command: ConfirmedTurnCommand): GameTransition<GameState> {
+  if (hasPendingStartingReputation(state)) throw new Error('Resolve starting reputation before another turn')
 
   const prepared = prepareTurn(state, command)
   const action = command.locationAction
@@ -23,6 +29,7 @@ export function applyTurn(state: GameState, command: ConfirmedTurnCommand): Game
   let next = state
   const events: GameEvent[] = []
 
+  /** Передаёт состояние предыдущего этапа следующему и сохраняет общий порядок доменных событий. */
   const append = (result: GameTransition<GameState>) => {
     next = result.state
     events.push(...result.events)
@@ -55,6 +62,7 @@ export function applyTurn(state: GameState, command: ConfirmedTurnCommand): Game
       default: throw new Error('Invalid turn step category')
     }
   }
+  // В финальном раунде ответного действия нет: вытесненная фигура возвращается сразу после эффектов хода.
   if(next.phase === 'final_round') {
     const playersBoards = next.playerBoards.map(el => {
       const event = events.find(el => el.type === 'PieceEjected')
@@ -91,9 +99,11 @@ export function applyTurn(state: GameState, command: ConfirmedTurnCommand): Game
     }
   }
 
+  // Возможность ответного действия появляется лишь после успешного завершения всего чужого хода.
+  // Вход к своему помощнику не даёт такой возможности и не меняет инициативу.
   const findEvent = events.find(el => el.type === 'PieceEjected')
   if((next.phase === 'ending_current_round' || next.phase === 'regular_play') && findEvent !== undefined && findEvent.playerId !== command.playerId) {
-    let pendingEjectionOpportunity: PendingEjectionOpportunity = (findEvent.pieceType === 'assistant')
+    const pendingEjectionOpportunity: PendingEjectionOpportunity = (findEvent.pieceType === 'assistant')
       ? {
         pieceType: 'assistant',
         assistantId: findEvent.assistantId,

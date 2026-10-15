@@ -1,3 +1,4 @@
+import { expectRestoredFixture } from './helpers.js'
 import { describe, expect, it } from 'vitest'
 import {
   applyGalleristMovementToGameState, applyTurn, confirmTurnDraft, createTurnDraft, declineEjectionOpportunity,
@@ -44,7 +45,7 @@ describe('EJECT-003/005: decline assistant opportunity', () => {
       ])
       expect(result.state.playerBoards.find(board => board.playerId === ownerId)!.assistants.assistantHireQueueIds)
         .toEqual(owner.assistants.assistantHireQueueIds)
-      expect(restoreGameState(JSON.parse(JSON.stringify(result.state)))).toEqual(result.state)
+      expectRestoredFixture(result.state)
       for (const viewer of [null, playerId, ownerId]) {
         expect(projectGameForViewer(result.state, viewer).pendingEjectionOpportunity).toBeNull()
         expect(projectGameForViewer(result.state, viewer).playerBoards).toEqual(result.state.playerBoards)
@@ -80,6 +81,7 @@ describe('EJECT-003/005: decline assistant opportunity', () => {
   )
 })
 
+/** Готовит ход, вытесняющий чужого помощника, при наличии второго помощника в другой локации. */
 function scenario() {
   const base = startGameAfterSetup(createGameState(twoPlayerGameConfig, twoPlayerConfigs))
   const playerId = base.activePlayerId!
@@ -181,7 +183,7 @@ describe('EJECT-001: pending ejection opportunity', () => {
           playerId: ownerId, displacedByPlayerId: playerId, locationId: destination })
         expect(result.state.activePlayerId).toBe(playerId)
         expect(result.state.round).toBe(state.round)
-        expect(restoreGameState(JSON.parse(JSON.stringify(result.state)))).toEqual(result.state)
+        expectRestoredFixture(result.state)
         expect({ state, command }).toEqual(before)
 
         const invalidCommand: ConfirmedTurnCommand = { ...command, management: {
@@ -232,8 +234,8 @@ describe('EJECT-001: pending ejection opportunity', () => {
 describe('EJECT-001: foreign assistant displacement', () => {
   it.each(['movement', 'turn'] as const)('preserves displacement through public %s, projections and restoration', entry => {
     const { state, command, playerId, ownerId, assistantId, otherAssistantId } = scenario()
-    // The starting snapshot must itself satisfy saved placement invariants.
-    expect(restoreGameState(JSON.parse(JSON.stringify(state)))).toEqual(state)
+    // Исходный снимок тоже должен соблюдать инварианты размещения сохраняемых фигур.
+    expectRestoredFixture(state)
     const before = structuredClone({ state, command })
     const movement = applyGalleristMovementToGameState(state, command)
     const result = entry === 'movement' ? movement : applyTurn(state, command)
@@ -261,7 +263,7 @@ describe('EJECT-001: foreign assistant displacement', () => {
     expect(projectGameForViewer(result.state, null).playerBoards.find(board => board.playerId === ownerId)!.ejectedAssistant)
       .toEqual(owner.ejectedAssistant)
     expect(projectEventsForViewer(result.events, result.state, null)).toEqual(result.events)
-    expect(restoreGameState(JSON.parse(JSON.stringify(result.state)))).toEqual(result.state)
+    expectRestoredFixture(result.state)
     expect({ state, command }).toEqual(before)
     expect(Object.isFrozen(state)).toBe(false)
     expect(Object.isFrozen(result.state)).toBe(true)
@@ -308,6 +310,7 @@ describe('EJECT-001: foreign assistant displacement', () => {
 })
 
 describe('EJECT-005 / END-004: assistant returns after the final-round turn', () => {
+  /** Переводит сценарий вытеснения помощника в финальный раунд с заданной заполненностью офиса. */
   function finalScenario(office: number = 0) {
     const base = scenario()
     const state: GameState = {
@@ -326,7 +329,7 @@ describe('EJECT-005 / END-004: assistant returns after the final-round turn', ()
 
   it.each([0, 1, 3, 4])('returns or removes the assistant with %i occupied office spaces', office => {
     const { state, command, playerId, ownerId, assistantId, otherAssistantId } = finalScenario(office)
-    expect(restoreGameState(JSON.parse(JSON.stringify(state)))).toEqual(state)
+    expectRestoredFixture(state)
     const before = structuredClone({ state, command })
     const originalOwner = state.playerBoards.find(board => board.playerId === ownerId)!
     const movement = applyGalleristMovementToGameState(state, command)
@@ -359,7 +362,7 @@ describe('EJECT-005 / END-004: assistant returns after the final-round turn', ()
       expect(projectGameForViewer(result.state, viewer).playerBoards).toEqual(result.state.playerBoards)
       expect(projectEventsForViewer(result.events, result.state, viewer)).toEqual(result.events)
     }
-    expect(restoreGameState(JSON.parse(JSON.stringify(result.state)))).toEqual(result.state)
+    expectRestoredFixture(result.state)
     expect({ state, command }).toEqual(before)
     expect(Object.isFrozen(state)).toBe(false)
     expect(Object.isFrozen(result)).toBe(true)
@@ -391,7 +394,7 @@ describe('EJECT-005 / END-004: assistant returns after the final-round turn', ()
     expect(result.events.at(-1)).toEqual({ type: 'AssistantReturnedHome', playerId: ownerId, assistantId })
     expect(result.state.playerBoards.find(board => board.playerId === ownerId)!.assistants.office).toBe(4)
     expect(result.state.vestibuleVisitors).toContainEqual({ playerId, vestibuleVisitor: visitor })
-    expect(restoreGameState(JSON.parse(JSON.stringify(result.state)))).toEqual(result.state)
+    expectRestoredFixture(result.state)
     expect({ state, command }).toEqual(before)
   })
 
@@ -418,7 +421,7 @@ describe('EJECT-005 / END-004: assistant returns after the final-round turn', ()
           office: 1, assistantOfficeIds: [assistantId] },
       }),
     }
-    expect(restoreGameState(JSON.parse(JSON.stringify(state)))).toEqual(state)
+    expectRestoredFixture(state)
     const result = applyTurn(state, command)
     expect(result.state.playerBoards.find(board => board.playerId === ownerId))
       .toEqual(state.playerBoards.find(board => board.playerId === ownerId))

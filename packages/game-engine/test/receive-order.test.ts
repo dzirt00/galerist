@@ -5,9 +5,11 @@ import { receiveOrder, restoreGameState, projectGameForViewer, projectEventsForV
 import { createGameState, startGameAfterSetup } from './helpers.js'
 import { twoPlayerConfigs, twoPlayerGameConfig } from './fixtures.js'
 
+/** Создаёт обычную фазу партии для проверки действий с заказами. */
 function scenario() {
   return startGameAfterSetup(createGameState(twoPlayerGameConfig, twoPlayerConfigs))
 }
+/** Возвращает состояние с заданным статусом выбранного игрока. */
 function withStatus(state: GameState, playerId: string, status: StatusPlayer): GameState {
   return { ...state, players: state.players.map(player => player.id === playerId
     ? { ...player, status } : player) }
@@ -63,7 +65,7 @@ describe('ORDER-001/002: receiveOrder через публичный API', () => 
     const refreshed = receiveOrder(pending, playerId, 'REFRESH')
     expect(refreshed).toEqual(receiveOrder(initial, playerId, 'REFRESH'))
     const restored = restoreGameState(JSON.parse(JSON.stringify(refreshed.state)))
-    expect(restored.stateSchemaVersion).toBe(18)
+    expect(restored.stateSchemaVersion).toBe(19)
     expect(() => receiveOrder(restored, playerId, 'REFRESH')).toThrow()
     const declined = receiveOrder(restored, playerId, 'DECLINE')
     expect(declined).toEqual(receiveOrder(refreshed.state, playerId, 'DECLINE'))
@@ -141,6 +143,7 @@ describe('ORDER-001/002: receiveOrder через публичный API', () => 
     const base = scenario()
     const playerId = base.activePlayerId
     const ids = base.orderMarket.remainingOrderIds.slice(0, 3)
+    /** Создаёт занятый слот с невыполненным либо завершённым заказом для проверки лимита. */
     const slot = (index: number) => ({ orderId: ids[index]!,
       orderStatus: index < count ? 'unfulfilled' as const : 'completed' as const, assistant: null })
     const input = { ...base, orderMarket: { ...base.orderMarket,

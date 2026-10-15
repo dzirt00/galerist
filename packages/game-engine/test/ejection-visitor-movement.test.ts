@@ -1,3 +1,4 @@
+import { expectRestoredFixture } from './helpers.js'
 import { describe, expect, it } from 'vitest'
 import {
   applyEjectionVisitorMovement, applyTurn, confirmTurnDraft, createTurnDraft, updateTurnDraft,
@@ -7,6 +8,7 @@ import {
 import { twoPlayerConfigs, twoPlayerGameConfig } from './fixtures.js'
 import { createGameState, startGameAfterSetup } from './helpers.js'
 
+/** Готовит вытеснение выбранной фигуры и два шага перемещения посетителя за билеты. */
 function scenario(pieceType: 'assistant' | 'gallerist', office = 0,
   phase: 'regular_play' | 'ending_current_round' = 'regular_play') {
   const base = startGameAfterSetup(createGameState(twoPlayerGameConfig, twoPlayerConfigs))
@@ -49,6 +51,7 @@ function scenario(pieceType: 'assistant' | 'gallerist', office = 0,
   return { pending, ownerId: owner.playerId, playerId, assistantId, steps }
 }
 
+/** Рекурсивно проверяет заморозку результата и всех вложенных объектов. */
 function expectDeepFrozen(value: unknown): void {
   if (!value || typeof value !== 'object') return
   expect(Object.isFrozen(value)).toBe(true)
@@ -85,7 +88,7 @@ describe('EJECT-003/004/005: ticket management after ejection', () => {
         pieceType === 'gallerist' ? { type: 'GalleristReturnedHome', playerId: ownerId }
           : { type: 'AssistantReturnedHome', playerId: ownerId, assistantId },
       ])
-      expect(restoreGameState(JSON.parse(JSON.stringify(result.state)))).toEqual(result.state)
+      expectRestoredFixture(result.state)
       for (const viewer of [null, playerId, ownerId]) {
         expect(projectGameForViewer(result.state, viewer).pendingEjectionOpportunity).toBeNull()
         expect(projectGameForViewer(result.state, viewer).playerBoards).toEqual(result.state.playerBoards)
@@ -107,7 +110,7 @@ describe('EJECT-003/004/005: ticket management after ejection', () => {
     expect(board.assistants.assistantOfficeIds.includes(assistantId)).toBe(office < 4)
     expect(board.assistants.assistantHireQueueIds).toEqual(pending.playerBoards.find(board => board.playerId === ownerId)!.assistants.assistantHireQueueIds)
     expect(result.events.at(-1)).toEqual({ type: office === 4 ? 'AssistantRemovedFromGame' : 'AssistantReturnedHome', playerId: ownerId, assistantId })
-    expect(restoreGameState(JSON.parse(JSON.stringify(result.state)))).toEqual(result.state)
+    expectRestoredFixture(result.state)
     expect(pending).toEqual(before)
   })
 

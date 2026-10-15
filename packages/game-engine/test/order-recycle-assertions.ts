@@ -4,6 +4,7 @@ import {
   type GameState,
 } from '../src/index.js'
 
+/** Собирает все заказы рынка, колоды, сброса и планшетов для проверки сохранности карт. */
 function allOrders(state: GameState) {
   return [...Object.values(state.orderMarket.visibleOrders).flatMap(id => id === null ? [] : [id]),
     ...Object.values(state.orderMarket.orderMarket).flat(), ...state.orderMarket.remainingOrderIds,

@@ -7,6 +7,7 @@ import { createGameState, startGameAfterSetup, withGameEndConditions } from './h
 import { twoPlayerConfigs, twoPlayerGameConfig } from './fixtures.js'
 import { expectOrderRecycled } from './order-recycle-assertions.js'
 
+/** Готовит принятие заказа с последним билетом, выбранным способом пополнения рынка и условием конца. */
 function scenario(color: 'B' | 'R' | 'W', second: 'none' | 'bag' | 'superstars',
   mode: 'draw' | 'reveal' | 'recycle', scoringStatus: 'pending' | 'completed' = 'completed',
   phase: 'regular_play' | 'ending_current_round' | 'final_round' = 'regular_play'): GameState {

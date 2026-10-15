@@ -6,6 +6,7 @@ import type {
 } from './types.js'
 import type {StartingLocationId} from './component-catalog.js'
 
+/** Проверяет, что назначение — одна из четырёх основных локаций, а не HOME или клетка выдворения. */
 function isGalleristPosition(id: string): id is StartingLocationId {
   return [
     'LOC-ARTISTS_COLONY',

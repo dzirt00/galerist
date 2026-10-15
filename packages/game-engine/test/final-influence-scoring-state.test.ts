@@ -2,6 +2,7 @@ import { withGameEndConditions } from './helpers.js'
 import { expect, it } from 'vitest'
 import {
   advanceTurn,
+  advanceFinalScoring,
   applyFinalInfluenceScoringToGameState,
   projectEventsForViewer,
   restoreGameState,
@@ -28,6 +29,8 @@ function advanceToFinalScoring(
     state = advanceTurn(state).state
   }
 
+  while (state.phase === 'final_scoring' && state.finalScoringStage !== 'influence') state = advanceFinalScoring(state).state
+  if (state.phase !== 'final_scoring') throw new Error('Expected final_scoring')
   return state
 }
 

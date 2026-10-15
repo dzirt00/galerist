@@ -1,3 +1,4 @@
+import { expectRestoredFixture } from './helpers.js'
 import { describe, expect, it } from 'vitest'
 import {
   openArtist, applyArtworkPurchaseToGameState, projectGameForViewer, projectEventsForViewer,
@@ -6,6 +7,7 @@ import {
 import { createGameState, startGameAfterSetup } from './helpers.js'
 import { twoPlayerConfigs, twoPlayerGameConfig } from './fixtures.js'
 
+/** Подбирает закрытого художника заданной категории и назначает ему тестовый бонус открытия. */
 function fixture(reward = 'COINS', category = 'red') {
   const initial = startGameAfterSetup(createGameState(twoPlayerGameConfig, twoPlayerConfigs))
   const artist = initial.artistMarket.slots.find(slot => !slot.isOpen && slot.category === category)!
@@ -19,17 +21,20 @@ function fixture(reward = 'COINS', category = 'red') {
   return { state, artist, prepared, request }
 }
 
+/** Задаёт состав посетителей галереи первого игрока для проверки бонуса открытия. */
 function withGallery(state: GameState, types: readonly ('B' | 'R' | 'W')[]): GameState {
   return { ...state, playerBoards: state.playerBoards.map((board, index) => index === 0
     ? { ...board, gallery: { ...board.gallery, visitors: types.map((type, i) => ({ id: `gallery-${i}`, type })) } } : board) }
 }
 
+/** Рекурсивно проверяет заморозку всех вложенных объектов результата. */
 function expectFrozen(value: unknown): void {
   if (!value || typeof value !== 'object') return
   expect(Object.isFrozen(value)).toBe(true)
   Object.values(value).forEach(expectFrozen)
 }
 
+/** Рекурсивно проверяет, что входные объекты остались незамороженными. */
 function expectUnfrozen(value: unknown): void {
   if (!value || typeof value !== 'object') return
   expect(Object.isFrozen(value)).toBe(false)
@@ -64,7 +69,7 @@ describe('ARTIST-001/002 public opening', () => {
       expect(projection.artistMarket.slots).toEqual(result.state.artistMarket.slots)
       expect(projectEventsForViewer(result.events, result.state, viewer)).toEqual(result.events)
     }
-    expect(restoreGameState(JSON.parse(JSON.stringify(result.state)))).toEqual(result.state)
+    expectRestoredFixture(result.state)
     expect(state).toEqual(before)
     expectUnfrozen(state)
     expectFrozen(result)
@@ -131,9 +136,9 @@ describe('ARTIST-001/002 public opening', () => {
     expect(result.state.plazaVisitors).toEqual([prepared.collector])
     expect(result.state).toMatchObject({ phase: 'ending_current_round', endTriggeredRound: state.round })
     expect(result.events.map(event => event.type)).toEqual([
-      'ArtistOpened', 'VisitorMoved', 'ArtistBonusClaimed', 'VisitorMoved', 'ContractSigned', 'GameEndTriggered',
+      'ArtistOpened', 'VisitorMoved', 'ArtistBonusClaimed', 'VisitorMoved', 'ContractSigned', 'EndConditionReached', 'GameEndTriggered',
     ])
-    expect(restoreGameState(result.state)).toEqual(result.state)
+    expectRestoredFixture(result.state)
   })
 
   it('preserves all ticket intermediate/end transitions and their event order', () => {
@@ -146,9 +151,9 @@ describe('ARTIST-001/002 public opening', () => {
       intermediateScoringStatus: 'pending' })
     expect(result.events.map(event => event.type)).toEqual([
       'ArtistOpened', 'TicketReceived', 'TicketReceived', 'IntermediateScoringTriggered',
-      'EndConditionReached', 'GameEndTriggered', 'ArtistBonusClaimed', 'VisitorMoved', 'ContractSigned',
+      'EndConditionReached', 'ArtistBonusClaimed', 'VisitorMoved', 'ContractSigned', 'GameEndTriggered',
     ])
-    expect(restoreGameState(result.state)).toEqual(result.state)
+    expectRestoredFixture(result.state)
   })
 
   it('FAME-C can choose the just opened artist, after its initial fame is set', () => {
@@ -191,10 +196,10 @@ describe('ARTIST-001/002 public opening', () => {
     expect(result.events.map(event => event.type)).toEqual([
       'ArtistOpened', 'ArtistFameIncreased', 'ArtworkSaleValuesChanged', 'ArtistBecameSuperstar',
       'CoinsReceived', 'ArtworkBecameMasterpiece', 'ArtworkBecameMasterpiece',
-      'ArtistBonusClaimed', 'VisitorMoved', 'ContractSigned', 'GameEndTriggered',
+      'ArtistBonusClaimed', 'VisitorMoved', 'ContractSigned', 'EndConditionReached', 'GameEndTriggered',
     ])
     expect(result.state).toMatchObject({ phase: 'ending_current_round', endTriggeredRound: input.round })
-    expect(restoreGameState(result.state)).toEqual(result.state)
+    expectRestoredFixture(result.state)
     expect(input).toEqual(before)
   })
 
@@ -266,7 +271,7 @@ describe('ARTIST-001/002 public opening', () => {
     expect(bought.state.playerBoards[0]!.contract).toBeNull()
     expect(bought.state.playerBoards[0]!.gallery.artworkSlots[0]!.signatureTokenId).toBe(prepared.availableSignatureTokenIds[0])
     expect(bought.state.players[0]!.coins).toBe(30 - artist.initialFame)
-    expect(restoreGameState(bought.state)).toEqual(bought.state)
+    expectRestoredFixture(bought.state)
     expect(() => openArtist(bought.state, request)).toThrow('closed artist')
   })
 })

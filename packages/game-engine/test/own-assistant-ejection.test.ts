@@ -10,6 +10,7 @@ import { createGameState, startGameAfterSetup } from './helpers.js'
 const destination = 'LOC-MEDIA_CENTER' as const
 const departure = 'LOC-ARTISTS_COLONY' as const
 
+/** Готовит вход к собственному помощнику с заданным числом свободных мест в офисе. */
 function scenario(officeCount = 1, fromHome = false) {
   const base = startGameAfterSetup(createGameState(twoPlayerGameConfig, twoPlayerConfigs))
   const playerId = base.activePlayerId!
@@ -41,6 +42,7 @@ function scenario(officeCount = 1, fromHome = false) {
   return { state, command, assistantId, playerId }
 }
 
+/** Проверяет порядок хода, возврат помощника, публичные проекции, восстановление и заморозку. */
 function assertPublicResult(state: GameState, command: ConfirmedTurnCommand, result: ReturnType<typeof applyTurn>) {
   expect(result.state.activePlayerId).toBe(state.activePlayerId)
   expect(result.state.round).toBe(state.round)

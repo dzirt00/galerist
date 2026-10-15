@@ -7,6 +7,7 @@ import { refreshOrderMarket } from '../src/refresh-order-market.js'
 import { createGameState, startGameAfterSetup } from './helpers.js'
 import { twoPlayerConfigs, twoPlayerGameConfig } from './fixtures.js'
 
+/** Создаёт обычную фазу партии для проверки обновления рынка заказов. */
 function scenario() {
   return startGameAfterSetup(createGameState(twoPlayerGameConfig, twoPlayerConfigs))
 }
@@ -96,7 +97,7 @@ describe('ORDER-002: обновление без переработки коло
   it.each(['final_scoring', 'finished'] as const)('отклоняет обновление в фазе %s', phase => {
     const initial = scenario()
     const state: GameState = phase === 'final_scoring'
-      ? { ...initial, phase, activePlayerId: null, endTriggeredRound: initial.round, finalInfluenceScored: false }
+      ? { ...initial, phase, activePlayerId: null, endTriggeredRound: initial.round, finalInfluenceScored: false, finalScoringStage: 'market_leadership' }
       : { ...initial, phase, status: 'finished', activePlayerId: null, endTriggeredRound: initial.round, winnerIds: [] }
     const before = structuredClone(state)
     expect(() => refreshOrderMarket(state, initial.activePlayerId)).toThrow('Invalid phase')

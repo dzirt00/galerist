@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { expectRestoredFixture } from './helpers.js'
 import {
   applyArtworkPurchaseToGameState,
   projectGameForViewer,
@@ -89,7 +90,7 @@ describe('ARTWORK-006: стартовый жетон на третьей раб�
       .toEqual(state.playerBoards.find(other => other.playerId !== request.playerId))
     expect(projectGameForViewer(transition.state, null).playerBoards.find(other => other.playerId === request.playerId)!
       .reputationTokenArtworkIds).toEqual({ [tokenId]: artworkId })
-    expect(restoreGameState(structuredClone(transition.state))).toEqual(transition.state)
+    expectRestoredFixture(transition.state)
     expect(Object.isFrozen(board.reputationTokenArtworkIds)).toBe(true)
     expect(state).toEqual(before)
     expect(request).toEqual(requestBefore)

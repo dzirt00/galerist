@@ -8,6 +8,7 @@ import { createGameState, startGameAfterSetup } from './helpers.js'
 import { twoPlayerConfigs, twoPlayerGameConfig } from './fixtures.js'
 import { createRuntimeRng } from '../src/runtime-rng.js'
 
+/** Создаёт пустую колоду с картами в подложках, сбросе и открытых позициях для рециклинга. */
 function scenario() {
   const state = startGameAfterSetup(createGameState(twoPlayerGameConfig, twoPlayerConfigs))
   const ids = [...Object.values(state.orderMarket.visibleOrders), ...state.orderMarket.remainingOrderIds]
@@ -23,6 +24,7 @@ function scenario() {
   }
 }
 
+/** Собирает и сортирует все карты рынка и колоды для проверки сохранности при рециклинге. */
 function allOrders(state: GameState) {
   return [
     ...Object.values(state.orderMarket.visibleOrders).filter((id): id is string => id !== null),
@@ -125,6 +127,7 @@ describe('ORDER-002 / ADR-008: переработка изначально пу�
 })
 
 describe('ORDER-002 / ADR-008: предварительная переработка при остатке 1–3 карты', () => {
+  /** Готовит рынок с заданным остатком колоды для проверки границы её обновления. */
   function partialDeck(count: number) {
     const state = startGameAfterSetup(createGameState(twoPlayerGameConfig, twoPlayerConfigs))
     const ids = [...Object.values(state.orderMarket.visibleOrders), ...state.orderMarket.remainingOrderIds]

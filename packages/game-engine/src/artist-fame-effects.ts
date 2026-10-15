@@ -11,10 +11,12 @@ export function applyArtistFameEffects(
   if (!artist?.isOpen || artist.fame === null) throw new Error('Fame requires an open artist')
   const fame = Math.min(19, requestedFame)
   const saleValue = calculateArtworkSaleValue(artistId, fame)
+  // Статус сохраняется отдельно от числа известности, чтобы повторное достижение предела не выдавало пять монет.
   const becameSuperstar = !artist.isSuperstar && fame === 19
   const masterpieceEvents: GameEvent[] = []
   let saleValuesChanged = false
   const playerBoards = state.playerBoards.map(board => {
+    /** Обновляет цену и статус только работ выбранного художника, сохраняя пустые и чужие позиции. */
     const updateArtwork = (artwork: Gallery['artworkSlots'][number]): Gallery['artworkSlots'][number] => {
       if (!artwork || artwork.artistId !== artistId) return artwork
       if (artwork.saleValue !== saleValue) saleValuesChanged = true

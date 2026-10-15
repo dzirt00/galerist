@@ -1,3 +1,4 @@
+import { expectRestoredFixture } from './helpers.js'
 import { describe, expect, it } from 'vitest'
 import { claimReputationToken, determineAvailableMarketColumns, placeAuctionBid, projectEventsForViewer,
   projectGameForViewer, restoreGameState, setupComponentCatalog,
@@ -5,6 +6,7 @@ import { claimReputationToken, determineAvailableMarketColumns, placeAuctionBid,
 import { createGameState, startGameAfterSetup, withGameEndConditions } from './helpers.js'
 import { twoPlayerConfigs, threePlayerConfigs, fourPlayerConfigs } from './fixtures.js'
 
+/** Создаёт ресурсы, посетителей и продажи для проверки международного рынка при разном числе игроков. */
 function fixture(playerCount: 2 | 3 | 4 = 3): GameState {
   const state = startGameAfterSetup(createGameState({ playerCount, seed: 42 },
     playerCount === 2 ? twoPlayerConfigs : playerCount === 3 ? threePlayerConfigs : fourPlayerConfigs))
@@ -23,21 +25,25 @@ function fixture(playerCount: 2 | 3 | 4 = 3): GameState {
     players: state.players.map((player, index) => index === 0 ? { ...player, coins: 20, soldArtworkCount: 4, acquiredArtworkCount: 4 } : player),
   })
 }
+/** Возвращает выбор посетителя, художника и цветов билетов для наград международного рынка. */
 function choices(state: GameState) {
   return { visitorId: 'reward-visitor', fameArtistId: state.artistMarket.slots[0]!.artistId,
     requestedTicketColors: ['B', 'R'] as const }
 }
+/** Собирает запрос ставки с билетной наградой, соответствующей выбранной ячейке. */
 function bidRequest(state: GameState, cellId = 'MARKET-BID-C1-B3'): PlaceAuctionBidRequest {
   const definition = setupComponentCatalog.marketBidCells.find(item => item.id === cellId)!
   return { playerId: 'player-1', cellId, assistantId: 'ASSISTANT-1', assistantSource: 'office',
     choices: { ...choices(state), requestedTicketColors: definition.reward === 'TICKET-ANY' ? ['B'] : ['B', 'R'] } }
 }
+/** Собирает запрос жетона репутации с заданными колонкой, жанром и ячейкой планшета. */
 function reputationRequest(state: GameState, column = 1, genre = 'D', boardCellId = 'BOARD-REP-R2-L'): ClaimReputationTokenRequest {
   return { playerId: 'player-1', cellId: `MARKET-REP-C${column}-${genre}`, assistantId: 'ASSISTANT-1',
     assistantSource: 'office', boardCellId, visitorId: 'vestibule-0', choices: choices(state) }
 }
+/** Проверяет восстановление состояния, публичность международного рынка и заморозку результата. */
 function expectPublic(state: GameState, events: Parameters<typeof projectEventsForViewer>[0]) {
-  expect(restoreGameState(JSON.parse(JSON.stringify(state)))).toEqual(state)
+  expectRestoredFixture(state)
   for (const viewer of [null, ...state.players.map(player => player.id)]) {
     expect(projectGameForViewer(state, viewer).internationalMarket.marketAssistants).toEqual(state.internationalMarket.marketAssistants)
     expect(projectGameForViewer(state, viewer).playerBoards).toEqual(state.playerBoards)

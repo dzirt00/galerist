@@ -7,6 +7,11 @@ import {
 import type { PlayerId } from './types.js'
 
 export type GameEvent =
+  | { readonly type: 'MarketLeadershipScored'; readonly column: number; readonly playerId: PlayerId; readonly coinsAwarded: number }
+  | { readonly type: 'ReputationTokensScored' | 'ExhibitionScored' | 'CuratorCardScored' | 'DealerCardScored'; readonly playerId: PlayerId; readonly coinsAwarded: number; readonly influenceAwarded?: number }
+  | { readonly type: 'AuctionResolved'; readonly playerIds: readonly PlayerId[] }
+  | { readonly type: 'ExceptionalArtworkAwarded'; readonly playerId: PlayerId; readonly artworkId: string; readonly goalType: 'curator' | 'dealer' }
+  | { readonly type: 'ReputationTokenRemoved'; readonly playerId: PlayerId; readonly tokenId: string }
   | { readonly type: 'ReputationTokenClaimed'; readonly playerId: PlayerId; readonly tokenId: string; readonly cellId: string; readonly boardCellId: string }
   | { readonly type: 'BoardRewardClaimed'; readonly playerId: PlayerId; readonly boardCellId: string; readonly reward: import('./component-catalog.js').RewardId }
   | { readonly type: 'AuctionBidPlaced'; readonly playerId: PlayerId; readonly cellId: string; readonly bid: 1 | 3 | 6 }
@@ -48,7 +53,7 @@ export type GameEvent =
   | { readonly type: 'FinalRoundStarted'}
   | { readonly type: 'OrderTaken', readonly playerId: PlayerId, orderId: string }
   | { readonly type: 'IntermediateScoringTriggered' }
-  | { readonly type: 'EndConditionReached' }
+  | { readonly type: 'EndConditionReached'; readonly condition?: 'ticket_office_empty' | 'visitor_bag_empty' | 'two_superstars' }
   | { readonly type: 'OwnAssistantEjected', readonly playerId: PlayerId, readonly assistantId: string, readonly locationId: StartingLocationId}
   | { readonly type: 'AssistantReturnedHome', readonly playerId: PlayerId, assistantId: string }
   | { readonly type: 'AssistantRemovedFromGame', readonly playerId: PlayerId, assistantId: string }

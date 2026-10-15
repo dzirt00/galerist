@@ -14,6 +14,7 @@ export interface RngRuntimeConfig {
 
 const UINT32_RANGE = 2 ** 32
 
+/** Отклоняет пустое имя потока, чтобы разные игровые операции не делили неявный поток случайности. */
 function assertStageId(stageId: string): void {
   if (typeof stageId !== 'string' || stageId.length === 0) {
     throw new Error('Stage ID must be a non-empty string')
@@ -27,7 +28,7 @@ function assertItemCount(itemCount: number): void {
   }
 }
 
-/** Создаёт детерминированный setup RNG с независимыми потоками по ADR-001. */
+/** Детерминированно перемешивает доступные заказы и возвращает обновлённый сохраняемый счётчик runtime-RNG по ADR-008. */
 export function createRuntimeRng(config: RngRuntimeConfig) {
   const copyOrdersRecycle = {...config.runtimeRng.runtimeRngCounters}
   const seed = Number( config.seedString )

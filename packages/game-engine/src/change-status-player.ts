@@ -2,6 +2,7 @@ import type { GameState, PlayerId } from "./types.js";
 import { freezeTransition, type GameTransition } from "./game-events.js";
 
 
+/** Начинает получение заказа из WAITING: проверяет лимит невыполненных заказов и сохраняет PENDING без игровых наград. */
 export function changeStatusPlayer(
   state: GameState,
   playerId: PlayerId,
@@ -29,6 +30,7 @@ export function changeStatusPlayer(
       if((el.orderId === null && el.orderStatus !== null) || (el.orderId !== null && el.orderStatus === null)) {
         throw new Error( `invalid boardOrders` );
       }
+      // Выполненные заказы занимают клетки, но не расходуют лимит трёх невыполненных заказов.
       if(el.orderId !== null && el.orderStatus === 'unfulfilled') {
         slotsCount++
       }

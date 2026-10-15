@@ -1,12 +1,12 @@
+import { evaluateEndConditions } from './end-conditions.js'
 import type { RewardId, SetupTicketColor } from './component-catalog.js'
-import { freezeTransition, type GameEvent, type GameTransition } from './game-events.js'
+import { type GameEvent, type GameTransition } from './game-events.js'
 import { calculateIntermediateIncome } from './intermediate-income.js'
 import { applyInfluenceGainToPlayer } from './influence-gain-award.js'
 import { applyArtistFameEffects } from './artist-fame-effects.js'
 import { applyTicketRewardToGameState } from './ticket-reward-to-game-state.js'
 import { hireAssistants } from './hiring.js'
 import { receiveOrder } from './receive-order.js'
-import { canTriggerGameEnd, triggerGameEnd } from './game-lifecycle.js'
 import type { GameState, PlayerId } from './types.js'
 
 export interface OrderRewardAction {
@@ -69,6 +69,7 @@ export function applyOrderRewardEffect(
     case 'VISITOR-ANY':
     case 'VISITOR-BR':
     case 'VISITOR-BAG': {
+      /** Для VISITOR-BR допускает только инвесторов и знаменитостей, для остальных наград — любой тип. */
       const eligible = (visitor: GameState['visitorBag']['visitors'][number]) =>
         reward !== 'VISITOR-BR' || visitor.type === 'B' || visitor.type === 'R'
       const plaza = next.plazaVisitors.filter(eligible)
@@ -136,10 +137,5 @@ export function applyOrderRewardEffect(
     }
     default: throw new Error('Unsupported order reward')
   }
-  if (next.phase === 'regular_play' && canTriggerGameEnd(next)) {
-    const result = triggerGameEnd(next)
-    next = result.state
-    events.push(...result.events)
-  }
-  return freezeTransition(next, events)
+  return evaluateEndConditions(state, next, events)
 }

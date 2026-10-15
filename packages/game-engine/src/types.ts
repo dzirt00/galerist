@@ -21,6 +21,12 @@ export type StatusPlayer = 'PENDING' | 'REFRESH' | 'REFUSAL' | 'SUCCESS' | 'WAIT
 export type GameId = string
 export type PlayerId = string
 export type IntermediateScoringStatus = 'not_triggered' | 'pending' | 'completed'
+export type FinalScoringStage = 'market_leadership' | 'reputation' | 'exhibition' | 'auction' | 'curator' | 'dealer' | 'influence' | 'complete'
+export interface AuctionAward {
+  readonly playerId: PlayerId
+  readonly artworkId: string
+  readonly goalType: 'curator' | 'dealer'
+}
 export interface OrderCardReward {
   orderSlot: keyof BoardOrders,
   assistantId: string,
@@ -158,7 +164,10 @@ export type PendingEjectionOpportunity =
 
 
 export interface GameStateBase {
-  readonly stateSchemaVersion: 18
+  readonly stateSchemaVersion: 19
+  readonly visitorBagEmptyReached: boolean
+  readonly twoSuperstarsReached: boolean
+  readonly auctionAwards: readonly AuctionAward[]
   readonly id: GameId
   readonly assistantByLocation: Readonly<Record<StartingLocationId, LocationAssistant | null>>
   readonly runtimeRng: RuntimeRngState
@@ -222,6 +231,7 @@ export interface FinalScoringGameState extends GameStateBase {
   readonly firstPlayerId: PlayerId
   readonly endTriggeredRound: number
   readonly finalInfluenceScored: boolean
+  readonly finalScoringStage: FinalScoringStage
 }
 
 export interface FinishedGameState extends GameStateBase {
