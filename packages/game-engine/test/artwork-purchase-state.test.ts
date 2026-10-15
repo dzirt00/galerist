@@ -53,6 +53,39 @@ function colorsForReward(reward: string): readonly SetupTicketColor[] {
   return ['B']
 }
 
+const limitedTicketRewardCases = [
+  { reward: '—', requested: [], unavailable: 'B', expected: [] },
+  { reward: 'B', requested: ['B'], unavailable: 'B', expected: [] },
+  { reward: 'R', requested: ['R'], unavailable: 'R', expected: [] },
+  { reward: 'W', requested: ['W'], unavailable: 'W', expected: [] },
+  { reward: 'ANY', requested: ['B'], unavailable: 'B', expected: [] },
+  { reward: 'DIFF2', requested: ['B', 'R'], unavailable: 'B', expected: ['R'] },
+  { reward: 'R+(B/W)', requested: ['R', 'B'], unavailable: 'R', expected: ['B'] },
+  { reward: 'B+(R/W)', requested: ['B', 'W'], unavailable: 'B', expected: ['W'] },
+  { reward: 'B+R+W', requested: ['B', 'R', 'W'], unavailable: 'B', expected: ['R', 'W'] },
+] as const satisfies readonly {
+  readonly reward: string
+  readonly requested: readonly SetupTicketColor[]
+  readonly unavailable: SetupTicketColor
+  readonly expected: readonly SetupTicketColor[]
+}[]
+
+const exchangedTicketRewardCases = [
+  { reward: 'B', requested: ['B'], unavailable: 'B', replacement: 'R' },
+  { reward: 'R', requested: ['R'], unavailable: 'R', replacement: 'B' },
+  { reward: 'W', requested: ['W'], unavailable: 'W', replacement: 'B' },
+  { reward: 'ANY', requested: ['B'], unavailable: 'B', replacement: 'R' },
+  { reward: 'DIFF2', requested: ['B', 'R'], unavailable: 'B', replacement: 'W' },
+  { reward: 'R+(B/W)', requested: ['R', 'B'], unavailable: 'R', replacement: 'W' },
+  { reward: 'B+(R/W)', requested: ['B', 'W'], unavailable: 'B', replacement: 'R' },
+  { reward: 'B+R+W', requested: ['B', 'R', 'W'], unavailable: 'B', replacement: 'R' },
+] as const satisfies readonly {
+  readonly reward: string
+  readonly requested: readonly SetupTicketColor[]
+  readonly unavailable: SetupTicketColor
+  readonly replacement: SetupTicketColor
+}[]
+
 /** Собирает обычную покупку первого игрока с допустимыми цветами награды. */
 function regularRequest(state: GameState): ArtworkPurchaseRequest {
   const artist = state.artistMarket.slots.find(slot => slot.isOpen)!
@@ -252,6 +285,197 @@ describe('applyArtworkPurchaseToGameState', () => {
     expect(state).toEqual(snapshot)
     expect(request).toEqual(requestSnapshot)
   })
+
+  it.each([
+    { name: 'обычную работу', masterpiece: false, purchaseType: 'regular' },
+    { name: 'шедевр по контракту', masterpiece: true, purchaseType: 'contract' },
+  ] as const)('ставит $name на третью перегородку, когда четвёртая занята другим шедевром', ({ masterpiece, purchaseType }) => {
+    const baseState = createGameState(twoPlayerGameConfig, twoPlayerConfigs)
+    const artist = baseState.artistMarket.slots.find(slot => slot.isOpen)!
+    const open = baseState.artworkMarket.openArtworksByGenre[artist.genre]!
+    const signatureTokenId = baseState.artistSetup.slots.find(slot => slot.artistId === artist.artistId)!
+      .availableSignatureTokenIds[0]!
+    /** Создаёт уже выставленную работу для проверки точной перегородки. */
+    const existing = (index: number, isMasterpiece = false) => ({
+      artworkId: `occupied-fourth-${index}`,
+      artistId: `occupied-artist-${index}`,
+      signatureTokenId: `occupied-signature-${index}`,
+      saleValue: 5,
+      isMasterpiece,
+    })
+    const state: GameState = {
+      ...baseState,
+      players: baseState.players.map((player, index) => index === 0 ? { ...player, coins: 30 } : player),
+      artistMarket: {
+        ...baseState.artistMarket,
+        slots: baseState.artistMarket.slots.map(slot => slot.artistId === artist.artistId
+          ? { ...slot, fame: masterpiece ? 19 : slot.fame, isSuperstar: masterpiece }
+          : slot),
+      },
+      artistSetup: {
+        ...baseState.artistSetup,
+        slots: baseState.artistSetup.slots.map(slot => masterpiece && slot.artistId === artist.artistId
+          ? { ...slot, availableSignatureTokenIds: slot.availableSignatureTokenIds.filter(id => id !== signatureTokenId) }
+          : slot),
+      },
+      artworkMarket: {
+        ...baseState.artworkMarket,
+        openArtworksByGenre: {
+          ...baseState.artworkMarket.openArtworksByGenre,
+          [artist.genre]: { ...open, artwork: { ...open.artwork, fameGain: 'X', ticketReward: '—' } },
+        },
+        remainingArtworksByGenre: { ...baseState.artworkMarket.remainingArtworksByGenre, [artist.genre]: [] },
+      },
+      playerBoards: baseState.playerBoards.map((board, index) => index === 0 ? {
+        ...board,
+        contract: masterpiece ? { artistId: artist.artistId, signatureTokenId } : null,
+        gallery: {
+          ...board.gallery,
+          artworkSlots: [existing(0), existing(1), null, existing(3, true)] as const,
+        },
+      } : board),
+    }
+    const request: ArtworkPurchaseRequest = {
+      playerId: state.players[0]!.id,
+      artistId: artist.artistId,
+      purchaseType,
+    }
+    const snapshot = structuredClone(state)
+    const requestSnapshot = structuredClone(request)
+
+    const transition = applyArtworkPurchaseToGameState(state, request)
+    const board = transition.state.playerBoards[0]!
+    const exhibited = board.gallery.artworkSlots[2]!
+
+    expect(board.gallery.artworkSlots[0]).toEqual(state.playerBoards[0]!.gallery.artworkSlots[0])
+    expect(board.gallery.artworkSlots[1]).toEqual(state.playerBoards[0]!.gallery.artworkSlots[1])
+    expect(board.gallery.artworkSlots[3]).toEqual(state.playerBoards[0]!.gallery.artworkSlots[3])
+    expect(exhibited).toMatchObject({
+      artworkId: open.artwork.id,
+      artistId: artist.artistId,
+      signatureTokenId,
+      isMasterpiece: masterpiece,
+    })
+    expect(board.contract).toBeNull()
+    expect(transition.events).toContainEqual({
+      type: 'ArtworkExhibited',
+      playerId: request.playerId,
+      artistId: artist.artistId,
+      artworkId: open.artwork.id,
+      artworkSlotIndex: 2,
+    })
+    expect(projectGameForViewer(transition.state, request.playerId).playerBoards[0]!.gallery.artworkSlots[2])
+      .toEqual(exhibited)
+    expect(projectEventsForViewer(transition.events, transition.state, request.playerId)).toEqual(transition.events)
+    expect(Object.isFrozen(transition.state)).toBe(true)
+    expect(Object.isFrozen(exhibited)).toBe(true)
+    expect(state).toEqual(snapshot)
+    expect(request).toEqual(requestSnapshot)
+  })
+
+  it.each(limitedTicketRewardCases)(
+    'применяет ограниченный запас к печатной награде $reward без возможной замены',
+    ({ reward, requested, unavailable, expected }) => {
+      const baseState = createGameState(twoPlayerGameConfig, twoPlayerConfigs)
+      const artist = baseState.artistMarket.slots.find(slot => slot.isOpen)!
+      const open = baseState.artworkMarket.openArtworksByGenre[artist.genre]!
+      const office: Record<SetupTicketColor, number> = { B: 1, R: 1, W: 1 }
+      office[unavailable] = 0
+      const state: GameState = {
+        ...baseState,
+        ticketOffice: { ticketsByColor: office },
+        ticketDiscard: { B: 0, R: 0, W: 0 },
+        artworkMarket: {
+          ...baseState.artworkMarket,
+          openArtworksByGenre: {
+            ...baseState.artworkMarket.openArtworksByGenre,
+            [artist.genre]: { ...open, artwork: { ...open.artwork, ticketReward: reward } },
+          },
+        },
+      }
+      const request: ArtworkPurchaseRequest = {
+        ...regularRequest(state),
+        requestedTicketColors: requested,
+      }
+      const snapshot = structuredClone(state)
+
+      const transition = applyArtworkPurchaseToGameState(state, request)
+      const ticketEvents = transition.events.filter(event => event.type === 'TicketReceived')
+      const expectedTickets = { B: 0, R: 0, W: 0 }
+      const expectedOffice = { ...office }
+      for (const color of expected) {
+        expectedTickets[color] += 1
+        expectedOffice[color] -= 1
+      }
+
+      expect(ticketEvents.map(event => event.color)).toEqual(expected)
+      expect(transition.events.some(event => event.type === 'TicketExchanged')).toBe(false)
+      expect(transition.state.players[0]!.ticketsByColor).toEqual(expectedTickets)
+      expect(transition.state.ticketOffice.ticketsByColor).toEqual(expectedOffice)
+      expect(transition.state.ticketDiscard).toEqual(state.ticketDiscard)
+      expect(projectGameForViewer(transition.state, request.playerId).players[0]!.ticketsByColor).toEqual(expectedTickets)
+      expect(projectEventsForViewer(transition.events, transition.state, request.playerId)).toEqual(transition.events)
+      expect(restoreGameState(structuredClone(transition.state))).toEqual(transition.state)
+      expect(Object.isFrozen(transition.state)).toBe(true)
+      expect(state).toEqual(snapshot)
+    },
+  )
+
+  it.each(exchangedTicketRewardCases)(
+    'заменяет недоступный цвет в печатной награде $reward',
+    ({ reward, requested, unavailable, replacement }) => {
+      const baseState = createGameState(twoPlayerGameConfig, twoPlayerConfigs)
+      const artist = baseState.artistMarket.slots.find(slot => slot.isOpen)!
+      const open = baseState.artworkMarket.openArtworksByGenre[artist.genre]!
+      const office: Record<SetupTicketColor, number> = { B: 2, R: 2, W: 2 }
+      const discard: Record<SetupTicketColor, number> = { B: 0, R: 0, W: 0 }
+      office[unavailable] = 0
+      discard[unavailable] = 1
+      const state: GameState = {
+        ...baseState,
+        ticketOffice: { ticketsByColor: office },
+        ticketDiscard: discard,
+        artworkMarket: {
+          ...baseState.artworkMarket,
+          openArtworksByGenre: {
+            ...baseState.artworkMarket.openArtworksByGenre,
+            [artist.genre]: { ...open, artwork: { ...open.artwork, ticketReward: reward } },
+          },
+        },
+      }
+      const request: ArtworkPurchaseRequest = {
+        ...regularRequest(state),
+        requestedTicketColors: requested,
+        replacementColorsByRequestedColor: { [unavailable]: replacement },
+      }
+      const snapshot = structuredClone(state)
+
+      const transition = applyArtworkPurchaseToGameState(state, request)
+      const expectedOffice = { ...office, [replacement]: office[replacement] - 1 }
+      for (const color of requested) {
+        if (color !== unavailable) expectedOffice[color] -= 1
+      }
+      const expectedDiscard = { ...discard, [unavailable]: 0, [replacement]: discard[replacement] + 1 }
+      const expectedTickets = { B: 0, R: 0, W: 0 }
+      for (const color of requested) expectedTickets[color] += 1
+
+      expect(transition.events.filter(event => event.type === 'TicketExchanged')).toEqual([{
+        type: 'TicketExchanged',
+        playerId: request.playerId,
+        discardedColor: replacement,
+        receivedColor: unavailable,
+      }])
+      expect(transition.events.filter(event => event.type === 'TicketReceived').map(event => event.color)).toEqual(requested)
+      expect(transition.state.players[0]!.ticketsByColor).toEqual(expectedTickets)
+      expect(transition.state.ticketOffice.ticketsByColor).toEqual(expectedOffice)
+      expect(transition.state.ticketDiscard).toEqual(expectedDiscard)
+      expect(projectGameForViewer(transition.state, request.playerId).players[0]!.ticketsByColor).toEqual(expectedTickets)
+      expect(projectEventsForViewer(transition.events, transition.state, request.playerId)).toEqual(transition.events)
+      expect(restoreGameState(structuredClone(transition.state))).toEqual(transition.state)
+      expect(Object.isFrozen(transition.state)).toBe(true)
+      expect(state).toEqual(snapshot)
+    },
+  )
 
   it('атомарно покупает, размещает работу, переносит подпись и пополняет рынок', () => {
     const state = createGameState(twoPlayerGameConfig, twoPlayerConfigs)
