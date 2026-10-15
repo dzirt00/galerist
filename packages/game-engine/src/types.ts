@@ -25,6 +25,7 @@ export interface OrderCardReward {
   orderSlot: keyof BoardOrders,
   assistantId: string,
   choices?: Readonly<OrderRewardChoices>
+  assistantSource?: 'office' | 'location' | 'ejected'
 }
 export interface MovementCommand {
   readonly category: 'movement'

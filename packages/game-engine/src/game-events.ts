@@ -27,6 +27,7 @@ export type GameEvent =
   | { readonly type: 'PieceEjected'; readonly pieceType: 'gallerist'; readonly locationId: StartingLocationId, readonly displacedByPlayerId: PlayerId, readonly playerId: PlayerId }
   | { readonly type: 'TicketSpent', readonly playerId: PlayerId, readonly color: SetupTicketColor }
   | { readonly type: 'EjectionActionDeclined', readonly playerId: PlayerId}
+  | { readonly type: 'EjectionActionPerformed'; readonly playerId: PlayerId }
   | { readonly type: 'GalleristReturnedHome', readonly playerId: PlayerId}
   | { readonly type: 'ArtistOpened'; readonly artistId: string }
   | { readonly type: 'ArtistBonusClaimed'; readonly playerId: PlayerId; readonly artistId: string; readonly bonusId: string }

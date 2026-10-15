@@ -139,6 +139,9 @@ export function advanceTurn(state: GameState): GameTransition<GameState> {
   if (currentIndex === -1) {
     throw new Error('Active player must belong to the game')
   }
+  if (state.pendingEjectionOpportunity !== null) {
+    throw new Error('Cannot advance turn with a pending ejection opportunity')
+  }
   let updatePlayersState:  readonly Readonly<PlayerState>[] | null = null
   let eventsIntermediateIncomeAwarded:GameEvent[] | null = null
   let intermediateScoringStatus = state.intermediateScoringStatus

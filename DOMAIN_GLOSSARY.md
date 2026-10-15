@@ -119,6 +119,11 @@
 | `PieceEjected` / `pieceType` | Событие выдворения: `playerId` — владелец выдворенной фишки, `locationId` — локация, `displacedByPlayerId` — выдворивший игрок. Вариант `pieceType: 'assistant'` требует `assistantId`; вариант `'gallerist'` не содержит его. |
 | `pendingEjectionOpportunity` / `PendingEjectionOpportunity` | Ожидающая возможность дополнительного действия после успешного `applyTurn` в regular_play или ending_current_round; объект с playerId владельца, locationId, displacedByPlayerId и pieceType, для assistant также обязательным assistantId, либо null. Не является новым обычным ходом. Публична, сохраняется в схеме 18; незавершённая возможность запрещает новый applyTurn. В final_round не создаётся. |
 | `EjectionOpportunityGranted` | Публичное событие выдачи возможности после всех событий обычного хода; содержит playerId владельца выдворенной фишки и locationId. |
+| `applyEjectionVisitorMovement` | Отдельная публичная команда билетного управления владельца pendingEjectionOpportunity: принимает state, playerId и readonly VisitorMovementStep[], применяет applyVisitorMovementTickets, возвращает выдворенную фишку и закрывает возможность. Не меняет очерёдность хода. |
+| `applyEjectionLocationAction` | Отдельная команда state, playerId, LocationActionCommand: оплачивает действие до строго предыдущего символа известности, выполняет ровно одно действие локации из pendingEjectionOpportunity и закрывает возможность с возвратом неиспользованной фишки. |
+| `applyEjectionOrderReward` | Отдельная команда state, playerId, OrderCardReward: выполняет одно управление наградой текущей стороны заказа через orderCardReward и закрывает возможность выдворения. Влияние за управление не расходуется. |
+| `OrderCardReward.assistantSource` | Необязательный источник помощника для orderCardReward и управления заказом; office по умолчанию, location либо ejected. Последний требует совпадения ID и участников с ожидающей возможностью выдворенного помощника; использованный помощник остаётся на заказе. |
+| `EjectionActionPerformed` | Публичное событие успешного дополнительного действия; playerId — владелец выдворенной фишки. Следует после событий выбранного действия, перед возвратом фишки. |
 
 ### Критические различия
 
@@ -248,7 +253,7 @@
 | `boardReputationTokens` | Словарь ID выбранной клетки планшета → ID полученного жетона рынка; максимум одна запись. Стартовый жетон перегородки хранится отдельно. |
 | `boardCellId` | Выбранная игроком клетка репутации планшета из каталога boardReputationCells. |
 | `locationAssistants` | Размещения собственных помощников на локациях: assistantId и locationId; источник location в действии рынка. |
-| `ejectedAssistant` / `displacedByPlayerId` | Собственный помощник на клетке выдворения и игрок, который его выдворил. Источник ejected разрешён только для этого ID после выдворения другим игроком, кроме final_round; использование очищает контекст. Создание контекста принадлежит будущему оркестратору выдворения. |
+| `ejectedAssistant` / `displacedByPlayerId` | Собственный помощник на клетке выдворения и игрок, который его выдворил. Источник ejected разрешён только для этого ID после выдворения другим игроком, кроме final_round; использование очищает контекст. Контекст создаёт applyGalleristMovementToGameState; applyTurn выдаёт возможность. После действия общий обработчик возвращает только неиспользованного помощника. |
 | `ReputationTokenClaimed` | Перенос tokenId из cellId рынка на boardCellId планшета playerId. |
 | `BoardRewardClaimed` | Получение каталожной награды выбранной клетки планшета: playerId, boardCellId, reward. |
 | `AuctionBidPlaced` | Зафиксированная ставка playerId в cellId с точным bid. |
