@@ -52,8 +52,10 @@ describe('WEB-001: вход и собственный профиль', () => {
 
     expect(wrapper.find('input[type="email"]').exists()).toBe(true)
     expect(wrapper.get('input').attributes('required')).toBeDefined()
+    expect(api.getSession).toHaveBeenCalledTimes(1)
     expect(api.from).not.toHaveBeenCalled()
     expect(wrapper.find('section').exists()).toBe(false)
+    expect(wrapper.find('input[type="number"]').exists()).toBe(false)
   })
 
   it('передаёт введённый email, блокирует повтор и показывает результат отправки', async () => {
@@ -74,6 +76,7 @@ describe('WEB-001: вход и собственный профиль', () => {
     await flushPromises()
     expect(wrapper.get('[role="status"]').text()).toContain('Письмо отправлено')
     expect(wrapper.get('button[type="submit"]').attributes('disabled')).toBeUndefined()
+    expect(api.getSession).toHaveBeenCalledTimes(1)
   })
 
   it.each(['response', 'exception'])('при ошибке отправки (%s) разрешает новую попытку', async (kind) => {
@@ -113,7 +116,8 @@ describe('WEB-001: вход и собственный профиль', () => {
     expect(wrapper.get('section').text()).toContain('Мой профиль')
     expect(wrapper.get('section').text()).toContain(userId)
     expect(wrapper.text()).not.toContain(otherId)
-    expect(wrapper.find('form').exists()).toBe(false)
+    expect(wrapper.find('input[type="email"]').exists()).toBe(false)
+    expect(wrapper.find('input[type="number"]').exists()).toBe(true)
     expect(wrapper.text()).not.toContain('Загружаем профиль…')
     wrapper.unmount()
 
@@ -155,8 +159,9 @@ describe('WEB-001: вход и собственный профиль', () => {
       request.resolve({ data: ownProfile, error: null })
       await flushPromises()
       expect(wrapper.get('section').text()).toContain(userId)
-      expect(wrapper.find('button').exists()).toBe(false)
-      expect(wrapper.find('form').exists()).toBe(false)
+      expect(wrapper.find('button[type="button"]').exists()).toBe(false)
+      expect(wrapper.find('input[type="email"]').exists()).toBe(false)
+      expect(wrapper.find('input[type="number"]').exists()).toBe(true)
       expect(api.signInWithOtp).not.toHaveBeenCalled()
     },
   )
@@ -176,5 +181,6 @@ describe('WEB-001: вход и собственный профиль', () => {
     await wrapper.get('form').trigger('submit')
     await flushPromises()
     expect(wrapper.get('[role="status"]').text()).toContain('Письмо отправлено')
+    expect(wrapper.text()).not.toContain('Ссылка недействительна или устарела')
   })
 })
