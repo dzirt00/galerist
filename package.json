@@ -11,6 +11,7 @@
     "lint": "npm run lint --workspace=@galerist/web",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
+    "test:db": "node supabase/tests/run.mjs",
     "verify:engine": "npm run typecheck --workspace=@galerist/game-engine && npm run typecheck:test --workspace=@galerist/game-engine && npm run test --workspace=@galerist/game-engine && npm run build --workspace=@galerist/game-engine",
     "verify:web": "npm run lint --workspace=@galerist/web && npm run test --workspace=@galerist/web && npm run build --workspace=@galerist/web",
     "check:architecture": "node scripts/harness/architecture.mjs",

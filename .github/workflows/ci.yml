@@ -30,3 +30,6 @@ jobs:
 
       - name: Verify workspaces
         run: npm run verify
+
+      - name: Test profile migration and RLS
+        run: npm run test:db

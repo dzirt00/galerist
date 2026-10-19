@@ -20,7 +20,10 @@
   },
   "devDependencies": {
     "@nuxt/eslint": "^1.17.0",
+    "@vitejs/plugin-vue": "^6.0.10",
+    "@vue/test-utils": "^2.5.1",
     "eslint": "^10.8.1",
+    "happy-dom": "^21.0.3",
     "typescript": "^6.0.3",
     "vitest": "^4.1.10"
   },
