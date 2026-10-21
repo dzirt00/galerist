@@ -1,0 +1,114 @@
+# Типы Edge Functions в редакторе
+
+Edge Functions выполняются в Deno. Для старых редакторов, которые дополнительно
+проверяют эти файлы обычным TypeScript/Vue language service, здесь есть отдельный
+`tsconfig.json`. Он включает настоящие объявления типов установленного Deno
+только в проект функций, без изменения настроек Nuxt или движка.
+
+После установки или обновления Deno выполни из корня репозитория:
+
+```powershell
+node supabase/functions/generate-editor-types.mjs
+```
+
+Можно явно передать путь к Deno первым аргументом скрипта. Генерируемый
+`deno-runtime.d.ts` игнорируется Git; вручную его редактировать не нужно.
+Перезапусти проверяющий language service или переоткрой проект после генерации.
+
+Проверка самого обработчика без запуска сервера:
+
+```powershell
+deno check --config supabase/functions/create-game/deno.json supabase/functions/create-game/index.ts
+```
+
+Дополнительная проверка обычным TypeScript для диагностики редактора:
+
+```powershell
+node node_modules/typescript/bin/tsc -p supabase/functions/tsconfig.json
+```
+
+Проверка Deno остаётся основной: отдельный `tsconfig.json` нужен редактору.
+Скрипт генерации не читает секреты, не запускает обработчик и не обращается к БД.
+
+Тесты хеширования пароля без сетевых запросов и доступа к БД:
+
+```powershell
+deno test --config supabase/functions/create-game/deno.json supabase/functions/create-game/game-password.test.ts
+```
+
+Проверяются формат и параметры сохранения, случайная соль, UTF-8 и сохранение
+пробелов. Результат сверяется с независимым вызовом PBKDF2 через `node:crypto`.
+Эти тесты не доказывают обработку HTTP, авторизацию или запись комнаты в БД.
+
+Тесты HTTP-границы до обращения к Auth и БД:
+
+```powershell
+deno test --config supabase/functions/create-game/deno.json supabase/functions/create-game/http-boundary.test.ts
+```
+
+Тест перехватывает регистрацию обработчика через `Deno.serve` и вызывает его
+с настоящими `Request`/`Response`, без запуска HTTP-сервера. Проверяются OPTIONS,
+запрет GET/PUT/PATCH/DELETE, заголовок Allow, CORS и отказы POST без корректно
+оформленного Bearer-токена. Разрешения на сеть и окружение не выдаются.
+Эти проверки не доказывают проверку действительности токена через Auth,
+валидацию JSON после авторизации, RPC, чтение DTO или браузерный сценарий.
+
+## HTTP-сценарии с локальными ответами Supabase
+
+Нужен Postman CLI 1.70+ (проверено с 1.75.0). В отдельном терминале из корня
+проекта запусти симуляцию и дождись события `listening`:
+
+```powershell
+postman simulation run postman/simulations/web002.sim.yaml --port 4917 --output ndjson --no-history
+```
+
+Затем в другом терминале:
+
+```powershell
+deno test --allow-net=127.0.0.1 --allow-env=SUPABASE_URL,SUPABASE_ANON_KEY,SUPABASE_SERVICE_ROLE_KEY --config supabase/functions/create-game/deno.json supabase/functions/create-game/supabase-http.test.ts
+```
+
+Тест запускает настоящий обработчик на свободном loopback-порту, отправляет
+HTTP-запросы и использует настоящий Supabase SDK. Внешний Supabase заменён
+локальным HTTP fixture; адрес фиксирован как `http://127.0.0.1:4917/supabase`.
+Три переменные окружения временно получают тестовые значения и восстанавливаются
+в `finally`. Не нужны реальные ключи или облачная БД. Останови симуляцию после тестов.
+
+Проверяются создание на 2/3/4 места, источник ID создателя, разделение Auth и
+service-role авторизации, хеш вместо пароля, пустой пароль, безопасный DTO,
+возврат сохранённых настроек при повторе, ошибки Auth, валидация payload,
+отсутствующие настройки сервера, ошибки RPC/чтения и отказ Web Crypto.
+Состояние SQL и RLS проверяются отдельно; реальный Supabase и браузер этот
+тест не проверяет. Происхождение и ограничения fixture описаны в
+`postman/mocks/web002-supabase/README.md`.
+
+## Облачный прогон WEB-002 — 2026-10-21
+
+В проекте `galerist` (`mrbrfnxpepogfhmwvdbx`) SQL из
+`supabase/migrations/20261019000100_create_games.sql` применён через Dashboard
+SQL Editor в транзакции. Это ручное применение SQL, а не `supabase db push`;
+запись версии в историю миграций CLI не добавлялась. Перед будущим `db push`
+нужно сверить облачную схему и согласовать историю уже применённых миграций,
+чтобы не выполнять CREATE TABLE повторно.
+
+Функция `create-game` развёрнута через Dashboard из трёх файлов: `index.ts`,
+`game-password.ts`, `deno.json`. Нормализованные SHA-256 загруженных исходников
+сверены с локальными. Пароли и серверные ключи в исходники не добавлялись:
+используются встроенные переменные окружения Edge Functions.
+
+С отдельного подтверждения пользователя настройка **Verify JWT with legacy
+secret** выключена только для `create-game`. Авторизация остаётся в обработчике:
+обязательный Bearer-токен проверяется через `auth.getUser(token)`. При будущем
+развёртывании необходимо сохранять эту конфигурацию; для CLI эквивалент —
+`supabase functions deploy create-game --project-ref mrbrfnxpepogfhmwvdbx --no-verify-jwt`.
+В репозитории пока нет `config.toml`, фиксирующего эту настройку.
+
+Проверены облачные OPTIONS/GET/POST без токена (204/405/401 с CORS), наличие
+RLS на четырёх таблицах, разрешение EXECUTE для `service_role` и запрет для
+`authenticated`. Пользователь вручную подтвердил в своём браузере создание
+комнаты на 3 места без пароля и на 4 места с паролем, правильную занятость и
+переход к лобби. Через SQL Editor подтверждены сохранённые записи, формат
+PBKDF2-хеша и возврат тех же комнат при повторном SQL-вызове с прежними ID
+запросов и изменённой вместимостью. Сам хеш и пароль в вывод не извлекались.
+Это ручной прогон локального Nuxt против облачного Supabase, не автоматический
+браузерный E2E и не публикация Nuxt на Vercel.

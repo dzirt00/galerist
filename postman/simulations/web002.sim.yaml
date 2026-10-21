@@ -1,0 +1,5 @@
+simulation: web002
+routing: path
+mocks:
+  - routeKey: supabase
+    path: ../mocks/web002-supabase/config.yaml

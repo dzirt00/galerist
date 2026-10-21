@@ -8,6 +8,7 @@ dist/
 .nuxt/
 .output/
 coverage/
+supabase/functions/deno-runtime.d.ts
 
 # Environment files
 .env
