@@ -1,0 +1,9 @@
+version: 1
+name: WEB-003 Supabase HTTP fixture
+slug: web003-supabase
+protocol: http
+interceptRequests: true
+scenarios:
+  - name: default
+    path: ./default.js
+    default: true

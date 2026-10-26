@@ -286,6 +286,13 @@
 | `game_passwords`         | хеши паролей защищённых комнат;                               |
 | `password_hash`          | серверный хеш пароля комнаты, недоступный клиентскому чтению. |
 | `hashGamePassword`       | есть хэш пароля.                                              |
+| `gameId` | ID выбранной комнаты в HTTP-запросе; соответствует `games.id` и `game_players.game_id`. |
+| `GameListItem` | Безопасные сведения о комнате: `id`, `seat_count`, `occupiedSeatCount`, `hasPassword`. |
+| `occupiedSeatCount` | Количество записей участников комнаты, вычисляемое из `game_players`; отдельного счётчика в БД нет. |
+| `hasPassword` | Признак наличия серверного хеша в `game_passwords`, без передачи самого хеша. |
+| `join_game` / `join-game` | SQL-транзакция присоединения и вызывающая её Edge Function; существующее участие делает повтор идемпотентным. |
+| `verifyGamePassword` | Серверная сверка пароля с сохранённым PBKDF2-SHA256-хешем через существующий `deriveBits`. |
+| `p_verified_password_hash` | Серверное подтверждение проверки конкретного текущего хеша; передаётся только Edge Function в SQL и не принимается из браузерного payload. |
 
 ## Добавление нового термина
 

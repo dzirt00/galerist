@@ -159,7 +159,7 @@ describe('WEB-001: вход и собственный профиль', () => {
       request.resolve({ data: ownProfile, error: null })
       await flushPromises()
       expect(wrapper.get('section').text()).toContain(userId)
-      expect(wrapper.find('button[type="button"]').exists()).toBe(false)
+      expect(wrapper.findAll('button').some((button) => button.text() === 'Повторить загрузку')).toBe(false)
       expect(wrapper.find('input[type="email"]').exists()).toBe(false)
       expect(wrapper.find('input[type="number"]').exists()).toBe(true)
       expect(api.signInWithOtp).not.toHaveBeenCalled()

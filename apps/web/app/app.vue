@@ -2,6 +2,7 @@
 import SignInForm from './SignInForm.vue'
 import {useProfile} from './composable/auth'
 import CreateGameForm from './CreateGameForm.vue'
+import GameList from './GameList.vue'
 
 const {
   profile,
@@ -22,6 +23,8 @@ const {
     <h2>Мой профиль</h2>
     <p>{{ profile.id }}</p>
     <CreateGameForm/>
+
+    <GameList/>
   </section>
   <p v-if="isLoadingProfile">Загружаем профиль…</p>
   <button

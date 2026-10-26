@@ -79,6 +79,8 @@ try {
     setup,
     readFileSync(new URL('profiles.sql', testRoot), 'utf8'),
     creationTests,
+    "INSERT INTO auth.users VALUES ('33333333-3333-4333-8333-333333333333');",
+    readFileSync(new URL('join-game.sql', testRoot), 'utf8'),
     'ROLLBACK;',
   ].join('\n')
   const output = docker([
@@ -129,7 +131,52 @@ try {
     END; $$;
   ` })
   console.log('PASS: concurrent retries return one room and persist exactly one set of records')
-  console.log('WEB-001 and WEB-002 database tests passed (local PostgreSQL fixture).')
+  // Both contenders hold a transaction open after obtaining the same room lock.
+  docker(['exec', '-i', containerId, ...psqlArgs], { input: `
+    INSERT INTO auth.users VALUES
+      ('22222222-2222-4222-8222-222222222222'),
+      ('33333333-3333-4333-8333-333333333333');
+    INSERT INTO public.games(id, creator_id, seat_count) VALUES
+      ('abababab-abab-4bab-8bab-abababababab', '11111111-1111-4111-8111-111111111111', 2);
+    INSERT INTO public.game_players VALUES
+      ('abababab-abab-4bab-8bab-abababababab', '11111111-1111-4111-8111-111111111111');
+  ` })
+  const joinCall = (userId) => `BEGIN; SET LOCAL ROLE service_role;
+    SELECT public.join_game('abababab-abab-4bab-8bab-abababababab', '${userId}');
+    SELECT pg_sleep(0.5); COMMIT;`
+  const contenders = await Promise.allSettled([
+    concurrentSql(joinCall('22222222-2222-4222-8222-222222222222')),
+    concurrentSql(joinCall('33333333-3333-4333-8333-333333333333')),
+  ])
+  if (contenders.filter((result) => result.status === 'fulfilled').length !== 1
+    || !String(contenders.find((result) => result.status === 'rejected')?.reason).includes('Свободных мест нет')) {
+    throw new Error('Exactly one contender must take the last seat')
+  }
+  // Two concurrent retries by the same existing participant both succeed.
+  const creatorRetry = joinCall('11111111-1111-4111-8111-111111111111')
+  await Promise.all([concurrentSql(creatorRetry), concurrentSql(creatorRetry)])
+  docker(['exec', '-i', containerId, ...psqlArgs], { input: `DO $$ BEGIN
+    IF (SELECT count(*) FROM public.game_players WHERE game_id = 'abababab-abab-4bab-8bab-abababababab') <> 2 THEN
+      RAISE EXCEPTION 'Concurrent joins/retries violated capacity';
+    END IF;
+  END; $$;` })
+  console.log('PASS: concurrent last-seat joins and concurrent member retries preserve capacity')
+  docker(['exec', '-i', containerId, ...psqlArgs], { input: `
+    INSERT INTO public.games(id, creator_id, seat_count) VALUES
+      ('cdcdcdcd-cdcd-4dcd-8dcd-cdcdcdcdcdcd', '11111111-1111-4111-8111-111111111111', 3);
+    INSERT INTO public.game_players VALUES
+      ('cdcdcdcd-cdcd-4dcd-8dcd-cdcdcdcdcdcd', '11111111-1111-4111-8111-111111111111');
+  ` })
+  const newMemberCall = joinCall('22222222-2222-4222-8222-222222222222')
+    .replaceAll('abababab-abab-4bab-8bab-abababababab', 'cdcdcdcd-cdcd-4dcd-8dcd-cdcdcdcdcdcd')
+  await Promise.all([concurrentSql(newMemberCall), concurrentSql(newMemberCall)])
+  docker(['exec', '-i', containerId, ...psqlArgs], { input: `DO $$ BEGIN
+    IF (SELECT count(*) FROM public.game_players WHERE game_id = 'cdcdcdcd-cdcd-4dcd-8dcd-cdcdcdcdcdcd') <> 2 THEN
+      RAISE EXCEPTION 'Concurrent retries of a new participant inserted twice';
+    END IF;
+  END; $$;` })
+  console.log('PASS: concurrent retries of a new participant persist exactly one membership')
+  console.log('WEB-001/002/003 database tests passed (local PostgreSQL fixture).')
 } finally {
   // Remove only the disposable container created by this run.
   if (containerId && /^[a-f0-9]{64}$/.test(containerId)) {
