@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import {useNuxtApp} from 'nuxt/app'
-import {ref} from 'vue'
+import {computed, ref} from 'vue'
 
 interface GameListItem {
   id: string
   seat_count: number
   occupiedSeatCount: number
   hasPassword: boolean
+}
+
+interface PlayerListItem {
+  isReady: boolean,
+  user_id: string
 }
 
 function isGameListItem(value: unknown): value is GameListItem {
@@ -19,7 +24,9 @@ function isGameListItem(value: unknown): value is GameListItem {
     && typeof item.hasPassword === 'boolean'
 }
 
+const isRefreshGame = ref(false)
 const hasLoaded = ref(false)
+const playerList = ref<PlayerListItem[] | null>(null)
 const state = ref<GameListItem[]>([])
 const {$supabase} = useNuxtApp()
 const isLoading = ref(false)
@@ -28,6 +35,89 @@ const pendingGameId = ref<string | null>(null)
 const passwords = ref<Record<string, string>>({})
 const joinMessage = ref('')
 const joinedGame = ref<GameListItem | null>(null)
+const playerIsReady = ref<boolean | null>(null)
+const changeReady = computed(() => {
+  if (playerIsReady.value === null) return true
+  return !playerIsReady.value
+})
+
+const waiting = ref<boolean>(false)
+
+const refreshGame = async () => {
+  if (waiting.value) return
+  if (joinedGame.value === null || passwords.value === null || isRefreshGame.value) return
+  isRefreshGame.value = true
+  message.value = ''
+  playerList.value = null
+  try {
+    const response = await $supabase.functions.invoke('get-game-players', {
+      body: {
+        gameId: joinedGame.value.id,
+      }
+    })
+    if (response.error) {
+      message.value = 'Что то пошло не так'
+      return
+    }
+
+    if (
+      typeof response.data === 'object' &&
+      response.data !== null &&
+      !Array.isArray(response.data) &&
+      'gameId' in response.data &&
+      response.data.gameId === joinedGame.value.id &&
+      'players' in response.data &&
+      Array.isArray(response.data.players) &&
+      response.data.players.every((el: unknown) => typeof el === 'object' && el !== null && !Array.isArray(el) &&
+        'isReady' in
+        el && 'user_id' in el && typeof el.user_id === 'string' && typeof el.isReady === 'boolean' && el.user_id.length > 0)
+    ) {
+      playerList.value = response.data.players
+    } else {
+      message.value = 'Что то пошло не так'
+    }
+  } catch {
+    message.value = 'Что то пошло не так'
+
+  } finally {
+    isRefreshGame.value = false
+  }
+}
+
+const isReady = async (value: boolean) => {
+  if (waiting.value || joinedGame.value === null || isRefreshGame.value) return
+  waiting.value = true
+  message.value = ''
+
+  try {
+    const response = await $supabase.functions.invoke('ready-to-game', {
+      body: {
+        gameId: joinedGame.value.id,
+        isReady: value
+      }
+    })
+    if (response.error) {
+      message.value = 'Что то пошло не так'
+      return
+    }
+    if (typeof response.data === 'object' &&
+      response.data !== null &&
+      !Array.isArray(response.data) &&
+      'isReady' in response.data &&
+      typeof response.data.isReady === 'boolean'
+      && response.data.isReady === value
+    ) {
+      playerIsReady.value = response.data.isReady
+    } else {
+      message.value = 'Что то пошло не так'
+    }
+  } catch {
+    message.value = 'Что то пошло не так'
+  } finally {
+    waiting.value = false
+  }
+}
+
 
 const loadList = async () => {
   if (isLoading.value || pendingGameId.value) return
@@ -50,9 +140,12 @@ const loadList = async () => {
 }
 
 const joinGame = async (game: GameListItem) => {
-  if (pendingGameId.value || isLoading.value) return
+
+  if (pendingGameId.value || isLoading.value || waiting.value || isRefreshGame.value) return
   pendingGameId.value = game.id
   joinedGame.value = null
+  playerIsReady.value = null
+  playerList.value = null
   joinMessage.value = ''
   try {
     const password = passwords.value[game.id] ?? ''
@@ -110,7 +203,7 @@ const joinGame = async (game: GameListItem) => {
           <label :for="'password-' + el.id">Пароль комнаты</label>
           <input :id="'password-' + el.id" v-model="passwords[el.id]" type="password" autocomplete="off">
         </template>
-        <button type="submit" :disabled="pendingGameId !== null || isLoading">
+        <button type="submit" :disabled="pendingGameId !== null || isLoading || waiting || isRefreshGame">
           {{ pendingGameId === el.id ? 'Присоединяемся…' : 'Присоединиться' }}
         </button>
       </form>
@@ -123,6 +216,22 @@ const joinGame = async (game: GameListItem) => {
       <p>Занято: {{ joinedGame.occupiedSeatCount }}</p>
       <p>Свободно: {{ joinedGame.seat_count - joinedGame.occupiedSeatCount }}</p>
       <p>Пароль: {{ joinedGame.hasPassword ? 'требуется' : 'не требуется' }}</p>
+      <button type="button" :disabled="waiting || isRefreshGame" @click="isReady(changeReady)">{{
+          waiting ? 'Сохраняем…' : changeReady ? 'Подтвердить готовность' : 'Снять готовность'
+        }}
+      </button>
+      <p>{{ playerIsReady === null ? 'Готовность неизвестна' : playerIsReady ? 'Готов' : 'Не готов' }}</p>
+
+      <div v-if="playerList !== null">
+        <p v-for="el of playerList" :key="el.user_id">
+          <span>{{ el.user_id }}</span>
+          <span>{{ el.isReady ? 'готов' : 'не готов' }}</span>
+        </p>
+      </div>
+      <button type="button" @click="refreshGame" :disabled="isRefreshGame || waiting">{{
+          isRefreshGame ? 'Загружаем состав…' : 'Обновить'
+        }}
+      </button>
     </section>
   </section>
 </template>

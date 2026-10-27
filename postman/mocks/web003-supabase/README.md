@@ -39,5 +39,16 @@ deno test --config supabase/functions/create-game/deno.json --allow-net=127.0.0.
 Fixture сохраняет членство для повторов; реальную блокировку и конкуренцию
 проверяет `npm run test:db`, а не mock.
 
+Дополнительный `supabase/functions/ready-to-game/supabase-http.test.ts` проверяет
+готовность (29 шагов). Fixture моделирует RPC ready_to_game и хранит готовность
+по паре gameId/userId; реальная SQL-функция проверяется отдельно тестами БД.
+Команды и границы проверки — в `supabase/functions/ready-to-game/README.md`.
+
+Дополнительный `supabase/functions/get-game-players/supabase-http.test.ts` проверяет
+чтение состава (36 шагов) на отдельном порту 4919. Fixture моделирует RPC
+get_game_players, используя readyMembers: проверяет членство и возвращает
+user_id/is_ready выбранной комнаты в порядке user_id. Команды и границы —
+в `supabase/functions/get-game-players/README.md`.
+
 Симуляция не доказывает права реальной БД, её согласованность при конкурентных
 изменениях, облачный деплой или браузерный путь. Они проверяются отдельно.

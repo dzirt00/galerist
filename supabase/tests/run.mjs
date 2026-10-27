@@ -81,6 +81,8 @@ try {
     creationTests,
     "INSERT INTO auth.users VALUES ('33333333-3333-4333-8333-333333333333');",
     readFileSync(new URL('join-game.sql', testRoot), 'utf8'),
+    readFileSync(new URL('ready-to-game.sql', testRoot), 'utf8'),
+    readFileSync(new URL('get-game-players.sql', testRoot), 'utf8'),
     'ROLLBACK;',
   ].join('\n')
   const output = docker([
