@@ -77,6 +77,7 @@ try {
   const sql = [
     'BEGIN;',
     setup,
+    readFileSync(new URL('game-list.sql', testRoot), 'utf8'),
     readFileSync(new URL('profiles.sql', testRoot), 'utf8'),
     creationTests,
     "INSERT INTO auth.users VALUES ('33333333-3333-4333-8333-333333333333');",

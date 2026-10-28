@@ -32,6 +32,17 @@ http.createServer(async (req, res) => {
     await pm.state.set(stateKey, state);
     const options = state.options;
 
+    if (req.method === 'POST' && url.pathname === '/rest/v1/rpc/get_game_list') {
+      if (req.headers.authorization !== 'Bearer fixture-service-key' || req.headers.apikey !== 'fixture-service-key') {
+        return reply(res, 403, { code: '42501', message: 'Wrong server credentials' });
+      }
+      if (Object.keys(body).length || url.searchParams.size) return reply(res, 400, { message: 'Unexpected list parameters' });
+      if (options.rpcError) return reply(res, 400, { code: options.rpcError, message: 'Private RPC diagnostic' });
+      if ('rpcResult' in options) return reply(res, 200, options.rpcResult);
+      return reply(res, 200, (options.games || []).map(({ id, seat_count, occupiedSeatCount, hasPassword }) =>
+        ({ id, seat_count, occupiedSeatCount, hasPassword })));
+    }
+
     if (req.method === 'POST' && url.pathname === '/rest/v1/rpc/get_game_players') {
       if (req.headers.authorization !== 'Bearer fixture-service-key' || req.headers.apikey !== 'fixture-service-key') {
         return reply(res, 403, { code: '42501', message: 'Wrong server credentials' });
