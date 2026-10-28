@@ -80,6 +80,7 @@ try {
     readFileSync(new URL('game-list.sql', testRoot), 'utf8'),
     readFileSync(new URL('profiles.sql', testRoot), 'utf8'),
     creationTests,
+    readFileSync(new URL('turn-duration.sql', testRoot), 'utf8'),
     "INSERT INTO auth.users VALUES ('33333333-3333-4333-8333-333333333333');",
     readFileSync(new URL('join-game.sql', testRoot), 'utf8'),
     readFileSync(new URL('ready-to-game.sql', testRoot), 'utf8'),
@@ -110,7 +111,7 @@ try {
     BEGIN;
     SET LOCAL ROLE service_role;
     SELECT public.create_game('11111111-1111-4111-8111-111111111111',
-      'ffffffff-ffff-4fff-8fff-ffffffffffff', 3, 'concurrent-hash-fixture');
+      'ffffffff-ffff-4fff-8fff-ffffffffffff', 3, 'concurrent-hash-fixture', 3);
     COMMIT;
   `
   const concurrentResults = await Promise.allSettled([concurrentSql(call), concurrentSql(call)])

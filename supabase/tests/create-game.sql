@@ -11,7 +11,7 @@ DECLARE
 BEGIN
   first_game := public.create_game(
     '11111111-1111-4111-8111-111111111111',
-    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 2, NULL);
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 2, NULL, 3);
   IF NOT EXISTS (SELECT 1 FROM public.games
     WHERE id = first_game AND seat_count = 2
       AND creator_id = '11111111-1111-4111-8111-111111111111')
@@ -28,7 +28,7 @@ BEGIN
   room_count := (SELECT count(*) FROM public.games);
   second_game := public.create_game(
     '11111111-1111-4111-8111-111111111111',
-    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 2, NULL);
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 2, NULL, 3);
   IF second_game IS DISTINCT FROM first_game
     OR (SELECT count(*) FROM public.games) <> room_count THEN
     RAISE EXCEPTION 'Retry must return the original room without adding a room';
@@ -36,14 +36,14 @@ BEGIN
 
   second_game := public.create_game(
     '22222222-2222-4222-8222-222222222222',
-    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 3, NULL);
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 3, NULL, 3);
   IF second_game IS NOT DISTINCT FROM first_game THEN
     RAISE EXCEPTION 'Request IDs must be scoped to each user';
   END IF;
 
   protected_game := public.create_game(
     '11111111-1111-4111-8111-111111111111',
-    'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 4, 'test-hash-fixture');
+    'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 4, 'test-hash-fixture', 3);
   IF NOT EXISTS (SELECT 1 FROM public.games WHERE id = protected_game AND seat_count = 4)
     OR NOT EXISTS (SELECT 1 FROM public.game_passwords
       WHERE game_id = protected_game AND password_hash = 'test-hash-fixture') THEN
@@ -53,27 +53,27 @@ BEGIN
   FOREACH invalid_count IN ARRAY ARRAY[1, 5, NULL]::integer[] LOOP
     BEGIN
       PERFORM public.create_game('11111111-1111-4111-8111-111111111111',
-        'cccccccc-cccc-4ccc-8ccc-cccccccccccc', invalid_count, NULL);
+        'cccccccc-cccc-4ccc-8ccc-cccccccccccc', invalid_count, NULL, 3);
       RAISE EXCEPTION 'Invalid seat count was accepted';
     EXCEPTION WHEN check_violation OR not_null_violation THEN
       NULL;
     END;
   END LOOP;
   BEGIN
-    PERFORM public.create_game(NULL, 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', 2, NULL);
+    PERFORM public.create_game(NULL, 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', 2, NULL, 3);
     RAISE EXCEPTION 'Missing creator was accepted';
   EXCEPTION WHEN raise_exception THEN
     IF SQLERRM <> 'Creator ID and request ID are required' THEN RAISE; END IF;
   END;
   BEGIN
-    PERFORM public.create_game('11111111-1111-4111-8111-111111111111', NULL, 2, NULL);
+    PERFORM public.create_game('11111111-1111-4111-8111-111111111111', NULL, 2, NULL, 3);
     RAISE EXCEPTION 'Missing request ID was accepted';
   EXCEPTION WHEN raise_exception THEN
     IF SQLERRM <> 'Creator ID and request ID are required' THEN RAISE; END IF;
   END;
   BEGIN
     PERFORM public.create_game('33333333-3333-4333-8333-333333333333',
-      'cccccccc-cccc-4ccc-8ccc-cccccccccccc', 2, NULL);
+      'cccccccc-cccc-4ccc-8ccc-cccccccccccc', 2, NULL, 3);
     RAISE EXCEPTION 'Unknown creator was accepted';
   EXCEPTION WHEN foreign_key_violation THEN
     NULL;
@@ -101,7 +101,7 @@ BEGIN
     (SELECT count(*) FROM public.game_creation_requests)];
   BEGIN
     PERFORM public.create_game('11111111-1111-4111-8111-111111111111',
-      'dddddddd-dddd-4ddd-8ddd-dddddddddddd', 3, 'rollback-hash-fixture');
+      'dddddddd-dddd-4ddd-8ddd-dddddddddddd', 3, 'rollback-hash-fixture', 3);
     RAISE EXCEPTION 'Injected failure was ignored';
   EXCEPTION WHEN raise_exception THEN
     IF SQLERRM <> 'Injected request persistence failure' THEN RAISE; END IF;
@@ -129,7 +129,7 @@ BEGIN
     END IF;
   END LOOP;
   IF (SELECT prosecdef FROM pg_proc
-    WHERE oid = 'public.create_game(uuid,uuid,integer,text)'::regprocedure) THEN
+    WHERE oid = 'public.create_game(uuid,uuid,integer,text,integer)'::regprocedure) THEN
     RAISE EXCEPTION 'Creation must execute with caller privileges';
   END IF;
 END;

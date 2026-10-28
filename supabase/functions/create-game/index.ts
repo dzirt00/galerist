@@ -21,6 +21,8 @@ Deno.serve(withAuthenticatedRequest('POST', 'Не удалось создать 
   const seatCount = ('seatCount' in payload) ? payload.seatCount : null
   const requestId = ('requestId' in payload) ? payload.requestId : null
   const password = ('password' in payload) ? payload.password : undefined
+  const turnDurationMinutes = ('turnDurationMinutes' in payload) ? payload.turnDurationMinutes : undefined
+
   if (typeof seatCount !== 'number' || !Number.isSafeInteger(seatCount) || ![2, 3, 4].includes(seatCount)) {
     return Response.json({error: 'Некорректное число игроков'}, {status: 400, headers: corsHeaders})
   }
@@ -36,6 +38,14 @@ Deno.serve(withAuthenticatedRequest('POST', 'Не удалось создать 
       headers: corsHeaders
     })
   }
+
+  if (typeof turnDurationMinutes !== 'number' || ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10].includes(turnDurationMinutes)) {
+    return Response.json({error: 'Укажите количество минут на ход'}, {
+      status: 400,
+      headers: corsHeaders
+    })
+  }
+
   let passwordHash: string | null = null
   if (password) {
     try {
@@ -53,7 +63,8 @@ Deno.serve(withAuthenticatedRequest('POST', 'Не удалось создать 
       'p_creator_id': user.id,
       'p_request_id': requestId,
       'p_seat_count': seatCount,
-      'p_password_hash': passwordHash
+      'p_password_hash': passwordHash,
+      'p_turn_duration_minutes': turnDurationMinutes
     })
     const supabaseAdminResponseData = supabaseAdminResponse.data
     const supabaseAdminResponseError = supabaseAdminResponse.error
@@ -65,7 +76,7 @@ Deno.serve(withAuthenticatedRequest('POST', 'Не удалось создать 
       return Response.json({error: 'Не удалось создать комнату'}, {status: 500, headers: corsHeaders})
     }
 
-    const response = await supabaseAdmin.from('games').select('id, creator_id, seat_count').eq('id', supabaseAdminResponseData).single()
+    const response = await supabaseAdmin.from('games').select('id, creator_id, seat_count, turn_duration_minutes').eq('id', supabaseAdminResponseData).single()
 
     if (response.error || !response.data) {
       return Response.json({error: 'Не удалось создать комнату'}, {status: 500, headers: corsHeaders})
@@ -73,7 +84,8 @@ Deno.serve(withAuthenticatedRequest('POST', 'Не удалось создать 
     const id = response.data.id
     const creator_id = response.data['creator_id']
     const seat_count = response.data['seat_count']
-    if (!id || !creator_id || (seat_count !== 2 && seat_count !== 3 && seat_count !== 4)) {
+    const turn_duration_minutes = response.data['turn_duration_minutes']
+    if (!id || !creator_id || (seat_count !== 2 && seat_count !== 3 && seat_count !== 4) || ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10].includes(turn_duration_minutes)) {
       return Response.json({error: 'Не удалось создать комнату'}, {status: 500, headers: corsHeaders})
     }
 
@@ -89,7 +101,8 @@ Deno.serve(withAuthenticatedRequest('POST', 'Не удалось создать 
       creator_id: creator_id,
       seat_count: seat_count,
       hasPassword: (responseGamePasswords.data) ? true : false,
-      occupiedSeats: responseGamePlayers.data
+      occupiedSeats: responseGamePlayers.data,
+      turnDurationMinutes: turn_duration_minutes
     }
     return Response.json(request, {status: 200, headers: corsHeaders})
   } catch {

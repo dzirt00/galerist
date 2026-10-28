@@ -14,9 +14,9 @@ DECLARE
   requested integer;
 BEGIN
   room_id := public.create_game(first_user,
-    '70707070-7070-4070-8070-707070707070', 3, NULL);
+    '70707070-7070-4070-8070-707070707070', 3, NULL, 3);
   other_room_id := public.create_game(first_user,
-    '80808080-8080-4080-8080-808080808080', 4, NULL);
+    '80808080-8080-4080-8080-808080808080', 4, NULL, 3);
   PERFORM public.join_game(room_id, second_user);
   PERFORM public.ready_to_game(room_id, first_user, true);
   SELECT jsonb_agg(to_jsonb(p) ORDER BY p.game_id, p.user_id)

@@ -64,7 +64,7 @@ http.createServer(async (req, res) => {
           id = crypto.randomUUID();
           state.requests[requestKey] = id;
           state.games[id] = { id, creator_id: body.p_creator_id, seat_count: body.p_seat_count,
-            password_hash: body.p_password_hash };
+            password_hash: body.p_password_hash, turn_duration_minutes: body.p_turn_duration_minutes };
           await pm.state.set(stateKey, state);
         }
         return reply(res, 200, id);
@@ -76,7 +76,8 @@ http.createServer(async (req, res) => {
         const game = state.games[filter?.replace(/^eq\./, '')];
         if (table === 'games') {
           if (options.noGame || !game) return reply(res, 406, { code: 'PGRST116', message: 'No rows' });
-          return reply(res, 200, { id: game.id, creator_id: game.creator_id, seat_count: game.seat_count });
+          return reply(res, 200, { id: game.id, creator_id: game.creator_id, seat_count: game.seat_count,
+            turn_duration_minutes: 'minutesResult' in options ? options.minutesResult : game.turn_duration_minutes });
         }
         if (table === 'game_players') return reply(res, 200, game ? [{ user_id: game.creator_id }] : []);
         if (table === 'game_passwords') return reply(res, 200, game?.password_hash ? [{ game_id: game.id }] : []);

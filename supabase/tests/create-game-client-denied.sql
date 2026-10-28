@@ -18,7 +18,7 @@ BEGIN
   END;
   BEGIN
     PERFORM public.create_game('11111111-1111-4111-8111-111111111111',
-      'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee', 2, NULL);
+      'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee', 2, NULL, 3);
     RAISE EXCEPTION 'Client must not invoke creation';
   EXCEPTION WHEN insufficient_privilege THEN
     NULL;

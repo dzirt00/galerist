@@ -12,9 +12,9 @@ DECLARE
   result jsonb;
 BEGIN
   room_id := public.create_game(first_user,
-    '30303030-3030-4030-8030-303030303030', 3, NULL);
+    '30303030-3030-4030-8030-303030303030', 3, NULL, 3);
   other_room_id := public.create_game(first_user,
-    '40404040-4040-4040-8040-404040404040', 3, NULL);
+    '40404040-4040-4040-8040-404040404040', 3, NULL, 3);
   PERFORM public.join_game(room_id, second_user);
   IF EXISTS (SELECT 1 FROM public.game_players
     WHERE game_id IN (room_id, other_room_id) AND is_ready IS DISTINCT FROM false) THEN

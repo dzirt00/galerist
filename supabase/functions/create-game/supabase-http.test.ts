@@ -12,7 +12,7 @@ type FixtureState = {
 const fixtureUrl = 'http://127.0.0.1:4917/supabase'
 const userId = '11111111-1111-4111-8111-111111111111'
 const requestId = '22222222-2222-4222-8222-222222222222'
-const validPayload = { seatCount: 3, requestId }
+const validPayload = { seatCount: 3, requestId, turnDurationMinutes: 3 }
 const environment = {
   SUPABASE_URL: fixtureUrl,
   SUPABASE_ANON_KEY: 'fixture-anon-key',
@@ -78,7 +78,7 @@ Deno.test('create-game через настоящий SDK и HTTP к локаль
         const dto = await response.json()
         assert.match(dto.id, /^[0-9a-f-]{36}$/)
         assert.deepEqual(dto, { id: dto.id, creator_id: userId, seat_count: seatCount,
-          hasPassword: false, occupiedSeats: [{ user_id: userId }] })
+          hasPassword: false, turnDurationMinutes: 3, occupiedSeats: [{ user_id: userId }] })
         const captured = await state()
         assert.deepEqual(captured.calls.map((call) => call.path), [
           '/auth/v1/user', '/rest/v1/rpc/create_game', '/rest/v1/games',
@@ -91,8 +91,8 @@ Deno.test('create-game через настоящий SDK и HTTP к локаль
           assert.equal(call.apikey, 'fixture-service-key')
         }
         assert.deepEqual(captured.calls[1].body, { p_creator_id: userId, p_request_id: requestId,
-          p_seat_count: seatCount, p_password_hash: null })
-        assert.deepEqual(captured.calls[2].query, { select: 'id,creator_id,seat_count', id: `eq.${dto.id}` })
+          p_seat_count: seatCount, p_password_hash: null, p_turn_duration_minutes: 3 })
+        assert.deepEqual(captured.calls[2].query, { select: 'id,creator_id,seat_count,turn_duration_minutes', id: `eq.${dto.id}` })
         assert.deepEqual(captured.calls[3].query, { select: 'user_id', game_id: `eq.${dto.id}` })
         assert.deepEqual(captured.calls[4].query, { select: 'game_id', game_id: `eq.${dto.id}` })
       })
@@ -113,7 +113,7 @@ Deno.test('create-game через настоящий SDK и HTTP к локаль
       assert.equal(parts[2], pbkdf2Sync(password, Buffer.from(parts[1], 'hex'), 600_000, 32, 'sha256').toString('hex'))
       assert.equal(JSON.stringify(captured.calls).includes(password), false)
       assert.equal(JSON.stringify(first).includes(String(hash)), false)
-      const repeated = await post({ ...validPayload, seatCount: 4, password: '' })
+      const repeated = await post({ ...validPayload, seatCount: 4, password: '', turnDurationMinutes: 5 })
       assert.equal(repeated.status, 200)
       assert.deepEqual(await repeated.json(), first)
       assert.equal(Object.keys((await state()).games).length, 1)
@@ -151,6 +151,8 @@ Deno.test('create-game через настоящий SDK и HTTP к локаль
       ['пароль null', { ...validPayload, password: null }],
       ['пароль другого типа', { ...validPayload, password: 12345678 }],
       ['короткий пароль', { ...validPayload, password: '1234567' }],
+      ...[undefined, null, '3', 0, 11, 2.5].map((minutes): [string, unknown] =>
+        ['неверные минуты ' + String(minutes), { ...validPayload, turnDurationMinutes: minutes }]),
     ]
     for (const [name, payload] of invalidPayloads) {
       await test.step(`Неверный payload (${name}): 400 без RPC`, async () => {
@@ -182,6 +184,8 @@ Deno.test('create-game через настоящий SDK и HTTP к локаль
       ['ошибка RPC', { rpcError: true }], ['RPC null', { rpcResult: null }],
       ['RPC объект', { rpcResult: { id: userId } }], ['RPC не UUID', { rpcResult: 'invalid' }],
       ['комната не найдена', { noGame: true }],
+      ...[null, '3', 0, 11, 2.5].map((minutes): [string, Record<string, unknown>] =>
+        ['неверные минуты БД ' + String(minutes), { minutesResult: minutes }]),
       ...['games', 'game_players', 'game_passwords'].map((table): [string, Record<string, unknown>] =>
         [`ошибка чтения ${table}`, { readError: table }]),
     ]
