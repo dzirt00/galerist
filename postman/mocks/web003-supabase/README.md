@@ -56,5 +56,5 @@ user_id/is_ready выбранной комнаты в порядке user_id. К
 2026-10-28: game-list использует POST RPC get_game_list вместо отдельных GET
 таблиц. Локальный fixture моделирует безопасный список, ошибку RPC и неверный
 DTO. HTTP-тест проверяет один RPC после Auth как для трёх, так и для 50 комнат,
-сохранность ответа и диагностических замеров. SQL get_game_list отдельно
+сохранность ответа. SQL get_game_list отдельно
 проверяется в supabase/tests/game-list.sql через npm run test:db.

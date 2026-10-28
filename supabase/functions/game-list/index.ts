@@ -19,38 +19,16 @@ function isGameListItem(value: unknown): value is GameListItem {
 }
 
 Deno.serve(withAuthenticatedRequest('GET', 'Ошибка чтения записей', async (_request, {createAdminClient}) => {
-  const startedAt = performance.now()
-  const queries: {table: string; durationMs: number}[] = []
-  let roomCount: number | null = null
-  const measure = async <T>(table: string, query: PromiseLike<T>): Promise<T> => {
-    const queryStartedAt = performance.now()
-    try {
-      return await query
-    } finally {
-      queries.push({table, durationMs: performance.now() - queryStartedAt})
-    }
+  const supabaseAdmin = createAdminClient()
+  if (supabaseAdmin instanceof Response) return supabaseAdmin
+
+  const {data, error} = await supabaseAdmin.rpc('get_game_list')
+  if (error || !Array.isArray(data) || !data.every(isGameListItem)) {
+    return Response.json({error: 'Ошибка чтения записей'}, {status: 500, headers: corsHeaders})
   }
-  try {
-    const supabaseAdmin = createAdminClient()
-    if (supabaseAdmin instanceof Response) return supabaseAdmin
 
-    const {data, error} = await measure('get_game_list', supabaseAdmin.rpc('get_game_list'))
-    if (error || !Array.isArray(data) || !data.every(isGameListItem)) {
-      return Response.json({error: 'Ошибка чтения записей'}, {status: 500, headers: corsHeaders})
-    }
+  const gameList: GameListItem[] = data.map(({id, seat_count, occupiedSeatCount, hasPassword}) =>
+    ({id, seat_count, occupiedSeatCount, hasPassword}))
 
-    roomCount = data.length
-    const gameList: GameListItem[] = data.map(({id, seat_count, occupiedSeatCount, hasPassword}) =>
-      ({id, seat_count, occupiedSeatCount, hasPassword}))
-
-    return Response.json(gameList, {status: 200, headers: corsHeaders})
-  } finally {
-    console.info(JSON.stringify({
-      event: 'game-list.db-timing',
-      roomCount,
-      queryCount: queries.length,
-      queries,
-      totalMs: performance.now() - startedAt,
-    }))
-  }
-}, {timingLabel: 'game-list'}))
+  return Response.json(gameList, {status: 200, headers: corsHeaders})
+}))

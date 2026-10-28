@@ -20,8 +20,6 @@ const rooms = [
 Deno.test('game-list: реальный обработчик и SDK через HTTP к локальной Postman simulation', async (test) => {
   const savedEnvironment = Object.fromEntries(Object.keys(environment).map((key) => [key, Deno.env.get(key)]))
   const originalServe = Deno.serve
-  const originalInfo = console.info
-  const timingLogs: string[] = []
   let handler: Handler | undefined
   Deno.serve = ((registered: Handler) => { handler = registered }) as unknown as typeof Deno.serve
   try {
@@ -38,7 +36,6 @@ Deno.test('game-list: реальный обработчик и SDK через HT
     for (const [key, value] of Object.entries(environment)) Deno.env.set(key, value)
   }
   const reset = async (options: Record<string, unknown> = {}) => {
-    timingLogs.length = 0
     resetEnvironment()
     const response = await send(`${fixtureUrl}/__test/reset`, { method: 'POST',
       headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ games: rooms, ...options }) })
@@ -62,34 +59,6 @@ Deno.test('game-list: реальный обработчик и SDK через HT
     assert.doesNotMatch(JSON.stringify(body), /Private|fixture-service-key|fixture-user-token/)
   }
 
-  console.info = (...values: unknown[]) => { timingLogs.push(values.join(' ')) }
-  const assertTimings = (status: number, tables: string[], roomCount: number | null) => {
-    const logs = timingLogs.map((entry) => JSON.parse(entry))
-    const request = logs.find((entry) => entry.event === 'game-list.request-timing')
-    assert.ok(request, 'Каждый запрос оставляет общий замер')
-    assert.equal(request.status, status)
-    assert.ok(Number.isFinite(request.totalMs) && request.totalMs >= 0)
-    if (tables.length > 0) {
-      assert.ok(Number.isFinite(request.authMs) && request.authMs >= 0)
-      assert.ok(request.totalMs >= request.authMs)
-    }
-    const db = logs.find((entry) => entry.event === 'game-list.db-timing')
-    if (tables.length > 0) {
-      assert.ok(db)
-      assert.equal(db.roomCount, roomCount)
-      assert.equal(db.queryCount, tables.length)
-      assert.deepEqual(db.queries.map((query: {table: string}) => query.table), tables)
-      for (const query of db.queries) {
-        assert.deepEqual(Object.keys(query).sort(), ['durationMs', 'table'])
-        assert.ok(Number.isFinite(query.durationMs) && query.durationMs >= 0)
-      }
-      assert.ok(request.totalMs >= db.totalMs)
-    } else {
-      assert.equal(db, undefined)
-    }
-    assert.doesNotMatch(timingLogs.join(''), /fixture-|Bearer|Private|password_hash/)
-    for (const room of rooms) assert.ok(!timingLogs.join('').includes(room.id))
-  }
   try {
     await test.step('Комнаты 2/3/4: отдельные счётчики, пароль и заполненная комната', async () => {
       await reset()
@@ -97,7 +66,6 @@ Deno.test('game-list: реальный обработчик и SDK через HT
       assert.equal(response.status, 200)
       assert.equal(response.headers.get('Access-Control-Allow-Origin'), '*')
       assert.deepEqual(await response.json(), rooms)
-      assertTimings(200, ['get_game_list'], rooms.length)
       const captured = await calls()
       assert.equal(captured.length, 2)
       assert.deepEqual(captured[0], { method: 'GET', path: '/auth/v1/user', query: {},
@@ -112,7 +80,6 @@ Deno.test('game-list: реальный обработчик и SDK через HT
       const response = await get()
       assert.equal(response.status, 200)
       assert.deepEqual(await response.json(), [])
-      assertTimings(200, ['get_game_list'], 0)
       assert.deepEqual((await calls()).map((call) => call.path), ['/auth/v1/user', '/rest/v1/rpc/get_game_list'])
     })
     await test.step('OPTIONS: preflight без Auth и БД', async () => {
@@ -123,7 +90,6 @@ Deno.test('game-list: реальный обработчик и SDK через HT
       assert.match(response.headers.get('Access-Control-Allow-Headers') ?? '', /authorization/i)
       assert.equal(await response.text(), '')
       assert.deepEqual(await calls(), [])
-      assertTimings(204, [], null)
     })
     for (const method of ['POST', 'PUT', 'PATCH', 'DELETE']) {
       await test.step(`${method}: 405 до Auth и БД`, async () => {
@@ -153,7 +119,6 @@ Deno.test('game-list: реальный обработчик и SDK через HT
     await test.step('Ошибка RPC: 500 без частичного списка и приватной диагностики', async () => {
       await reset({rpcError: '42501'})
       await assertError(await get(), 500)
-      assertTimings(500, ['get_game_list'], null)
       assert.equal((await calls()).length, 2)
     })
     for (const rpcResult of [null, {}, [rooms[0], {id: 'broken'}],
@@ -163,7 +128,6 @@ Deno.test('game-list: реальный обработчик и SDK через HT
       await test.step('Неверный RPC DTO отклоняется целиком: ' + JSON.stringify(rpcResult), async () => {
         await reset({rpcResult})
         await assertError(await get(), 500)
-        assertTimings(500, ['get_game_list'], null)
       })
     }
     await test.step('Приватные поля RPC не выходят в ответ', async () => {
@@ -180,7 +144,6 @@ Deno.test('game-list: реальный обработчик и SDK через HT
       assert.equal(response.status, 200)
       assert.deepEqual(await response.json(), manyRooms)
       assert.equal((await calls()).length, 2)
-      assertTimings(200, ['get_game_list'], 50)
     })
     for (const key of Object.keys(environment)) {
       await test.step(`Нет ${key}: 500 без чтения БД`, async () => {
@@ -205,7 +168,6 @@ Deno.test('game-list: реальный обработчик и SDK через HT
       assert.deepEqual(await response.json(), rooms)
     })
   } finally {
-    console.info = originalInfo
     for (const [key, value] of Object.entries(savedEnvironment)) {
       if (value === undefined) Deno.env.delete(key)
       else Deno.env.set(key, value)
