@@ -1,14 +1,13 @@
 <script setup lang="ts">
-import {computed, ref} from 'vue'
+import {computed, onUnmounted, ref} from 'vue'
 import {useNuxtApp} from 'nuxt/app'
+import type {GameListItem} from './types/lobby'
 
-interface GameListItem {
-  id: string
+
+interface ChangeData {
   seat_count: number
-  occupiedSeatCount: number
-  hasPassword: boolean
+  turnDurationMinutes: number
 }
-
 interface GamePlayer {
   isReady: boolean,
   user_id: string
@@ -36,8 +35,10 @@ function isGamePlayersResponse(value: unknown): value is GamePlayersResponse {
 const props = defineProps<{ joinedGame: GameListItem | null }>()
 const emit = defineEmits<{
   busyChange: [value: boolean]
-  seatCountChange: [value: number]
+  changeData: [value: ChangeData]
 }>()
+let active = true
+onUnmounted(() => { active = false })
 
 const isRefreshGame = ref(false)
 const waiting = ref<boolean>(false)
@@ -46,7 +47,8 @@ const isChangeSeatCount = ref(false)
 const playerList = ref<GamePlayer[] | null>(null)
 const {$supabase} = useNuxtApp()
 const playerIsReady = ref<boolean | null>(null)
-const changeSeatCount = ref<number | null>(null)
+const changeSeatCount = ref<number | null>(props.joinedGame?.seat_count ?? null)
+const turnDurationMinutes = ref<number | null>(props.joinedGame?.turnDurationMinutes ?? null)
 const changeReady = computed(() => {
   if (playerIsReady.value === null) return true
   return !playerIsReady.value
@@ -64,6 +66,7 @@ const isReady = async (value: boolean) => {
         isReady: value
       }
     })
+    if (!active) return
     if (response.error) {
       message.value = 'Что то пошло не так'
       return
@@ -82,7 +85,7 @@ const isReady = async (value: boolean) => {
   } catch {
     message.value = 'Что то пошло не так'
   } finally {
-    emit('busyChange', false)
+    if (active) emit('busyChange', false)
     waiting.value = false
   }
 }
@@ -100,6 +103,7 @@ const refreshGame = async () => {
         gameId: props.joinedGame.id,
       }
     })
+    if (!active) return
     if (response.error) {
       message.value = 'Что то пошло не так'
       return
@@ -115,41 +119,53 @@ const refreshGame = async () => {
 
   } finally {
     isRefreshGame.value = false
-    emit('busyChange', false)
+    if (active) emit('busyChange', false)
   }
 }
 
 const editChangeSeatCount = async () => {
   message.value = ''
-  if (changeSeatCount.value === null) {
+  if (typeof changeSeatCount.value !== 'number' || ![2, 3, 4].includes(changeSeatCount.value)) {
     message.value = 'выберете количество игроков'
+    return
+  }
+  if (typeof turnDurationMinutes.value !== 'number' || !Number.isSafeInteger(turnDurationMinutes.value)
+    || turnDurationMinutes.value < 1 || turnDurationMinutes.value > 10) {
+    message.value = 'Выберите длительность хода от 1 до 10 минут'
     return
   }
   if (props.joinedGame === null) {
     message.value = 'вы не присоединены ни к одной игре'
     return
   }
-  if (isChangeSeatCount.value || waiting.value || isChangeSeatCount.value) return
+  if (isChangeSeatCount.value || waiting.value || isRefreshGame.value) return
 
   isChangeSeatCount.value = true
   waiting.value = true
   emit('busyChange', true)
 
   try {
-    const response = await $supabase.functions.invoke('change-seat-count', {
+    const response = await $supabase.functions.invoke('change-settings-game', {
       body: {
         gameId: props.joinedGame.id,
         seatCount: changeSeatCount.value,
+        turnDurationMinutes: turnDurationMinutes.value,
       }
     })
+    if (!active) return
     if (response.error) {
       message.value = 'Что то пошло не так'
       return
     }
     const data = response.data
     if (data !== null && typeof data === 'object' && !Array.isArray(data) && 'seat_count' in data &&
-      data['seat_count'] === changeSeatCount.value) {
-      emit('seatCountChange', data['seat_count'])
+      data['seat_count'] === changeSeatCount.value && 'turnDurationMinutes' in data &&
+      data['turnDurationMinutes'] === turnDurationMinutes.value) {
+      emit('changeData', {
+        seat_count: data['seat_count'],
+        turnDurationMinutes: data['turnDurationMinutes']
+      })
+
     } else {
       message.value = 'Что то пошло не так'
     }
@@ -160,7 +176,7 @@ const editChangeSeatCount = async () => {
     isRefreshGame.value = false
     isChangeSeatCount.value = false
     waiting.value = false
-    emit('busyChange', false)
+    if (active) emit('busyChange', false)
   }
 }
 </script>
@@ -172,6 +188,7 @@ const editChangeSeatCount = async () => {
     <p>Всего мест: {{ joinedGame.seat_count }}</p>
     <p>Занято: {{ joinedGame.occupiedSeatCount }}</p>
     <p>Свободно: {{ joinedGame.seat_count - joinedGame.occupiedSeatCount }}</p>
+    <p>Количество минут на ход игрока {{ joinedGame.turnDurationMinutes }}</p>
     <p>Пароль: {{ joinedGame.hasPassword ? 'требуется' : 'не требуется' }}</p>
     <button type="button" :disabled="waiting || isRefreshGame" @click="isReady(changeReady)">{{
         waiting ? 'Сохраняем…' : changeReady ? 'Подтвердить готовность' : 'Снять готовность'
@@ -192,17 +209,24 @@ const editChangeSeatCount = async () => {
       {{ isRefreshGame ? 'Загружаем состав…' : 'Обновить' }}
     </button>
     <div>
-      <p>изменить количество игроков</p>
-      <select v-model="changeSeatCount" :disabled="waiting || isRefreshGame || isChangeSeatCount" required>
+      <label for="lobby-seat-count">Количество игроков</label>
+      <select id="lobby-seat-count" v-model="changeSeatCount" :disabled="waiting || isRefreshGame || isChangeSeatCount" required>
         <option :value="2">2 игрока</option>
         <option :value="3">3 игрока</option>
         <option :value="4">4 игрока</option>
       </select>
-      <button type="button" :disabled="waiting || isRefreshGame || isChangeSeatCount" @click="editChangeSeatCount">
-        Изменить
-      </button>
     </div>
-
+    <div>
+      <label for="lobby-turn-duration">Количество минут на ход игрока</label>
+      <select id="lobby-turn-duration" v-model="turnDurationMinutes" :disabled="waiting || isRefreshGame || isChangeSeatCount">
+        <template v-for="i in 10" :key="i">
+          <option :value="i">{{ i }}</option>
+        </template>
+      </select>
+    </div>
+    <button type="button" :disabled="waiting || isRefreshGame || isChangeSeatCount" @click="editChangeSeatCount">
+      Изменить
+    </button>
   </section>
 
 </template>

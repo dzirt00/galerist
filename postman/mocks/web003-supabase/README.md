@@ -58,3 +58,5 @@ user_id/is_ready выбранной комнаты в порядке user_id. К
 DTO. HTTP-тест проверяет один RPC после Auth как для трёх, так и для 50 комнат,
 сохранность ответа. SQL get_game_list отдельно
 проверяется в supabase/tests/game-list.sql через npm run test:db.
+
+2026-10-28: fixture расширен для RPC `change_settings_game` (вместимость и таймер), а `join_game` и `get_game_list` возвращают `turnDurationMinutes`. Команды проверки — в `supabase/functions/change-settings-game/README.md`.

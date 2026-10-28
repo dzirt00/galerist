@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import {useNuxtApp} from 'nuxt/app'
-import {ref} from 'vue'
+import {ref, watch} from 'vue'
 import GameLobby from './GameLobby.vue'
+import type {GameListItem} from './types/lobby'
 
-interface GameListItem {
-  id: string
+const props = defineProps<{createdGame?: GameListItem | null}>()
+
+interface ChangeData {
   seat_count: number
-  occupiedSeatCount: number
-  hasPassword: boolean
+  turnDurationMinutes: number
 }
-
 
 
 function isGameListItem(value: unknown): value is GameListItem {
@@ -20,6 +20,8 @@ function isGameListItem(value: unknown): value is GameListItem {
     && typeof item.occupiedSeatCount === 'number' && Number.isSafeInteger(item.occupiedSeatCount)
     && item.occupiedSeatCount >= 0 && item.occupiedSeatCount <= (item.seat_count as number)
     && typeof item.hasPassword === 'boolean'
+    && typeof item.turnDurationMinutes === 'number' && Number.isSafeInteger(item.turnDurationMinutes)
+    && item.turnDurationMinutes >= 1 && item.turnDurationMinutes <= 10
 }
 
 
@@ -33,11 +35,20 @@ const pendingGameId = ref<string | null>(null)
 const passwords = ref<Record<string, string>>({})
 const joinMessage = ref<string>('')
 const joinedGame = ref<GameListItem | null>(null)
-
-
 const waiting = ref<boolean>(false)
+
+watch(() => props.createdGame, (game) => {
+  if (!game) return
+  joinedGame.value = {...game}
+  state.value = [...state.value.filter((item) => item.id !== game.id), {...game}]
+  pendingGameId.value = null
+  joinMessage.value = ''
+  waiting.value = false
+}, {immediate: true})
+
 const loadList = async () => {
-  if (isLoading.value || pendingGameId.value) return
+  if (isLoading.value || pendingGameId.value || waiting.value) return
+  const creationAtStart = props.createdGame
   try {
     message.value = ''
     isLoading.value = true
@@ -48,6 +59,11 @@ const loadList = async () => {
       return
     }
     state.value = response.data
+    // A list request started before creation may not contain the new room yet.
+    if (props.createdGame && props.createdGame !== creationAtStart) {
+      const game = joinedGame.value?.id === props.createdGame.id ? joinedGame.value : props.createdGame
+      state.value = [...state.value.filter((item) => item.id !== game.id), {...game}]
+    }
     hasLoaded.value = true
   } catch {
     message.value = 'Не удалось загрузить комнаты. Попробуйте ещё раз'
@@ -59,6 +75,7 @@ const loadList = async () => {
 const joinGame = async (game: GameListItem) => {
 
   if (pendingGameId.value || isLoading.value || waiting.value) return
+  const creationAtStart = props.createdGame
   pendingGameId.value = game.id
   joinedGame.value = null
   joinMessage.value = ''
@@ -67,6 +84,7 @@ const joinGame = async (game: GameListItem) => {
     const response = await $supabase.functions.invoke('join-game', {
       body: {gameId: game.id, ...(password !== '' && {password})},
     })
+    if (props.createdGame !== creationAtStart) return
     if (response.error) {
       joinMessage.value = 'Не удалось присоединиться к комнате. Попробуйте ещё раз'
       // Read only known server errors; never display arbitrary upstream diagnostics.
@@ -90,22 +108,23 @@ const joinGame = async (game: GameListItem) => {
     state.value = state.value.map((item) => item.id === game.id ? response.data : item)
     passwords.value[game.id] = ''
   } catch {
+    if (props.createdGame !== creationAtStart) return
     joinMessage.value = 'Не удалось присоединиться к комнате. Попробуйте ещё раз'
   } finally {
-    pendingGameId.value = null
+    if (pendingGameId.value === game.id) pendingGameId.value = null
   }
 }
-const editState = (seatCount: number) => {
+const editState = (changeData: ChangeData) => {
   if (joinedGame.value === null) return
-  joinedGame.value.seat_count = seatCount
-  state.value = state.value.map((item) => item.id === joinedGame.value?.id ? {...item, seat_count: seatCount} : item)
+  joinedGame.value = {...joinedGame.value, ...changeData}
+  state.value = state.value.map((item) => item.id === joinedGame.value?.id ? {...item, ...changeData} : item)
 }
 </script>
 
 <template>
   <section aria-label="Список комнат">
     <h2>Комнаты</h2>
-    <button :disabled="isLoading || pendingGameId !== null" type="button" @click="loadList">Обновить</button>
+    <button :disabled="isLoading || pendingGameId !== null || waiting" type="button" @click="loadList">Обновить</button>
     <p v-if="message" role="alert">{{ message }}</p>
     <p v-if="isLoading" role="status">Загружаем комнаты…</p>
     <p v-if="!isLoading && hasLoaded && state.length === 0 && message === ''">Комнат пока нет</p>
@@ -116,6 +135,7 @@ const editState = (seatCount: number) => {
         <p>Всего мест: {{ el.seat_count }}</p>
         <p>Занято: {{ el.occupiedSeatCount }}</p>
         <p>Свободно: {{ el.seat_count - el.occupiedSeatCount }}</p>
+        <p>Количество минут на ход игрока {{ el.turnDurationMinutes }}</p>
         <p>Пароль: {{ el.hasPassword ? 'требуется' : 'не требуется' }}</p>
       </div>
       <form @submit.prevent="joinGame(el)">
@@ -132,9 +152,10 @@ const editState = (seatCount: number) => {
     <p v-if="joinMessage" role="alert">{{ joinMessage }}</p>
     <GameLobby
       v-if="joinedGame"
+      :key="joinedGame.id"
       :joined-game="joinedGame"
       @busy-change="waiting = $event"
-      @seat-count-change="editState($event)"
+      @change-data="editState($event)"
     />
   </section>
 </template>

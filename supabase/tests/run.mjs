@@ -80,8 +80,8 @@ try {
     readFileSync(new URL('game-list.sql', testRoot), 'utf8'),
     readFileSync(new URL('profiles.sql', testRoot), 'utf8'),
     creationTests,
-    readFileSync(new URL('turn-duration.sql', testRoot), 'utf8'),
     "INSERT INTO auth.users VALUES ('33333333-3333-4333-8333-333333333333');",
+    readFileSync(new URL('turn-duration.sql', testRoot), 'utf8'),
     readFileSync(new URL('join-game.sql', testRoot), 'utf8'),
     readFileSync(new URL('ready-to-game.sql', testRoot), 'utf8'),
     readFileSync(new URL('get-game-players.sql', testRoot), 'utf8'),
@@ -190,8 +190,8 @@ try {
       ('dededede-dede-4ede-8ede-dededededede', '22222222-2222-4222-8222-222222222222');
   ` })
   const shrinkCall = `BEGIN; SET LOCAL ROLE service_role;
-    SELECT public.change_seat_count('dededede-dede-4ede-8ede-dededededede',
-      '11111111-1111-4111-8111-111111111111', 2);
+    SELECT public.change_settings_game('dededede-dede-4ede-8ede-dededededede',
+      '11111111-1111-4111-8111-111111111111', 2, 7);
     SELECT pg_sleep(0.5); COMMIT;`
   const racingJoin = joinCall('33333333-3333-4333-8333-333333333333')
     .replaceAll('abababab-abab-4bab-8bab-abababababab', 'dededede-dede-4ede-8ede-dededededede')
@@ -204,13 +204,14 @@ try {
   if (!String(loser.reason).includes(expectedError)) throw loser.reason
   docker(['exec', '-i', containerId, ...psqlArgs], { input: `DO $$ DECLARE
     capacity integer;
+    duration integer;
     occupied bigint;
     BEGIN
-      SELECT seat_count INTO capacity FROM public.games
+      SELECT seat_count, turn_duration_minutes INTO capacity, duration FROM public.games
         WHERE id = 'dededede-dede-4ede-8ede-dededededede';
       SELECT count(*) INTO occupied FROM public.game_players
         WHERE game_id = 'dededede-dede-4ede-8ede-dededededede';
-      IF NOT ((capacity = 2 AND occupied = 2) OR (capacity = 3 AND occupied = 3)) THEN
+      IF NOT ((capacity = 2 AND occupied = 2 AND duration = 7) OR (capacity = 3 AND occupied = 3 AND duration = 3)) THEN
         RAISE EXCEPTION 'Concurrent shrink/join violated capacity or lost a successful change';
       END IF;
     END; $$;` })

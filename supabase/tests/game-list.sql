@@ -26,9 +26,9 @@ DO $$
 DECLARE
   result jsonb;
   expected jsonb := '[
-    {"id":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa","seat_count":2,"occupiedSeatCount":2,"hasPassword":true},
-    {"id":"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb","seat_count":3,"occupiedSeatCount":0,"hasPassword":false},
-    {"id":"cccccccc-cccc-4ccc-8ccc-cccccccccccc","seat_count":4,"occupiedSeatCount":1,"hasPassword":false}
+    {"id":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa","seat_count":2,"occupiedSeatCount":2,"hasPassword":true,"turnDurationMinutes":3},
+    {"id":"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb","seat_count":3,"occupiedSeatCount":0,"hasPassword":false,"turnDurationMinutes":3},
+    {"id":"cccccccc-cccc-4ccc-8ccc-cccccccccccc","seat_count":4,"occupiedSeatCount":1,"hasPassword":false,"turnDurationMinutes":3}
   ]';
   before_rows jsonb;
 BEGIN

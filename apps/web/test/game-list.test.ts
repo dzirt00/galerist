@@ -10,7 +10,7 @@ enableAutoUnmount(afterEach)
 
 const room = {
   id: '11111111-1111-4111-8111-111111111111',
-  seat_count: 4, occupiedSeatCount: 2, hasPassword: true,
+  seat_count: 4, occupiedSeatCount: 2, hasPassword: true, turnDurationMinutes: 3,
 }
 const errorMessage = 'Не удалось загрузить комнаты. Попробуйте ещё раз'
 
@@ -30,7 +30,7 @@ describe('WEB-003: загрузка списка комнат', () => {
 
   it('по кнопке отправляет GET и показывает отдельные данные каждой комнаты', async () => {
     const second = { ...room, id: '22222222-2222-4222-8222-222222222222',
-      seat_count: 2, occupiedSeatCount: 2, hasPassword: false }
+      seat_count: 2, occupiedSeatCount: 2, hasPassword: false, turnDurationMinutes: 3 }
     api.invoke.mockResolvedValueOnce({ data: [room, second], error: null })
     const wrapper = mount(GameList)
     await wrapper.get('button').trigger('click')
@@ -99,6 +99,8 @@ describe('WEB-003: загрузка списка комнат', () => {
   })
 
   const malformed: [string, unknown][] = [
+    ...[undefined, null, '3', 0, 11, 2.5].map((minutes): [string, unknown] =>
+      ['неверные минуты ' + String(minutes), [{...room, turnDurationMinutes: minutes}]]),
     ['null', null], ['объект вместо списка', room], ['null внутри списка', [null]],
     ['строка внутри списка', ['room']], ['нет полей', [{}]],
     ['неверный ID', [{ ...room, id: 123 }]],

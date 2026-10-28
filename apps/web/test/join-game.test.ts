@@ -9,8 +9,8 @@ vi.mock('nuxt/app', () => ({
 enableAutoUnmount(afterEach)
 
 const room = {id: '11111111-1111-4111-8111-111111111111', seat_count: 3,
-  occupiedSeatCount: 1, hasPassword: false}
-const protectedRoom = {...room, id: '22222222-2222-4222-8222-222222222222', hasPassword: true}
+  occupiedSeatCount: 1, hasPassword: false, turnDurationMinutes: 3}
+const protectedRoom = {...room, id: '22222222-2222-4222-8222-222222222222', hasPassword: true, turnDurationMinutes: 3}
 const failureMessage = 'Не удалось присоединиться к комнате. Попробуйте ещё раз'
 
 beforeEach(() => {

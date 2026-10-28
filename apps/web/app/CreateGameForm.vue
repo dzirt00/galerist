@@ -1,6 +1,9 @@
 <script lang="ts" setup>
 import {ref} from 'vue'
 import {useNuxtApp} from 'nuxt/app'
+import type {GameListItem} from './types/lobby'
+
+const emit = defineEmits<{gameCreated: [value: GameListItem]}>()
 
 function isResponseCreateGame(value: unknown): value is ResponseCreateGame {
   return (
@@ -92,6 +95,13 @@ const createGame = async () => {
     }
     resCreateGame.value = response.data
     message.value = ''
+    emit('gameCreated', {
+      id: response.data.id,
+      seat_count: response.data.seat_count,
+      occupiedSeatCount: response.data.occupiedSeats.length,
+      hasPassword: response.data.hasPassword,
+      turnDurationMinutes: response.data.turnDurationMinutes,
+    })
   } catch {
     message.value = 'Не удалось получить результат. Повторите запрос с прежними настройками'
   } finally {

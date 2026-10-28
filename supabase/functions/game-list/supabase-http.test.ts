@@ -12,9 +12,9 @@ const environment = {
   SUPABASE_SERVICE_ROLE_KEY: 'fixture-service-key',
 }
 const rooms = [
-  { id: '22222222-2222-4222-8222-222222222222', seat_count: 4, occupiedSeatCount: 2, hasPassword: true },
-  { id: '33333333-3333-4333-8333-333333333333', seat_count: 3, occupiedSeatCount: 1, hasPassword: false },
-  { id: '44444444-4444-4444-8444-444444444444', seat_count: 2, occupiedSeatCount: 2, hasPassword: false },
+  { id: '22222222-2222-4222-8222-222222222222', seat_count: 4, occupiedSeatCount: 2, hasPassword: true, turnDurationMinutes: 3 },
+  { id: '33333333-3333-4333-8333-333333333333', seat_count: 3, occupiedSeatCount: 1, hasPassword: false, turnDurationMinutes: 3 },
+  { id: '44444444-4444-4444-8444-444444444444', seat_count: 2, occupiedSeatCount: 2, hasPassword: false, turnDurationMinutes: 3 },
 ]
 
 Deno.test('game-list: реальный обработчик и SDK через HTTP к локальной Postman simulation', async (test) => {
@@ -121,7 +121,8 @@ Deno.test('game-list: реальный обработчик и SDK через HT
       await assertError(await get(), 500)
       assert.equal((await calls()).length, 2)
     })
-    for (const rpcResult of [null, {}, [rooms[0], {id: 'broken'}],
+    for (const rpcResult of [null, {},
+      ...[undefined, null, '3', 0, 11, 2.5].map((minutes) => [{...rooms[0], turnDurationMinutes: minutes}]), [rooms[0], {id: 'broken'}],
       [{...rooms[0], occupiedSeatCount: 5}], [{...rooms[0], occupiedSeatCount: -1}],
       [{...rooms[0], occupiedSeatCount: 1.5}], [{...rooms[0], hasPassword: 'true'}],
       [{...rooms[0], seat_count: 5}], [{...rooms[0], id: 'invalid'}]]) {

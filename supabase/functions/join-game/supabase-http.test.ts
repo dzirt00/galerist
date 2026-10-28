@@ -10,7 +10,7 @@ const password = '  пароль 🎨  '
 const salt = Buffer.alloc(16, 7)
 const hash = 'pbkdf2-sha256$600000$' + salt.toString('hex') + '$'
   + pbkdf2Sync(password, salt, 600000, 32, 'sha256').toString('hex')
-const room = {id: gameId, seat_count: 3, occupiedSeatCount: 1, hasPassword: false}
+const room = {id: gameId, seat_count: 3, occupiedSeatCount: 1, hasPassword: false, turnDurationMinutes: 3}
 const environment = {SUPABASE_URL: base, SUPABASE_ANON_KEY: 'fixture-anon-key',
   SUPABASE_SERVICE_ROLE_KEY: 'fixture-service-key'}
 
@@ -72,10 +72,10 @@ Deno.test('join-game: настоящий HTTP и SDK против локальн
       assert.deepEqual(await repeated.json(), first)
     })
     await test.step('Пароль UTF-8 с пробелами: хеш сверяется, plaintext не отправляется в БД', async () => {
-      await reset({games: [{...room, hasPassword: true}]})
+      await reset({games: [{...room, hasPassword: true, turnDurationMinutes: 3}]})
       const response = await post({gameId, password})
       assert.equal(response.status, 200)
-      assert.deepEqual(await response.json(), {...room, hasPassword: true, occupiedSeatCount: 2})
+      assert.deepEqual(await response.json(), {...room, hasPassword: true, turnDurationMinutes: 3, occupiedSeatCount: 2})
       const calls = (await state()).calls
       assert.deepEqual(calls[1].query, {select: 'password_hash', game_id: 'eq.' + gameId})
       assert.equal(calls[2].body.p_verified_password_hash, hash)
@@ -86,7 +86,7 @@ Deno.test('join-game: настоящий HTTP и SDK против локальн
     })
     for (const supplied of [undefined, '', 'wrong', password.trim()]) {
       await test.step('Неверный/отсутствующий пароль ' + JSON.stringify(supplied), async () => {
-        await reset({games: [{...room, hasPassword: true}]})
+        await reset({games: [{...room, hasPassword: true, turnDurationMinutes: 3}]})
         await failure(await post({gameId, ...(supplied !== undefined && {password: supplied})}), 403)
         assert.equal((await state()).options.games[0].occupiedSeatCount, 1)
       })
@@ -136,12 +136,13 @@ Deno.test('join-game: настоящий HTTP и SDK против локальн
     })
     await test.step('Ошибка чтения хеша и неверный формат: 500 без RPC', async () => {
       for (const options of [{readError: 'game_passwords'}, {passwordHash: 'invalid'}]) {
-        await reset({games: [{...room, hasPassword: true}], ...options})
+        await reset({games: [{...room, hasPassword: true, turnDurationMinutes: 3}], ...options})
         await failure(await post({gameId, password}), 500)
         assert.equal((await state()).calls.length, 2)
       }
     })
-    for (const rpcResult of [null, {...room, id: 'other'}, {...room, occupiedSeatCount: 4}]) {
+    for (const rpcResult of [null,
+      ...[undefined, null, '3', 0, 11, 2.5].map((minutes) => ({...room, turnDurationMinutes: minutes})), {...room, id: 'other'}, {...room, occupiedSeatCount: 4}]) {
       await test.step('Неверный DTO: 500', async () => {
         await reset({rpcResult})
         await failure(await post(), 500)

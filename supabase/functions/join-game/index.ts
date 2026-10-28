@@ -13,6 +13,8 @@ function isLobby(value: unknown, gameId: string): boolean {
     && typeof lobby.occupiedSeatCount === 'number' && Number.isSafeInteger(lobby.occupiedSeatCount)
     && lobby.occupiedSeatCount >= 1 && lobby.occupiedSeatCount <= (lobby.seat_count as number)
     && typeof lobby.hasPassword === 'boolean'
+    && typeof lobby.turnDurationMinutes === 'number' && Number.isSafeInteger(lobby.turnDurationMinutes)
+    && lobby.turnDurationMinutes > 0 && lobby.turnDurationMinutes < 11
 }
 
 Deno.serve(withAuthenticatedRequest('POST', 'Не удалось присоединиться к комнате. Попробуйте ещё раз', async (request, {user, createAdminClient}) => {
@@ -45,6 +47,6 @@ Deno.serve(withAuthenticatedRequest('POST', 'Не удалось присоед�
     return fail(500, 'Не удалось присоединиться к комнате. Попробуйте ещё раз')
   }
   if (!isLobby(result.data, gameId)) return fail(500, 'Некорректный ответ сервера')
-  const {id, seat_count, occupiedSeatCount, hasPassword} = result.data
-  return Response.json({id, seat_count, occupiedSeatCount, hasPassword}, {headers: corsHeaders})
+  const {id, seat_count, occupiedSeatCount, hasPassword, turnDurationMinutes} = result.data
+  return Response.json({id, seat_count, occupiedSeatCount, hasPassword, turnDurationMinutes}, {headers: corsHeaders})
 }, {requireAdminKeyBeforeAuth: true}))

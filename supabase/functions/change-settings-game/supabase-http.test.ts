@@ -5,11 +5,11 @@ const base = 'http://127.0.0.1:4920/supabase'
 const gameId = '22222222-2222-4222-8222-222222222222'
 const userId = '11111111-1111-4111-8111-111111111111'
 const otherUser = '33333333-3333-4333-8333-333333333333'
-const game = {id: gameId, creator_id: userId, seat_count: 3, occupiedSeatCount: 2}
+const game = {id: gameId, creator_id: userId, seat_count: 3, occupiedSeatCount: 2, turnDurationMinutes: 3}
 const environment = {SUPABASE_URL: base, SUPABASE_ANON_KEY: 'fixture-anon-key',
   SUPABASE_SERVICE_ROLE_KEY: 'fixture-service-key'}
 
-Deno.test('change-seat-count: real HTTP and SDK against local Postman simulation', async (test) => {
+Deno.test('change-settings-game: real HTTP and SDK against local Postman simulation', async (test) => {
   const saved = Object.fromEntries(Object.keys(environment).map((key) => [key, Deno.env.get(key)]))
   let handler: Handler | undefined
   const original = Deno.serve
@@ -32,7 +32,7 @@ Deno.test('change-seat-count: real HTTP and SDK against local Postman simulation
     assert.equal(response.status, 200)
     return response.json()
   }
-  const post = (body: unknown = {gameId, seatCount: 2}, raw = false) => send(endpoint, {
+  const post = (body: unknown = {gameId, seatCount: 2, turnDurationMinutes: 7}, raw = false) => send(endpoint, {
     method: 'POST', headers: {Authorization: 'Bearer fixture-user-token', 'Content-Type': 'application/json'},
     body: raw ? String(body) : JSON.stringify(body),
   })
@@ -47,10 +47,10 @@ Deno.test('change-seat-count: real HTTP and SDK against local Postman simulation
   try {
     await test.step('verified identity, exact RPC parameters and separate Auth/service keys', async () => {
       await reset()
-      const response = await post({gameId, seatCount: 2, userId: otherUser, p_user_id: otherUser})
+      const response = await post({gameId, seatCount: 2, turnDurationMinutes: 7, userId: otherUser, p_user_id: otherUser})
       assert.equal(response.status, 200)
       assert.equal(response.headers.get('access-control-allow-origin'), '*')
-      assert.deepEqual(await response.json(), {seat_count: 2})
+      assert.deepEqual(await response.json(), {seat_count: 2, turnDurationMinutes: 7})
       const snapshot = await state()
       assert.equal(snapshot.calls.length, 2)
       const [auth, rpc] = snapshot.calls
@@ -59,23 +59,33 @@ Deno.test('change-seat-count: real HTTP and SDK against local Postman simulation
       assert.equal(auth.apikey, 'fixture-anon-key')
       assert.equal(auth.authorization, 'Bearer fixture-user-token')
       assert.equal(rpc.method, 'POST')
-      assert.equal(rpc.path, '/rest/v1/rpc/change_seat_count')
+      assert.equal(rpc.path, '/rest/v1/rpc/change_settings_game')
       assert.equal(rpc.apikey, 'fixture-service-key')
       assert.equal(rpc.authorization, 'Bearer fixture-service-key')
-      assert.deepEqual(rpc.body, {p_game_id: gameId, p_user_id: userId, p_seat_count: 2})
+      assert.deepEqual(rpc.body, {p_game_id: gameId, p_user_id: userId, p_seat_count: 2, p_turn_duration_minutes: 7})
       assert.equal(snapshot.options.games[0].seat_count, 2)
     })
     await test.step('2/3/4, repeat and shrink to occupancy return confirmed totals', async () => {
       await reset()
       for (const seatCount of [2, 2, 4, 3]) {
-        const response = await post({gameId, seatCount})
+        const response = await post({gameId, seatCount, turnDurationMinutes: 7})
         assert.equal(response.status, 200)
-        assert.deepEqual(await response.json(), {seat_count: seatCount})
+        assert.deepEqual(await response.json(), {seat_count: seatCount, turnDurationMinutes: 7})
+      }
+    })
+    await test.step('timer-only changes, boundaries and replay return confirmed values', async () => {
+      await reset()
+      for (const minutes of [1, 7, 7, 10]) {
+        const response = await post({gameId, seatCount: 3, turnDurationMinutes: minutes})
+        assert.equal(response.status, 200)
+        assert.deepEqual(await response.json(), {seat_count: 3, turnDurationMinutes: minutes})
+        assert.equal((await state()).options.games[0].turnDurationMinutes, minutes)
       }
     })
     for (const payload of [null, [], 'room', {}, {gameId}, {seatCount: 2},
+      ...[undefined, null, '7', true, 0, 11, 2.5].map((turnDurationMinutes) => ({gameId, seatCount: 3, turnDurationMinutes})),
       {gameId: null, seatCount: 2}, {gameId: 'wrong', seatCount: 2},
-      ...[null, true, '2', 1, 5, 2.5].map((seatCount) => ({gameId, seatCount}))]) {
+      ...[null, true, '2', 1, 5, 2.5].map((seatCount) => ({gameId, seatCount, turnDurationMinutes: 7}))]) {
       await test.step('invalid input ' + JSON.stringify(payload), async () => {
         await reset()
         await failure(await post(payload), 400)
@@ -93,7 +103,7 @@ Deno.test('change-seat-count: real HTTP and SDK against local Postman simulation
         await reset(options)
         const response = await post()
         assert.equal(response.status, 400)
-        assert.deepEqual(await response.json(), {error: 'Невозможно изменить вместимость'})
+        assert.deepEqual(await response.json(), {error: 'Невозможно изменить настройки комнаты'})
         assert.deepEqual((await state()).options.games, options.games)
       })
     }
@@ -103,7 +113,8 @@ Deno.test('change-seat-count: real HTTP and SDK against local Postman simulation
         await failure(await post(), status)
       })
     }
-    for (const rpcResult of [null, [], {}, true, 2, '2', [{seat_count: 2}],
+    for (const rpcResult of [null, [], {}, true, 2, '2',
+      ...[undefined, null, '7', 0, 11, 2.5, 5].map((minutes) => ({seat_count: 2, turn_duration_minutes: minutes})), [{seat_count: 2, turnDurationMinutes: 7}],
       {seat_count: null}, {seat_count: '2'}, {seat_count: 3}, {seat_count: 1}]) {
       await test.step('invalid or mismatched DB result ' + JSON.stringify(rpcResult), async () => {
         await reset({rpcResult})
@@ -111,10 +122,10 @@ Deno.test('change-seat-count: real HTTP and SDK against local Postman simulation
       })
     }
     await test.step('private DB fields do not enter the response', async () => {
-      await reset({rpcResult: {seat_count: 2, password_hash: 'Private hash', creator_id: userId}})
+      await reset({rpcResult: {seat_count: 2, turn_duration_minutes: 7, password_hash: 'Private hash', creator_id: userId}})
       const response = await post()
       assert.equal(response.status, 200)
-      assert.deepEqual(await response.json(), {seat_count: 2})
+      assert.deepEqual(await response.json(), {seat_count: 2, turnDurationMinutes: 7})
     })
     await test.step('preflight, wrong methods and missing authorization skip dependencies', async () => {
       await reset()
@@ -157,7 +168,7 @@ Deno.test('change-seat-count: real HTTP and SDK against local Postman simulation
       await reset()
       const response = await post()
       assert.equal(response.status, 200)
-      assert.deepEqual(await response.json(), {seat_count: 2})
+      assert.deepEqual(await response.json(), {seat_count: 2, turnDurationMinutes: 7})
     })
   } finally {
     for (const [key, value] of Object.entries(saved)) {

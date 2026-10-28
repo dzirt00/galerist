@@ -6,6 +6,7 @@ interface GameListItem {
   seat_count: number
   occupiedSeatCount: number
   hasPassword: boolean
+  turnDurationMinutes: number
 }
 
 function isGameListItem(value: unknown): value is GameListItem {
@@ -16,6 +17,8 @@ function isGameListItem(value: unknown): value is GameListItem {
     && typeof item.occupiedSeatCount === 'number' && Number.isSafeInteger(item.occupiedSeatCount)
     && item.occupiedSeatCount >= 0 && item.occupiedSeatCount <= item.seat_count
     && typeof item.hasPassword === 'boolean'
+    && typeof item.turnDurationMinutes === 'number' && Number.isSafeInteger(item.turnDurationMinutes)
+    && item.turnDurationMinutes >= 1 && item.turnDurationMinutes <= 10
 }
 
 Deno.serve(withAuthenticatedRequest('GET', 'Ошибка чтения записей', async (_request, {createAdminClient}) => {
@@ -27,8 +30,8 @@ Deno.serve(withAuthenticatedRequest('GET', 'Ошибка чтения запис
     return Response.json({error: 'Ошибка чтения записей'}, {status: 500, headers: corsHeaders})
   }
 
-  const gameList: GameListItem[] = data.map(({id, seat_count, occupiedSeatCount, hasPassword}) =>
-    ({id, seat_count, occupiedSeatCount, hasPassword}))
+  const gameList: GameListItem[] = data.map(({id, seat_count, occupiedSeatCount, hasPassword, turnDurationMinutes}) =>
+    ({id, seat_count, occupiedSeatCount, hasPassword, turnDurationMinutes}))
 
   return Response.json(gameList, {status: 200, headers: corsHeaders})
 }))

@@ -9,7 +9,7 @@ vi.mock('nuxt/app', () => ({
 enableAutoUnmount(afterEach)
 
 const room = { id: '11111111-1111-4111-8111-111111111111',
-  seat_count: 3, occupiedSeatCount: 1, hasPassword: false }
+  seat_count: 3, occupiedSeatCount: 1, hasPassword: false, turnDurationMinutes: 3 }
 const other = { ...room, id: '22222222-2222-4222-8222-222222222222' }
 const lobbySelector = '[aria-label="Лобби"]'
 

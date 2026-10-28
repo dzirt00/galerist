@@ -3,6 +3,10 @@ import SignInForm from './SignInForm.vue'
 import {useProfile} from './composable/auth'
 import CreateGameForm from './CreateGameForm.vue'
 import GameList from './GameList.vue'
+import {shallowRef} from 'vue'
+import type {GameListItem} from './types/lobby'
+
+const createdGame = shallowRef<GameListItem | null>(null)
 
 const {
   profile,
@@ -22,9 +26,9 @@ const {
   <section v-if="profile">
     <h2>Мой профиль</h2>
     <p>{{ profile.id }}</p>
-    <CreateGameForm/>
+    <CreateGameForm v-if="!createdGame" @game-created="createdGame = $event"/>
 
-    <GameList/>
+    <GameList :created-game="createdGame"/>
   </section>
   <p v-if="isLoadingProfile">Загружаем профиль…</p>
   <button

@@ -24,8 +24,8 @@ BEGIN
 
   -- Exact occupancy is allowed; increases and repeated values are safe.
   FOREACH requested IN ARRAY ARRAY[2, 2, 4, 3] LOOP
-    result := public.change_seat_count(room_id, first_user, requested);
-    IF result IS DISTINCT FROM jsonb_build_object('seat_count', requested)
+    result := public.change_settings_game(room_id, first_user, requested, 3);
+    IF result IS DISTINCT FROM jsonb_build_object('seat_count', requested, 'turn_duration_minutes', 3)
       OR (SELECT seat_count FROM public.games WHERE id = room_id) IS DISTINCT FROM requested THEN
       RAISE EXCEPTION 'Capacity change must persist and return the requested total';
     END IF;
@@ -42,34 +42,34 @@ BEGIN
   -- A noncreator must be rejected even when requesting the current value.
   FOREACH requested IN ARRAY ARRAY[2, 3, 4] LOOP
     BEGIN
-      PERFORM public.change_seat_count(room_id, second_user, requested);
+      PERFORM public.change_settings_game(room_id, second_user, requested, 3);
       RAISE EXCEPTION 'TEST: noncreator participant accepted';
     EXCEPTION WHEN no_data_found THEN NULL;
     END;
   END LOOP;
   BEGIN
-    PERFORM public.change_seat_count(room_id, outsider, 4);
+    PERFORM public.change_settings_game(room_id, outsider, 4, 3);
     RAISE EXCEPTION 'TEST: outsider accepted';
   EXCEPTION WHEN no_data_found THEN NULL;
   END;
   BEGIN
-    PERFORM public.change_seat_count(NULL, first_user, 3);
+    PERFORM public.change_settings_game(NULL, first_user, 3, 3);
     RAISE EXCEPTION 'TEST: null room accepted';
   EXCEPTION WHEN no_data_found THEN NULL;
   END;
   BEGIN
-    PERFORM public.change_seat_count(room_id, NULL, 3);
+    PERFORM public.change_settings_game(room_id, NULL, 3, 3);
     RAISE EXCEPTION 'TEST: null user accepted';
   EXCEPTION WHEN no_data_found THEN NULL;
   END;
   BEGIN
-    PERFORM public.change_seat_count(absent_room, first_user, 3);
+    PERFORM public.change_settings_game(absent_room, first_user, 3, 3);
     RAISE EXCEPTION 'TEST: missing room accepted';
   EXCEPTION WHEN no_data_found THEN NULL;
   END;
   FOREACH requested IN ARRAY ARRAY[NULL, -1, 0, 1, 5, 2147483647] LOOP
     BEGIN
-      PERFORM public.change_seat_count(room_id, first_user, requested);
+      PERFORM public.change_settings_game(room_id, first_user, requested, 3);
       RAISE EXCEPTION 'TEST: invalid capacity accepted';
     EXCEPTION WHEN no_data_found THEN NULL;
     END;
@@ -83,7 +83,7 @@ BEGIN
   SELECT jsonb_agg(to_jsonb(p) ORDER BY p.game_id, p.user_id)
     INTO before_players FROM public.game_players p;
   BEGIN
-    PERFORM public.change_seat_count(room_id, first_user, 2);
+    PERFORM public.change_settings_game(room_id, first_user, 2, 3);
     RAISE EXCEPTION 'TEST: capacity below occupancy accepted';
   EXCEPTION WHEN no_data_found THEN NULL;
   END;
@@ -92,7 +92,7 @@ BEGIN
       IS DISTINCT FROM before_players THEN
     RAISE EXCEPTION 'Rejected shrink must preserve capacity, membership and readiness';
   END IF;
-  PERFORM public.change_seat_count(room_id, first_user, 4);
+  PERFORM public.change_settings_game(room_id, first_user, 4, 3);
   IF (SELECT jsonb_agg(to_jsonb(p) ORDER BY p.game_id, p.user_id) FROM public.game_players p)
     IS DISTINCT FROM before_players THEN
     RAISE EXCEPTION 'Successful changes must preserve membership and readiness';
@@ -103,16 +103,16 @@ RESET ROLE;
 
 SET LOCAL ROLE anon;
 DO $$ BEGIN
-  PERFORM public.change_seat_count('96969696-9696-4696-8696-969696969696',
-    '11111111-1111-4111-8111-111111111111', 3);
+  PERFORM public.change_settings_game('96969696-9696-4696-8696-969696969696',
+    '11111111-1111-4111-8111-111111111111', 3, 3);
   RAISE EXCEPTION 'TEST: anonymous client could change capacity';
 EXCEPTION WHEN insufficient_privilege THEN NULL;
 END; $$;
 RESET ROLE;
 SET LOCAL ROLE authenticated;
 DO $$ BEGIN
-  PERFORM public.change_seat_count('96969696-9696-4696-8696-969696969696',
-    '11111111-1111-4111-8111-111111111111', 3);
+  PERFORM public.change_settings_game('96969696-9696-4696-8696-969696969696',
+    '11111111-1111-4111-8111-111111111111', 3, 3);
   RAISE EXCEPTION 'TEST: authenticated client could change capacity';
 EXCEPTION WHEN insufficient_privilege THEN NULL;
 END; $$;
