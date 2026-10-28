@@ -32,6 +32,22 @@ http.createServer(async (req, res) => {
     await pm.state.set(stateKey, state);
     const options = state.options;
 
+    if (req.method === 'POST' && url.pathname === '/rest/v1/rpc/change_seat_count') {
+      if (req.headers.authorization !== 'Bearer fixture-service-key' || req.headers.apikey !== 'fixture-service-key') {
+        return reply(res, 403, { code: '42501', message: 'Wrong server credentials' });
+      }
+      if (options.rpcError) return reply(res, 400, { code: options.rpcError, message: 'Private RPC diagnostic' });
+      if ('rpcResult' in options) return reply(res, 200, options.rpcResult);
+      const game = (options.games || []).find((item) => item.id === body.p_game_id);
+      if (!game || game.creator_id !== body.p_user_id
+        || ![2, 3, 4].includes(body.p_seat_count) || body.p_seat_count < game.occupiedSeatCount) {
+        return reply(res, 400, { code: 'P0002', message: 'Private capacity refusal' });
+      }
+      game.seat_count = body.p_seat_count;
+      await pm.state.set(stateKey, state);
+      return reply(res, 200, { seat_count: game.seat_count });
+    }
+
     if (req.method === 'POST' && url.pathname === '/rest/v1/rpc/get_game_list') {
       if (req.headers.authorization !== 'Bearer fixture-service-key' || req.headers.apikey !== 'fixture-service-key') {
         return reply(res, 403, { code: '42501', message: 'Wrong server credentials' });

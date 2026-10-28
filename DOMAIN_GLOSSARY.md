@@ -296,6 +296,9 @@
 | `p_verified_password_hash` | Серверное подтверждение проверки конкретного текущего хеша; передаётся только Edge Function в SQL и не принимается из браузерного payload. |
 
 | `is_ready` / `isReady` | Сохранённая готовность участника лобби в БД / поле запроса и подтверждённого JSON-ответа; boolean, начальное значение false. |
+| `change_seat_count` | Серверная SQL-функция изменения вместимости комнаты её создателем: принимает `p_game_id`, `p_user_id`, `p_seat_count`, блокирует строку комнаты, не допускает вместимость ниже занятости и возвращает `{seat_count}`; доступна только `service_role`. |
+| `change-seat-count` | Защищённая Edge Function изменения вместимости: принимает POST `{gameId, seatCount}`, получает пользователя из Auth, вызывает `change_seat_count` и возвращает `{seat_count}`. |
+| `seatCountChange` | Событие GameLobby с подтверждённой сервером вместимостью; GameList обновляет `seat_count` выбранной комнаты и её записи в списке. В шаблоне: `seat-count-change`. |
 | `ready_to_game` / `ready-to-game` | SQL-функция изменения готовности участника комнаты / защищённая Edge Function, передающая ID пользователя только из проверенной авторизации. |
 | `get_game_players` | Серверная SQL-функция чтения состава комнаты: проверяет участие по `p_game_id` и `p_user_id`, возвращает `user_id` и `is_ready` всех участников выбранной комнаты в порядке `user_id`. |
 | `get-game-players` | Защищённая Edge Function чтения состава: принимает `{gameId}`, получает пользователя из Auth, вызывает `get_game_players` и возвращает `{gameId, players}`. |

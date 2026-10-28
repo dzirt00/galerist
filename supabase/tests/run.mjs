@@ -84,6 +84,7 @@ try {
     readFileSync(new URL('join-game.sql', testRoot), 'utf8'),
     readFileSync(new URL('ready-to-game.sql', testRoot), 'utf8'),
     readFileSync(new URL('get-game-players.sql', testRoot), 'utf8'),
+    readFileSync(new URL('change-seat-count.sql', testRoot), 'utf8'),
     'ROLLBACK;',
   ].join('\n')
   const output = docker([
@@ -179,7 +180,41 @@ try {
     END IF;
   END; $$;` })
   console.log('PASS: concurrent retries of a new participant persist exactly one membership')
-  console.log('WEB-001/002/003 database tests passed (local PostgreSQL fixture).')
+  // Both commands lock the same room; exactly one can win the last free seat.
+  docker(['exec', '-i', containerId, ...psqlArgs], { input: `
+    INSERT INTO public.games(id, creator_id, seat_count) VALUES
+      ('dededede-dede-4ede-8ede-dededededede', '11111111-1111-4111-8111-111111111111', 3);
+    INSERT INTO public.game_players(game_id, user_id) VALUES
+      ('dededede-dede-4ede-8ede-dededededede', '11111111-1111-4111-8111-111111111111'),
+      ('dededede-dede-4ede-8ede-dededededede', '22222222-2222-4222-8222-222222222222');
+  ` })
+  const shrinkCall = `BEGIN; SET LOCAL ROLE service_role;
+    SELECT public.change_seat_count('dededede-dede-4ede-8ede-dededededede',
+      '11111111-1111-4111-8111-111111111111', 2);
+    SELECT pg_sleep(0.5); COMMIT;`
+  const racingJoin = joinCall('33333333-3333-4333-8333-333333333333')
+    .replaceAll('abababab-abab-4bab-8bab-abababababab', 'dededede-dede-4ede-8ede-dededededede')
+  const capacityRace = await Promise.allSettled([concurrentSql(shrinkCall), concurrentSql(racingJoin)])
+  if (capacityRace.filter((result) => result.status === 'fulfilled').length !== 1) {
+    throw new Error('Exactly one of shrinking to occupancy and joining must succeed')
+  }
+  const loser = capacityRace.find((result) => result.status === 'rejected')
+  const expectedError = capacityRace[0].status === 'fulfilled' ? 'Свободных мест нет' : 'данные некорректны'
+  if (!String(loser.reason).includes(expectedError)) throw loser.reason
+  docker(['exec', '-i', containerId, ...psqlArgs], { input: `DO $$ DECLARE
+    capacity integer;
+    occupied bigint;
+    BEGIN
+      SELECT seat_count INTO capacity FROM public.games
+        WHERE id = 'dededede-dede-4ede-8ede-dededededede';
+      SELECT count(*) INTO occupied FROM public.game_players
+        WHERE game_id = 'dededede-dede-4ede-8ede-dededededede';
+      IF NOT ((capacity = 2 AND occupied = 2) OR (capacity = 3 AND occupied = 3)) THEN
+        RAISE EXCEPTION 'Concurrent shrink/join violated capacity or lost a successful change';
+      END IF;
+    END; $$;` })
+  console.log('PASS: concurrent capacity shrink and join preserve capacity and reject exactly one request')
+  console.log('WEB-001/002/003/004 database tests passed (local PostgreSQL fixture).')
 } finally {
   // Remove only the disposable container created by this run.
   if (containerId && /^[a-f0-9]{64}$/.test(containerId)) {

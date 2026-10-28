@@ -95,6 +95,11 @@ const joinGame = async (game: GameListItem) => {
     pendingGameId.value = null
   }
 }
+const editState = (seatCount: number) => {
+  if (joinedGame.value === null) return
+  joinedGame.value.seat_count = seatCount
+  state.value = state.value.map((item) => item.id === joinedGame.value?.id ? {...item, seat_count: seatCount} : item)
+}
 </script>
 
 <template>
@@ -129,6 +134,7 @@ const joinGame = async (game: GameListItem) => {
       v-if="joinedGame"
       :joined-game="joinedGame"
       @busy-change="waiting = $event"
+      @seat-count-change="editState($event)"
     />
   </section>
 </template>

@@ -43,14 +43,14 @@ describe('WEB-004: подтверждённая готовность участ�
     expect(api.invoke).toHaveBeenLastCalledWith('ready-to-game', {
       body: { gameId: room.id, isReady: true },
     })
-    expect(lobby.findAll('p').at(-1)!.text()).toBe('Готов')
+    expect(lobby.findAll('p').map((row) => row.text())).toContain('Готов')
     expect(lobby.get('button').text()).toBe('Снять готовность')
     await lobby.get('button').trigger('click')
     await flushPromises()
     expect(api.invoke).toHaveBeenLastCalledWith('ready-to-game', {
       body: { gameId: room.id, isReady: false },
     })
-    expect(lobby.findAll('p').at(-1)!.text()).toBe('Не готов')
+    expect(lobby.findAll('p').map((row) => row.text())).toContain('Не готов')
     expect(lobby.get('button').text()).toBe('Подтвердить готовность')
   })
 
@@ -71,7 +71,7 @@ describe('WEB-004: подтверждённая готовность участ�
     expect(lobby.text()).toContain(room.id)
     resolve({ data: { isReady: true }, error: null })
     await flushPromises()
-    expect(lobby.findAll('p').at(-1)!.text()).toBe('Готов')
+    expect(lobby.findAll('p').map((row) => row.text())).toContain('Готов')
     expect(lobby.get('button').attributes('disabled')).toBeUndefined()
     expect(wrapper.findAll('form button').every((button) => button.attributes('disabled') === undefined)).toBe(true)
   })
@@ -87,14 +87,14 @@ describe('WEB-004: подтверждённая готовность участ�
     await flushPromises()
     expect(wrapper.get('[role="alert"]').text()).toBe('Что то пошло не так')
     expect(wrapper.text()).not.toContain('Private diagnostic')
-    expect(lobby.findAll('p').at(-1)!.text()).toBe('Готов')
+    expect(lobby.findAll('p').map((row) => row.text())).toContain('Готов')
     expect(lobby.get('button').attributes('disabled')).toBeUndefined()
     await lobby.get('button').trigger('click')
     await flushPromises()
     expect(api.invoke).toHaveBeenLastCalledWith('ready-to-game', {
       body: { gameId: room.id, isReady: false },
     })
-    expect(lobby.findAll('p').at(-1)!.text()).toBe('Не готов')
+    expect(lobby.findAll('p').map((row) => row.text())).toContain('Не готов')
     expect(wrapper.find('[role="alert"]').exists()).toBe(false)
   })
 
@@ -110,7 +110,7 @@ describe('WEB-004: подтверждённая готовность участ�
       expect(lobby.get('button').attributes('disabled')).toBeUndefined()
       await lobby.get('button').trigger('click')
       await flushPromises()
-      expect(lobby.findAll('p').at(-1)!.text()).toBe('Готов')
+      expect(lobby.findAll('p').map((row) => row.text())).toContain('Готов')
     },
   )
 

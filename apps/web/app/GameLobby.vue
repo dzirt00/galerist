@@ -34,15 +34,19 @@ function isGamePlayersResponse(value: unknown): value is GamePlayersResponse {
 }
 
 const props = defineProps<{ joinedGame: GameListItem | null }>()
-const emit = defineEmits<{ busyChange: [value: boolean] }>()
+const emit = defineEmits<{
+  busyChange: [value: boolean]
+  seatCountChange: [value: number]
+}>()
 
 const isRefreshGame = ref(false)
 const waiting = ref<boolean>(false)
 const message = ref('')
+const isChangeSeatCount = ref(false)
 const playerList = ref<GamePlayer[] | null>(null)
 const {$supabase} = useNuxtApp()
 const playerIsReady = ref<boolean | null>(null)
-
+const changeSeatCount = ref<number | null>(null)
 const changeReady = computed(() => {
   if (playerIsReady.value === null) return true
   return !playerIsReady.value
@@ -114,6 +118,51 @@ const refreshGame = async () => {
     emit('busyChange', false)
   }
 }
+
+const editChangeSeatCount = async () => {
+  message.value = ''
+  if (changeSeatCount.value === null) {
+    message.value = 'выберете количество игроков'
+    return
+  }
+  if (props.joinedGame === null) {
+    message.value = 'вы не присоединены ни к одной игре'
+    return
+  }
+  if (isChangeSeatCount.value || waiting.value || isChangeSeatCount.value) return
+
+  isChangeSeatCount.value = true
+  waiting.value = true
+  emit('busyChange', true)
+
+  try {
+    const response = await $supabase.functions.invoke('change-seat-count', {
+      body: {
+        gameId: props.joinedGame.id,
+        seatCount: changeSeatCount.value,
+      }
+    })
+    if (response.error) {
+      message.value = 'Что то пошло не так'
+      return
+    }
+    const data = response.data
+    if (data !== null && typeof data === 'object' && !Array.isArray(data) && 'seat_count' in data &&
+      data['seat_count'] === changeSeatCount.value) {
+      emit('seatCountChange', data['seat_count'])
+    } else {
+      message.value = 'Что то пошло не так'
+    }
+  } catch {
+    message.value = 'Что то пошло не так'
+
+  } finally {
+    isRefreshGame.value = false
+    isChangeSeatCount.value = false
+    waiting.value = false
+    emit('busyChange', false)
+  }
+}
 </script>
 
 <template>
@@ -142,6 +191,18 @@ const refreshGame = async () => {
     >
       {{ isRefreshGame ? 'Загружаем состав…' : 'Обновить' }}
     </button>
+    <div>
+      <p>изменить количество игроков</p>
+      <select v-model="changeSeatCount" :disabled="waiting || isRefreshGame || isChangeSeatCount" required>
+        <option :value="2">2 игрока</option>
+        <option :value="3">3 игрока</option>
+        <option :value="4">4 игрока</option>
+      </select>
+      <button type="button" :disabled="waiting || isRefreshGame || isChangeSeatCount" @click="editChangeSeatCount">
+        Изменить
+      </button>
+    </div>
+
   </section>
 
 </template>
