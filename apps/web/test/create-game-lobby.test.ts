@@ -1,3 +1,4 @@
+import {passiveRealtime} from './helpers/passive-realtime'
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 import {enableAutoUnmount, flushPromises, mount} from '@vue/test-utils'
 import App from '../app/app.vue'
@@ -5,7 +6,7 @@ import GameList from '../app/GameList.vue'
 import CreateGameForm from '../app/CreateGameForm.vue'
 
 const api = vi.hoisted(() => ({invoke: vi.fn()}))
-vi.mock('nuxt/app', () => ({useNuxtApp: () => ({$supabase: {functions: {invoke: api.invoke}}})}))
+vi.mock('nuxt/app', () => ({useNuxtApp: () => ({$supabase: {...passiveRealtime,functions: {invoke: api.invoke}}})}))
 vi.mock('../app/composable/auth', () => ({useProfile: () => ({
   profile: {id: '11111111-1111-4111-8111-111111111111'},
   isLoadingProfile: false, hasProfileError: false, profileMessage: '', loadProfile: vi.fn(),

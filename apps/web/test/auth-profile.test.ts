@@ -1,3 +1,4 @@
+import {passiveRealtime} from './helpers/passive-realtime'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import App from '../app/app.vue'
@@ -13,7 +14,7 @@ const api = vi.hoisted(() => ({
 
 vi.mock('nuxt/app', () => ({
   useNuxtApp: () => ({
-    $supabase: {
+    $supabase: {...passiveRealtime,
       auth: { getSession: api.getSession, signInWithOtp: api.signInWithOtp },
       from: api.from,
     },

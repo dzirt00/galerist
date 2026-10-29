@@ -1,9 +1,10 @@
+import {passiveRealtime} from './helpers/passive-realtime'
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 import {enableAutoUnmount, flushPromises, mount} from '@vue/test-utils'
 import GameList from '../app/GameList.vue'
 
 const api = vi.hoisted(() => ({invoke: vi.fn()}))
-vi.mock('nuxt/app', () => ({useNuxtApp: () => ({$supabase: {functions: {invoke: api.invoke}}})}))
+vi.mock('nuxt/app', () => ({useNuxtApp: () => ({$supabase: {...passiveRealtime,functions: {invoke: api.invoke}}})}))
 enableAutoUnmount(afterEach)
 
 const room = {id: '11111111-1111-4111-8111-111111111111',

@@ -8,6 +8,7 @@ interface ChangeData {
   seat_count: number
   turnDurationMinutes: number
 }
+
 interface GamePlayer {
   isReady: boolean,
   user_id: string
@@ -38,7 +39,10 @@ const emit = defineEmits<{
   changeData: [value: ChangeData]
 }>()
 let active = true
-onUnmounted(() => { active = false })
+let refreshPending = false
+onUnmounted(() => {
+  active = false
+})
 
 const isRefreshGame = ref(false)
 const waiting = ref<boolean>(false)
@@ -53,6 +57,20 @@ const changeReady = computed(() => {
   if (playerIsReady.value === null) return true
   return !playerIsReady.value
 })
+if (props.joinedGame && props.joinedGame.id !== null) {
+  const channel = $supabase
+      .channel(`lobby:${props.joinedGame.id}`, {config: {private: true}})
+      .on('broadcast', {event: 'data is changed'}, () => {
+        refreshGame()
+      })
+      .subscribe((status) => {
+        if (!active) return
+        if (status === 'CLOSED') return
+        if (status === 'SUBSCRIBED') refreshGame()
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') message.value = 'Не удалось подключить автоматическое обновление. Состав можно обновить вручную'
+      })
+  onUnmounted(() => $supabase.removeChannel(channel))
+}
 
 const isReady = async (value: boolean) => {
   if (waiting.value || props.joinedGame === null || isRefreshGame.value) return
@@ -85,18 +103,25 @@ const isReady = async (value: boolean) => {
   } catch {
     message.value = 'Что то пошло не так'
   } finally {
-    if (active) emit('busyChange', false)
     waiting.value = false
+    if (active) emit('busyChange', false)
+    if (active && refreshPending) await refreshGame()
   }
 }
 
 const refreshGame = async () => {
-  if (waiting.value) return
-  if (props.joinedGame === null || isRefreshGame.value) return
+
+  if (!active || props.joinedGame === null) return
+
+  if (waiting.value || isRefreshGame.value) {
+    refreshPending = true
+    return
+  }
   isRefreshGame.value = true
   emit('busyChange', true)
   message.value = ''
   playerList.value = null
+  refreshPending = false
   try {
     const response = await $supabase.functions.invoke('get-game-players', {
       body: {
@@ -120,6 +145,7 @@ const refreshGame = async () => {
   } finally {
     isRefreshGame.value = false
     if (active) emit('busyChange', false)
+    if (active && refreshPending) await refreshGame()
   }
 }
 
@@ -177,6 +203,7 @@ const editChangeSeatCount = async () => {
     isChangeSeatCount.value = false
     waiting.value = false
     if (active) emit('busyChange', false)
+    if (active && refreshPending) await refreshGame()
   }
 }
 </script>
@@ -210,7 +237,8 @@ const editChangeSeatCount = async () => {
     </button>
     <div>
       <label for="lobby-seat-count">Количество игроков</label>
-      <select id="lobby-seat-count" v-model="changeSeatCount" :disabled="waiting || isRefreshGame || isChangeSeatCount" required>
+      <select id="lobby-seat-count" v-model="changeSeatCount" :disabled="waiting || isRefreshGame || isChangeSeatCount"
+              required>
         <option :value="2">2 игрока</option>
         <option :value="3">3 игрока</option>
         <option :value="4">4 игрока</option>
@@ -218,7 +246,8 @@ const editChangeSeatCount = async () => {
     </div>
     <div>
       <label for="lobby-turn-duration">Количество минут на ход игрока</label>
-      <select id="lobby-turn-duration" v-model="turnDurationMinutes" :disabled="waiting || isRefreshGame || isChangeSeatCount">
+      <select id="lobby-turn-duration" v-model="turnDurationMinutes"
+              :disabled="waiting || isRefreshGame || isChangeSeatCount">
         <template v-for="i in 10" :key="i">
           <option :value="i">{{ i }}</option>
         </template>

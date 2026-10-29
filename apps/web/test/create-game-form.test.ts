@@ -1,10 +1,11 @@
+import {passiveRealtime} from './helpers/passive-realtime'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import CreateGameForm from '../app/CreateGameForm.vue'
 
 const api = vi.hoisted(() => ({ invoke: vi.fn() }))
 vi.mock('nuxt/app', () => ({
-  useNuxtApp: () => ({ $supabase: { functions: { invoke: api.invoke } } }),
+  useNuxtApp: () => ({ $supabase: {...passiveRealtime, functions: { invoke: api.invoke } } }),
 }))
 enableAutoUnmount(afterEach)
 

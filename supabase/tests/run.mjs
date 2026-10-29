@@ -69,6 +69,7 @@ try {
   if (migrations.length === 0) throw new Error('No migrations found')
   const setup = [
     readFileSync(new URL('bootstrap.sql', testRoot), 'utf8'),
+    readFileSync(new URL('realtime-fixture.sql', testRoot), 'utf8'),
     ...migrations.map((file) => readFileSync(new URL(file, migrationRoot), 'utf8')),
   ].join('\n')
   const creationTests = readFileSync(new URL('create-game.sql', testRoot), 'utf8')
@@ -86,6 +87,7 @@ try {
     readFileSync(new URL('ready-to-game.sql', testRoot), 'utf8'),
     readFileSync(new URL('get-game-players.sql', testRoot), 'utf8'),
     readFileSync(new URL('change-seat-count.sql', testRoot), 'utf8'),
+    readFileSync(new URL('lobby-realtime.sql', testRoot), 'utf8'),
     'ROLLBACK;',
   ].join('\n')
   const output = docker([
