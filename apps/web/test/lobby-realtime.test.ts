@@ -1,6 +1,7 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 import {enableAutoUnmount, flushPromises, mount} from '@vue/test-utils'
 import GameLobby from '../app/GameLobby.vue'
+import GameList from '../app/GameList.vue'
 
 const api = vi.hoisted(() => ({invoke: vi.fn(), channel: vi.fn(), removeChannel: vi.fn()}))
 vi.mock('nuxt/app', () => ({useNuxtApp: () => ({$supabase: {
@@ -53,6 +54,8 @@ beforeEach(() => {
     return connection
   })
   api.invoke.mockImplementation(async (name, options) => {
+    if (name === 'game-list') return {data: [room, {...room, id: 'other-room'}], error: null}
+    if (name === 'join-game') return {data: {...room, id: options.body.gameId}, error: null}
     if (name === 'get-game-players') return roster(false)
     if (name === 'ready-to-game') return {data: {isReady: options.body.isReady}, error: null}
     if (name === 'change-settings-game') return {data: {seat_count: 3, turnDurationMinutes: 3}, error: null}
@@ -161,5 +164,71 @@ describe('WEB-004: уведомление Realtime → подтверждённ�
   it('без комнаты не создаёт подписку', () => {
     mount(GameLobby, {props: {joinedGame: null}})
     expect(api.channel).not.toHaveBeenCalled()
+  })
+
+  it('после входа участника обновляет состав и оба счётчика только выбранной комнаты', async () => {
+    const wrapper = mount(GameList)
+    await wrapper.get('button').trigger('click')
+    await flushPromises()
+    await wrapper.findAll('form')[0]!.trigger('submit')
+    await flushPromises()
+    connections[0]!.status('SUBSCRIBED')
+    await flushPromises()
+    const lobby = wrapper.get('[aria-label="Лобби"]')
+    const card = wrapper.get(`[aria-label="Комната ${room.id}"]`)
+    const other = wrapper.get('[aria-label="Комната other-room"]')
+    expect(lobby.text()).toContain('Занято: 1')
+    expect(card.text()).toContain('Свободно: 2')
+    const otherBefore = other.text()
+    const pending = deferred()
+    api.invoke.mockReturnValueOnce(pending.promise)
+    connections[0]!.receive()
+    await flushPromises()
+    expect(lobby.text()).toContain('Занято: 1')
+    pending.resolve({data: {gameId: room.id, players: [
+      {user_id: user, isReady: false}, {user_id: 'new-participant', isReady: false},
+    ]}, error: null})
+    await flushPromises()
+    for (const view of [lobby, card]) {
+      expect(view.text()).toContain('Занято: 2')
+      expect(view.text()).toContain('Свободно: 1')
+      expect(view.text()).toContain('Всего мест: 3')
+    }
+    expect(lobby.text()).toContain('new-participant')
+    expect(other.text()).toBe(otherBefore)
+    // Readiness notification still uses the same roster path and does not add seats.
+    api.invoke.mockResolvedValueOnce({data: {gameId: room.id, players: [
+      {user_id: user, isReady: true}, {user_id: 'new-participant', isReady: false},
+    ]}, error: null})
+    connections[0]!.receive()
+    await flushPromises()
+    expect(rows(wrapper)[0]).toBe(`${user}готов`)
+    expect(lobby.text()).toContain('Занято: 2')
+  })
+
+  it.each(['error', 'wrong-room'])('не меняет занятость по %s, повтор обновляет оба представления', async (kind) => {
+    const wrapper = mount(GameList)
+    await wrapper.get('button').trigger('click')
+    await flushPromises()
+    await wrapper.findAll('form')[0]!.trigger('submit')
+    await flushPromises()
+    connections[0]!.status('SUBSCRIBED')
+    await flushPromises()
+    api.invoke.mockResolvedValueOnce(kind === 'error'
+      ? {data: null, error: new Error('network')}
+      : {data: {gameId: 'other-room', players: []}, error: null})
+    connections[0]!.receive()
+    await flushPromises()
+    for (const selector of ['[aria-label="Лобби"]', `[aria-label="Комната ${room.id}"]`]) {
+      expect(wrapper.get(selector).text()).toContain('Занято: 1')
+    }
+    expect(wrapper.find('[role="alert"]').exists()).toBe(true)
+    api.invoke.mockResolvedValueOnce({data: {gameId: room.id, players: [
+      {user_id: user, isReady: false}, {user_id: 'new-participant', isReady: false},
+    ]}, error: null})
+    connections[0]!.receive()
+    await flushPromises()
+    expect(wrapper.get('[aria-label="Лобби"]').text()).toContain('Занято: 2')
+    expect(wrapper.get(`[aria-label="Комната ${room.id}"]`).text()).toContain('Занято: 2')
   })
 })

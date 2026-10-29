@@ -7,9 +7,15 @@ DECLARE
   first_user uuid := '11111111-1111-4111-8111-111111111111';
   second_user uuid := '22222222-2222-4222-8222-222222222222';
 BEGIN
-  room := public.create_game(first_user, '73737373-7373-4373-8373-737373737373', 3, NULL, 3);
+  room := public.create_game(first_user, '73737373-7373-4373-8373-737373737373', 2, NULL, 3);
   other_room := public.create_game(second_user, '74747474-7474-4474-8474-747474747474', 3, NULL, 3);
   PERFORM public.join_game(room, second_user);
+  PERFORM public.join_game(room, second_user);
+  BEGIN
+    PERFORM public.join_game(room, '33333333-3333-4333-8333-333333333333');
+    RAISE EXCEPTION 'TEST: full room accepted';
+  EXCEPTION WHEN SQLSTATE 'P1002' THEN NULL;
+  END;
   PERFORM set_config('test.lobby.room', room::text, true);
   PERFORM set_config('test.lobby.other', other_room::text, true);
   PERFORM public.ready_to_game(room, first_user, true);
@@ -23,7 +29,12 @@ DECLARE
   total integer;
 BEGIN
   SELECT count(*) INTO total FROM realtime.messages m WHERE m.topic = v_topic;
-  IF total <> 2 THEN RAISE EXCEPTION 'Readiness toggle must send twice, unchanged value must not send'; END IF;
+  IF total <> 4 THEN
+    RAISE EXCEPTION 'Creator + participant insert + two readiness changes must send four signals; retries and rejected join send none';
+  END IF;
+  IF (SELECT count(*) FROM public.game_players WHERE game_id = current_setting('test.lobby.room')::uuid) <> 2 THEN
+    RAISE EXCEPTION 'Retry/rejected join must preserve two seats';
+  END IF;
   IF EXISTS (SELECT FROM realtime.messages m WHERE m.topic = v_topic
     AND (m.event IS DISTINCT FROM 'data is changed' OR m.payload IS DISTINCT FROM '{}'::jsonb
       OR m.private IS DISTINCT FROM true OR m.extension IS DISTINCT FROM 'broadcast')) THEN
@@ -37,6 +48,18 @@ BEGIN
   END;
   IF (SELECT count(*) FROM realtime.messages m WHERE m.topic = v_topic) <> total THEN
     RAISE EXCEPTION 'Rolled-back readiness must not leave a notification';
+  END IF;
+  BEGIN
+    PERFORM public.join_game(current_setting('test.lobby.other')::uuid,
+      '11111111-1111-4111-8111-111111111111');
+    RAISE EXCEPTION 'force rollback' USING ERRCODE = 'P0004';
+  EXCEPTION WHEN assert_failure THEN NULL;
+  END;
+  IF (SELECT count(*) FROM realtime.messages
+      WHERE topic = 'lobby:' || current_setting('test.lobby.other')) <> 1
+    OR (SELECT count(*) FROM public.game_players
+      WHERE game_id = current_setting('test.lobby.other')::uuid) <> 1 THEN
+    RAISE EXCEPTION 'Rolled-back join must leave neither participant nor signal';
   END IF;
 END; $$;
 
@@ -52,7 +75,7 @@ DO $$ BEGIN
     RAISE EXCEPTION 'Creator must be authorized for own room';
   END IF;
   -- Emulate the topic filter used by Realtime authorization.
-  IF (SELECT count(*) FROM realtime.messages WHERE topic = realtime.topic()) <> 2 THEN
+  IF (SELECT count(*) FROM realtime.messages WHERE topic = realtime.topic()) <> 4 THEN
     RAISE EXCEPTION 'Member must receive broadcast, excluding presence';
   END IF;
   IF EXISTS (SELECT FROM public.game_players) THEN

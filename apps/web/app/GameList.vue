@@ -4,7 +4,7 @@ import {ref, watch} from 'vue'
 import GameLobby from './GameLobby.vue'
 import type {GameListItem} from './types/lobby'
 
-const props = defineProps<{createdGame?: GameListItem | null}>()
+const props = defineProps<{ createdGame?: GameListItem | null }>()
 
 interface ChangeData {
   seat_count: number
@@ -119,6 +119,11 @@ const editState = (changeData: ChangeData) => {
   joinedGame.value = {...joinedGame.value, ...changeData}
   state.value = state.value.map((item) => item.id === joinedGame.value?.id ? {...item, ...changeData} : item)
 }
+const updateOccupiedSeatCount = (value: number) => {
+  if (joinedGame.value === null) return
+  joinedGame.value = {...joinedGame.value, occupiedSeatCount: value}
+  state.value = state.value.map((item) => item.id === joinedGame.value?.id ? {...item, occupiedSeatCount: value} : item)
+}
 </script>
 
 <template>
@@ -156,6 +161,7 @@ const editState = (changeData: ChangeData) => {
       :joined-game="joinedGame"
       @busy-change="waiting = $event"
       @change-data="editState($event)"
+      @occupied-seat-count-change="updateOccupiedSeatCount($event)"
     />
   </section>
 </template>

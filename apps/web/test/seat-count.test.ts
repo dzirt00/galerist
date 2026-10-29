@@ -15,10 +15,11 @@ type View = ReturnType<typeof mount>
 const lobby = (view: View) => view.get('[aria-label="Лобби"]')
 const save = (view: View) => lobby(view).findAll('button').find((button) => button.text() === 'Изменить')!
 const card = (view: View, id = room.id) => view.get('article[aria-label="Комната ' + id + '"]')
-const capacity = (view: View, value: number) => {
+const capacity = (view: View, value: number, occupiedSeatCount = room.occupiedSeatCount) => {
   expect(lobby(view).text()).toContain('Всего мест: ' + value)
   expect(card(view).text()).toContain('Всего мест: ' + value)
-  expect(lobby(view).text()).toContain('Свободно: ' + (value - room.occupiedSeatCount))
+  expect(lobby(view).text()).toContain('Свободно: ' + (value - occupiedSeatCount))
+  expect(card(view).text()).toContain('Свободно: ' + (value - occupiedSeatCount))
   expect(card(view, otherRoom.id).text()).toContain('Всего мест: 3')
 }
 
@@ -175,7 +176,7 @@ describe('WEB-004: изменение вместимости через UI', () 
     expect(save(view).attributes('disabled')).toBeUndefined()
     await save(view).trigger('click')
     await flushPromises()
-    capacity(view, 4)
+    capacity(view, 4, operation === 'ready-to-game' ? room.occupiedSeatCount : 0)
   })
 
   it.each(['response', 'exception'])('при отказе %s сохраняет выбор и прежнюю вместимость, разрешает повтор', async (kind) => {
@@ -223,7 +224,7 @@ describe('WEB-004: изменение вместимости через UI', () 
     expect(lobby(view).get('button').text()).toBe('Снять готовность')
     expect(lobby(view).text()).toContain(userId)
     expect(lobby(view).get('select').element.value).toBe('4')
-    capacity(view, 4)
+    capacity(view, 4, 1)
   })
 
   it('новая комната не наследует выбранную или подтверждённую вместимость предыдущей', async () => {

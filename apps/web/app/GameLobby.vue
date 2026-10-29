@@ -37,6 +37,7 @@ const props = defineProps<{ joinedGame: GameListItem | null }>()
 const emit = defineEmits<{
   busyChange: [value: boolean]
   changeData: [value: ChangeData]
+  occupiedSeatCountChange: [value: number]
 }>()
 let active = true
 let refreshPending = false
@@ -136,6 +137,7 @@ const refreshGame = async () => {
     const data = response.data
     if (isGamePlayersResponse(data)) {
       playerList.value = data.players
+      emit('occupiedSeatCountChange', data.players.length)
     } else {
       message.value = 'Что то пошло не так'
     }
