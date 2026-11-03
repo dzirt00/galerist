@@ -8,8 +8,8 @@ DECLARE
   repeated jsonb;
   invalid_user uuid;
 BEGIN
-  room_id := public.create_game('11111111-1111-4111-8111-111111111111',
-    '10101010-1010-4010-8010-101010101010', 2, NULL, 3);
+  room_id := (public.create_game('11111111-1111-4111-8111-111111111111',
+    '10101010-1010-4010-8010-101010101010', 2, NULL, 3)->>'gameId')::uuid;
   result := public.join_game(room_id, '22222222-2222-4222-8222-222222222222');
   IF result IS DISTINCT FROM jsonb_build_object('id', room_id, 'seat_count', 2,
     'occupiedSeatCount', 2, 'hasPassword', false, 'turnDurationMinutes', 3)
@@ -43,8 +43,9 @@ BEGIN
   EXCEPTION WHEN no_data_found THEN NULL;
   END;
 
-  protected_id := public.create_game('11111111-1111-4111-8111-111111111111',
-    '20202020-2020-4020-8020-202020202020', 3, 'opaque-test-hash', 3);
+  UPDATE public.games SET status = 'CLOSED' WHERE id = room_id;
+  protected_id := (public.create_game('11111111-1111-4111-8111-111111111111',
+    '20202020-2020-4020-8020-202020202020', 3, 'opaque-test-hash', 3)->>'gameId')::uuid;
   result := public.join_game(protected_id, '11111111-1111-4111-8111-111111111111');
   IF result IS DISTINCT FROM jsonb_build_object('id', protected_id, 'seat_count', 3,
     'occupiedSeatCount', 1, 'hasPassword', true, 'turnDurationMinutes', 3) THEN

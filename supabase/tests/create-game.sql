@@ -9,9 +9,9 @@ DECLARE
   invalid_count integer;
   room_count bigint;
 BEGIN
-  first_game := public.create_game(
+  first_game := (public.create_game(
     '11111111-1111-4111-8111-111111111111',
-    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 2, NULL, 3);
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 2, NULL, 3)->>'gameId')::uuid;
   IF NOT EXISTS (SELECT 1 FROM public.games
     WHERE id = first_game AND seat_count = 2
       AND creator_id = '11111111-1111-4111-8111-111111111111')
@@ -26,30 +26,33 @@ BEGIN
   END IF;
 
   room_count := (SELECT count(*) FROM public.games);
-  second_game := public.create_game(
+  second_game := (public.create_game(
     '11111111-1111-4111-8111-111111111111',
-    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 2, NULL, 3);
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 2, NULL, 3)->>'gameId')::uuid;
   IF second_game IS DISTINCT FROM first_game
     OR (SELECT count(*) FROM public.games) <> room_count THEN
     RAISE EXCEPTION 'Retry must return the original room without adding a room';
   END IF;
 
-  second_game := public.create_game(
+  second_game := (public.create_game(
     '22222222-2222-4222-8222-222222222222',
-    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 3, NULL, 3);
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 3, NULL, 3)->>'gameId')::uuid;
   IF second_game IS NOT DISTINCT FROM first_game THEN
     RAISE EXCEPTION 'Request IDs must be scoped to each user';
   END IF;
 
-  protected_game := public.create_game(
+  -- Finish the first lobby before testing a different creation by this user.
+  UPDATE public.games SET status = 'CLOSED' WHERE id = first_game;
+  protected_game := (public.create_game(
     '11111111-1111-4111-8111-111111111111',
-    'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 4, 'test-hash-fixture', 3);
+    'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 4, 'test-hash-fixture', 3)->>'gameId')::uuid;
   IF NOT EXISTS (SELECT 1 FROM public.games WHERE id = protected_game AND seat_count = 4)
     OR NOT EXISTS (SELECT 1 FROM public.game_passwords
       WHERE game_id = protected_game AND password_hash = 'test-hash-fixture') THEN
     RAISE EXCEPTION 'Protected creation must preserve the server-supplied hash';
   END IF;
 
+  UPDATE public.games SET status = 'CLOSED' WHERE id = protected_game;
   FOREACH invalid_count IN ARRAY ARRAY[1, 5, NULL]::integer[] LOOP
     BEGIN
       PERFORM public.create_game('11111111-1111-4111-8111-111111111111',

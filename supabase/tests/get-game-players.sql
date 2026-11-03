@@ -12,10 +12,12 @@ DECLARE
   result jsonb;
   before_rows jsonb;
 BEGIN
-  room_id := public.create_game(first_user,
-    '50505050-5050-4050-8050-505050505050', 3, NULL, 3);
-  other_room_id := public.create_game(first_user,
-    '60606060-6060-4060-8060-606060606060', 2, NULL, 3);
+  room_id := (public.create_game(first_user,
+    '50505050-5050-4050-8050-505050505050', 3, NULL, 3)->>'gameId')::uuid;
+  -- Keep a historical room to verify cross-room roster isolation.
+  INSERT INTO public.games(creator_id, seat_count, status)
+    VALUES (first_user, 2, 'CLOSED') RETURNING id INTO other_room_id;
+  INSERT INTO public.game_players(game_id, user_id) VALUES (other_room_id, first_user);
   PERFORM public.join_game(room_id, second_user);
   PERFORM public.ready_to_game(room_id, first_user, true);
   expected := jsonb_build_array(

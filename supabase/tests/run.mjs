@@ -1,6 +1,7 @@
 import { spawn, spawnSync } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { readFileSync, readdirSync } from 'node:fs'
+import { testRoomRestrictions } from './room-restrictions.mjs'
 
 const testRoot = new URL('./', import.meta.url)
 const migrationRoot = new URL('../migrations/', import.meta.url)
@@ -72,22 +73,31 @@ try {
     readFileSync(new URL('realtime-fixture.sql', testRoot), 'utf8'),
     ...migrations.map((file) => readFileSync(new URL(file, migrationRoot), 'utf8')),
   ].join('\n')
+  if (process.argv.includes('--room-restrictions')) {
+    await testRoomRestrictions({
+      setup, concurrentSql,
+      execute: (input) => docker(['exec', '-i', containerId, ...psqlArgs], { input }),
+    })
+  } else {
   const creationTests = readFileSync(new URL('create-game.sql', testRoot), 'utf8')
     .replaceAll('\\ir create-game-client-denied.sql',
       () => readFileSync(new URL('create-game-client-denied.sql', testRoot), 'utf8'))
+  // A scenario must not inherit another scenario's open lobby or memberships.
+  const isolatedFixture = (source) => `SAVEPOINT fixture;\n${source}\nROLLBACK TO fixture; RELEASE fixture;`
+  const fixture = (file) => isolatedFixture(readFileSync(new URL(file, testRoot), 'utf8'))
   const sql = [
     'BEGIN;',
     setup,
     readFileSync(new URL('game-list.sql', testRoot), 'utf8'),
     readFileSync(new URL('profiles.sql', testRoot), 'utf8'),
-    creationTests,
-    "INSERT INTO auth.users VALUES ('33333333-3333-4333-8333-333333333333');",
-    readFileSync(new URL('turn-duration.sql', testRoot), 'utf8'),
-    readFileSync(new URL('join-game.sql', testRoot), 'utf8'),
-    readFileSync(new URL('ready-to-game.sql', testRoot), 'utf8'),
-    readFileSync(new URL('get-game-players.sql', testRoot), 'utf8'),
-    readFileSync(new URL('change-seat-count.sql', testRoot), 'utf8'),
-    readFileSync(new URL('lobby-realtime.sql', testRoot), 'utf8'),
+    isolatedFixture(creationTests),
+    "INSERT INTO auth.users VALUES ('33333333-3333-4333-8333-333333333333'), ('44444444-4444-4444-8444-444444444444');",
+    fixture('turn-duration.sql'),
+    fixture('join-game.sql'),
+    fixture('ready-to-game.sql'),
+    fixture('get-game-players.sql'),
+    fixture('change-seat-count.sql'),
+    fixture('lobby-realtime.sql'),
     'ROLLBACK;',
   ].join('\n')
   const output = docker([
@@ -140,6 +150,7 @@ try {
   console.log('PASS: concurrent retries return one room and persist exactly one set of records')
   // Both contenders hold a transaction open after obtaining the same room lock.
   docker(['exec', '-i', containerId, ...psqlArgs], { input: `
+    UPDATE public.games SET status = 'CLOSED';
     INSERT INTO auth.users VALUES
       ('22222222-2222-4222-8222-222222222222'),
       ('33333333-3333-4333-8333-333333333333');
@@ -169,6 +180,7 @@ try {
   END; $$;` })
   console.log('PASS: concurrent last-seat joins and concurrent member retries preserve capacity')
   docker(['exec', '-i', containerId, ...psqlArgs], { input: `
+    UPDATE public.games SET status = 'CLOSED';
     INSERT INTO public.games(id, creator_id, seat_count) VALUES
       ('cdcdcdcd-cdcd-4dcd-8dcd-cdcdcdcdcdcd', '11111111-1111-4111-8111-111111111111', 3);
     INSERT INTO public.game_players VALUES
@@ -185,6 +197,7 @@ try {
   console.log('PASS: concurrent retries of a new participant persist exactly one membership')
   // Both commands lock the same room; exactly one can win the last free seat.
   docker(['exec', '-i', containerId, ...psqlArgs], { input: `
+    UPDATE public.games SET status = 'CLOSED';
     INSERT INTO public.games(id, creator_id, seat_count) VALUES
       ('dededede-dede-4ede-8ede-dededededede', '11111111-1111-4111-8111-111111111111', 3);
     INSERT INTO public.game_players(game_id, user_id) VALUES
@@ -219,6 +232,17 @@ try {
     END; $$;` })
   console.log('PASS: concurrent capacity shrink and join preserve capacity and reject exactly one request')
   console.log('WEB-001/002/003/004 database tests passed (local PostgreSQL fixture).')
+  // The container is disposable. Clear only its fixtures before exercising
+  // WEB-018 against the already-applied migrations, including in the CI command.
+  docker(['exec', '-i', containerId, ...psqlArgs], { input: `
+    TRUNCATE auth.users, public.profiles, public.games, public.game_players,
+      public.game_passwords, public.game_creation_requests, realtime.messages;
+  ` })
+  await testRoomRestrictions({
+    setup: '', concurrentSql,
+    execute: (input) => docker(['exec', '-i', containerId, ...psqlArgs], { input }),
+  })
+  }
 } finally {
   // Remove only the disposable container created by this run.
   if (containerId && /^[a-f0-9]{64}$/.test(containerId)) {

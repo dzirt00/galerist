@@ -11,6 +11,7 @@ BEGIN
   END IF;
 END; $$;
 
+SAVEPOINT timer_creation;
 SET LOCAL ROLE service_role;
 DO $$
 DECLARE
@@ -21,21 +22,25 @@ DECLARE
   minutes integer;
   before_counts bigint[];
 BEGIN
-  room_id := public.create_game(creator, request_id, 3, NULL, 7);
-  repeated_id := public.create_game(creator, request_id, 4, NULL, 5);
+  room_id := (public.create_game(creator, request_id, 3, NULL, 7)->>'gameId')::uuid;
+  repeated_id := (public.create_game(creator, request_id, 4, NULL, 5)->>'gameId')::uuid;
   IF repeated_id <> room_id OR NOT EXISTS (
     SELECT 1 FROM public.games WHERE id = room_id AND turn_duration_minutes = 7 AND seat_count = 3
   ) THEN RAISE EXCEPTION 'Retry must retain original room and seven minutes'; END IF;
   FOREACH minutes IN ARRAY ARRAY[1, 10] LOOP
-    room_id := public.create_game(creator, gen_random_uuid(), 2, NULL, minutes);
+    UPDATE public.games SET status = 'CLOSED' WHERE id = room_id;
+    room_id := (public.create_game(creator, gen_random_uuid(), 2, NULL, minutes)->>'gameId')::uuid;
     IF (SELECT turn_duration_minutes FROM public.games WHERE id = room_id) <> minutes THEN
       RAISE EXCEPTION 'Boundary minutes must be saved';
     END IF;
   END LOOP;
+  UPDATE public.games SET status = 'CLOSED' WHERE id = room_id;
   INSERT INTO public.games(creator_id, seat_count) VALUES (creator, 2) RETURNING id INTO room_id;
   IF (SELECT turn_duration_minutes FROM public.games WHERE id = room_id) <> 3 THEN
     RAISE EXCEPTION 'Default must be three minutes';
   END IF;
+  -- No open lobby should short-circuit input constraint scenarios.
+  UPDATE public.games SET status = 'CLOSED' WHERE id = room_id;
   before_counts := ARRAY[(SELECT count(*) FROM public.games),
     (SELECT count(*) FROM public.game_players), (SELECT count(*) FROM public.game_passwords),
     (SELECT count(*) FROM public.game_creation_requests)];
@@ -69,6 +74,8 @@ BEGIN
 END; $$;
 RESET ROLE;
 \echo PASS: timer defaults, boundaries, retry, constraints, rollback and server-only signature
+ROLLBACK TO timer_creation;
+RELEASE timer_creation;
 
 -- Exercise the complete settings command, then read via both lobby paths.
 SET LOCAL ROLE service_role;
@@ -82,7 +89,7 @@ DECLARE
   before_room jsonb;
   before_members jsonb;
 BEGIN
-  room_id := public.create_game(owner_id, gen_random_uuid(), 3, NULL, 3);
+  room_id := (public.create_game(owner_id, gen_random_uuid(), 3, NULL, 3)->>'gameId')::uuid;
   PERFORM public.join_game(room_id, member_id);
   PERFORM public.ready_to_game(room_id, member_id, true);
   SELECT jsonb_agg(to_jsonb(p) ORDER BY p.user_id) INTO before_members

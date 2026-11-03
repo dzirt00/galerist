@@ -11,10 +11,12 @@ DECLARE
   before_rows jsonb;
   result jsonb;
 BEGIN
-  room_id := public.create_game(first_user,
-    '30303030-3030-4030-8030-303030303030', 3, NULL, 3);
-  other_room_id := public.create_game(first_user,
-    '40404040-4040-4040-8040-404040404040', 3, NULL, 3);
+  room_id := (public.create_game(first_user,
+    '30303030-3030-4030-8030-303030303030', 3, NULL, 3)->>'gameId')::uuid;
+  -- Historical membership checks do not require a second open lobby.
+  INSERT INTO public.games(creator_id, seat_count, status)
+    VALUES (first_user, 3, 'CLOSED') RETURNING id INTO other_room_id;
+  INSERT INTO public.game_players(game_id, user_id) VALUES (other_room_id, first_user);
   PERFORM public.join_game(room_id, second_user);
   IF EXISTS (SELECT 1 FROM public.game_players
     WHERE game_id IN (room_id, other_room_id) AND is_ready IS DISTINCT FROM false) THEN

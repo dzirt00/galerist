@@ -7,12 +7,13 @@ DECLARE
   first_user uuid := '11111111-1111-4111-8111-111111111111';
   second_user uuid := '22222222-2222-4222-8222-222222222222';
 BEGIN
-  room := public.create_game(first_user, '73737373-7373-4373-8373-737373737373', 2, NULL, 3);
-  other_room := public.create_game(second_user, '74747474-7474-4474-8474-747474747474', 3, NULL, 3);
+  room := (public.create_game(first_user, '73737373-7373-4373-8373-737373737373', 2, NULL, 3)->>'gameId')::uuid;
+  other_room := (public.create_game('33333333-3333-4333-8333-333333333333',
+    '74747474-7474-4474-8474-747474747474', 3, NULL, 3)->>'gameId')::uuid;
   PERFORM public.join_game(room, second_user);
   PERFORM public.join_game(room, second_user);
   BEGIN
-    PERFORM public.join_game(room, '33333333-3333-4333-8333-333333333333');
+    PERFORM public.join_game(room, '44444444-4444-4444-8444-444444444444');
     RAISE EXCEPTION 'TEST: full room accepted';
   EXCEPTION WHEN SQLSTATE 'P1002' THEN NULL;
   END;
@@ -51,7 +52,7 @@ BEGIN
   END IF;
   BEGIN
     PERFORM public.join_game(current_setting('test.lobby.other')::uuid,
-      '11111111-1111-4111-8111-111111111111');
+      '44444444-4444-4444-8444-444444444444');
     RAISE EXCEPTION 'force rollback' USING ERRCODE = 'P0004';
   EXCEPTION WHEN assert_failure THEN NULL;
   END;
