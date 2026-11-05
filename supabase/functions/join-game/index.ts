@@ -1,30 +1,31 @@
 import {jsonError, withAuthenticatedRequest} from '../_shared/http.ts'
 import {corsHeaders} from '@supabase/supabase-js/cors'
 import {verifyGamePassword} from './game-password.ts'
+import {isRecord, isUUID, isObject, isString} from '../_shared/validation.ts'
+import {isGameListItem, isJoinGameRefusal} from '../_shared/lobby-validation.ts'
 
-function isUUID(value: unknown): value is string {
-  return typeof value === 'string' && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(value)
+const errorMessage = {
+  LOBBY_NOT_OPEN: 'Комната больше не принимает участников',
+  OWN_LOBBY_EXISTS: 'У вас уже есть открытое лобби',
+  GAME_IN_PROGRESS: 'Вы участвуете в незавершённой партии',
 }
+const isPasswordRow = isObject({password_hash: isString})
 
-function isLobby(value: unknown, gameId: string): boolean {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
-  const lobby = value as Record<string, unknown>
-  return lobby.id === gameId && [2, 3, 4].includes(lobby.seat_count as number)
-    && typeof lobby.occupiedSeatCount === 'number' && Number.isSafeInteger(lobby.occupiedSeatCount)
-    && lobby.occupiedSeatCount >= 1 && lobby.occupiedSeatCount <= (lobby.seat_count as number)
-    && typeof lobby.hasPassword === 'boolean'
-    && typeof lobby.turnDurationMinutes === 'number' && Number.isSafeInteger(lobby.turnDurationMinutes)
-    && lobby.turnDurationMinutes > 0 && lobby.turnDurationMinutes < 11
-}
-
-Deno.serve(withAuthenticatedRequest('POST', 'Не удалось присоединиться к комнате. Попробуйте ещё раз', async (request, {user, createAdminClient}) => {
+Deno.serve(withAuthenticatedRequest('POST', 'Не удалось присоединиться к комнате. Попробуйте ещё раз', async (request, {
+  user,
+  createAdminClient
+}) => {
   const fail = jsonError
   const admin = createAdminClient()
   if (admin instanceof Response) return admin
   let payload: unknown
-  try { payload = await request.json() } catch { return fail(400, 'Некорректный JSON') }
-  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return fail(400, 'Некорректные данные комнаты')
-  const {gameId, password} = payload as Record<string, unknown>
+  try {
+    payload = await request.json()
+  } catch {
+    return fail(400, 'Некорректный JSON')
+  }
+  if (!isRecord(payload)) return fail(400, 'Некорректные данные комнаты')
+  const {gameId, password} = payload
   if (!isUUID(gameId)) return fail(400, 'Некорректный ID комнаты')
   if (password !== undefined && typeof password !== 'string') return fail(400, 'Пароль должен быть строкой')
   let verifiedHash: string | null = null
@@ -33,7 +34,7 @@ Deno.serve(withAuthenticatedRequest('POST', 'Не удалось присоед�
     const stored = await admin.from('game_passwords').select('password_hash').eq('game_id', gameId).maybeSingle()
     if (stored.error) return fail(500, 'Не удалось проверить пароль')
     if (stored.data) {
-      if (typeof stored.data.password_hash !== 'string') return fail(500, 'Не удалось проверить пароль')
+      if (!isPasswordRow(stored.data)) return fail(500, 'Не удалось проверить пароль')
       if (await verifyGamePassword(password, stored.data.password_hash)) verifiedHash = stored.data.password_hash
     }
   }
@@ -46,7 +47,17 @@ Deno.serve(withAuthenticatedRequest('POST', 'Не удалось присоед�
     if (result.error.code === 'P1002') return fail(409, 'Свободных мест нет')
     return fail(500, 'Не удалось присоединиться к комнате. Попробуйте ещё раз')
   }
-  if (!isLobby(result.data, gameId)) return fail(500, 'Некорректный ответ сервера')
+  if (isRecord(result.data) && 'code' in result.data) {
+    if (isJoinGameRefusal(result.data)) {
+      return jsonError(409, errorMessage[result.data.code], {code: result.data.code, gameId: result.data.gameId})
+    } else {
+      return fail(500, 'Не удалось присоединиться к комнате. Попробуйте ещё раз')
+    }
+  }
+  if (!isGameListItem(result.data) || result.data.id !== gameId || result.data.occupiedSeatCount < 1) {
+    return fail(500, 'Не удалось присоединиться к комнате. Попробуйте ещё раз')
+  }
+
   const {id, seat_count, occupiedSeatCount, hasPassword, turnDurationMinutes} = result.data
   return Response.json({id, seat_count, occupiedSeatCount, hasPassword, turnDurationMinutes}, {headers: corsHeaders})
 }, {requireAdminKeyBeforeAuth: true}))

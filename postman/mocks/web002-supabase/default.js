@@ -67,7 +67,7 @@ http.createServer(async (req, res) => {
             password_hash: body.p_password_hash, turn_duration_minutes: body.p_turn_duration_minutes };
           await pm.state.set(stateKey, state);
         }
-        return reply(res, 200, id);
+        return reply(res, 200, { code: 'SUCCESS', gameId: id });
       }
       if (req.method === 'GET') {
         const table = url.pathname.slice('/rest/v1/'.length);

@@ -7,10 +7,13 @@ import CreateGameForm from '../app/CreateGameForm.vue'
 
 const api = vi.hoisted(() => ({invoke: vi.fn()}))
 vi.mock('nuxt/app', () => ({useNuxtApp: () => ({$supabase: {...passiveRealtime,functions: {invoke: api.invoke}}})}))
-vi.mock('../app/composable/auth', () => ({useProfile: () => ({
-  profile: {id: '11111111-1111-4111-8111-111111111111'},
-  isLoadingProfile: false, hasProfileError: false, profileMessage: '', loadProfile: vi.fn(),
-})}))
+vi.mock('../app/composable/auth', async () => {
+  const {ref} = await import('vue')
+  return {useProfile: () => ({
+    profile: ref({id: '11111111-1111-4111-8111-111111111111'}),
+    isLoadingProfile: ref(false), hasProfileError: ref(false), profileMessage: ref(''), loadProfile: vi.fn(),
+  })}
+})
 enableAutoUnmount(afterEach)
 
 const game = {id: '22222222-2222-4222-8222-222222222222', seat_count: 3,

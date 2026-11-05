@@ -57,7 +57,7 @@ http.createServer(async (req, res) => {
       if (Object.keys(body).length || url.searchParams.size) return reply(res, 400, { message: 'Unexpected list parameters' });
       if (options.rpcError) return reply(res, 400, { code: options.rpcError, message: 'Private RPC diagnostic' });
       if ('rpcResult' in options) return reply(res, 200, options.rpcResult);
-      return reply(res, 200, (options.games || []).map(({ id, seat_count, occupiedSeatCount, hasPassword, turnDurationMinutes }) =>
+      return reply(res, 200, (options.games || []).filter(game => !game.status || game.status === 'OPEN_LOBBY').map(({ id, seat_count, occupiedSeatCount, hasPassword, turnDurationMinutes }) =>
         ({ id, seat_count, occupiedSeatCount, hasPassword, turnDurationMinutes })));
     }
 
@@ -89,6 +89,19 @@ http.createServer(async (req, res) => {
       return reply(res, 200, { isReady: member.isReady });
     }
 
+    if (req.method === 'POST' && url.pathname === '/rest/v1/rpc/get_own_lobby') {
+      if (req.headers.authorization !== 'Bearer fixture-service-key' || req.headers.apikey !== 'fixture-service-key') {
+        return reply(res, 403, { code: '42501', message: 'Wrong server credentials' });
+      }
+      if (options.rpcError) return reply(res, 400, { code: options.rpcError, message: 'Private RPC diagnostic' });
+      if ('rpcResult' in options) return reply(res, 200, options.rpcResult);
+      const game = (options.games || []).find(item => item.id === body.p_game_id
+        && item.creator_id === body.p_user_id && (item.status || 'OPEN_LOBBY') === 'OPEN_LOBBY'
+        && (item.members || []).includes(body.p_user_id));
+      if (!game) return reply(res, 404, {code: 'P0002', message: 'Private missing owned lobby'});
+      const {id, seat_count, occupiedSeatCount, hasPassword, turnDurationMinutes} = game;
+      return reply(res, 200, {id, seat_count, occupiedSeatCount, hasPassword, turnDurationMinutes});
+    }
     if (req.method === 'POST' && url.pathname === '/rest/v1/rpc/join_game') {
       if (req.headers.authorization !== 'Bearer fixture-service-key' || req.headers.apikey !== 'fixture-service-key') {
         return reply(res, 403, { code: '42501', message: 'Wrong server credentials' });

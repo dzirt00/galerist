@@ -92,7 +92,7 @@ describe('WEB-001: вход и собственный профиль', () => {
     await wrapper.get('form').trigger('submit')
     await flushPromises()
 
-    expect(wrapper.get('[role="status"]').text()).toContain('Не удалось отправить письмо')
+    expect(wrapper.get('[role="status"]').text()).toContain(kind === 'response' ? 'test error' : 'Не удалось отправить письмо')
     expect(wrapper.text()).not.toContain('Письмо отправлено')
     expect(wrapper.get('button[type="submit"]').attributes('disabled')).toBeUndefined()
 

@@ -75,6 +75,17 @@ Deno.test('game-list: реальный обработчик и SDK через HT
         authorization: 'Bearer fixture-service-key', apikey: 'fixture-service-key',
       })
     })
+    await test.step('WEB-018: закрытые комнаты и начатые партии не предлагаются как лобби', async () => {
+      await reset({games: [
+        {...rooms[0], status: 'OPEN_LOBBY'},
+        {...rooms[1], status: 'GAME_STARTED'},
+        {...rooms[2], status: 'CLOSED'},
+      ]})
+      const response = await get()
+      assert.equal(response.status, 200)
+      assert.deepEqual(await response.json(), rooms.slice(0, 1).map(({id, seat_count, occupiedSeatCount, hasPassword, turnDurationMinutes}) =>
+        ({id, seat_count, occupiedSeatCount, hasPassword, turnDurationMinutes})))
+    })
     await test.step('Пустая БД: 200 и [], без запросов участников и паролей', async () => {
       await reset({ games: [] })
       const response = await get()

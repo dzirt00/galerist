@@ -6,8 +6,9 @@ type AuthenticatedContext = {
   createAdminClient: () => SupabaseClient | Response
 }
 
-export function jsonError(status: number, error: string): Response {
-  return Response.json({error}, {status, headers: corsHeaders})
+// Only application-prepared messages reach the browser; never pass an upstream error object here.
+export function jsonError(status: number, error: string, details?: {code: string; gameId: string}): Response {
+  return Response.json({...details, error}, {status, headers: corsHeaders})
 }
 
 // The handler owns payload validation and authorization for the specific action.
@@ -20,9 +21,9 @@ export function withAuthenticatedRequest(
   return async (request) => {
     if (request.method === 'OPTIONS') return new Response(null, {status: 204, headers: corsHeaders})
     if (request.method !== method) {
-      return Response.json({error: 'Метод не поддерживается'}, {
-        status: 405, headers: {...corsHeaders, Allow: `${method}, OPTIONS`},
-      })
+      const response = jsonError(405, 'Метод не поддерживается')
+      response.headers.set('Allow', `${method}, OPTIONS`)
+      return response
     }
     const authorization = request.headers.get('Authorization')
     if (!authorization?.startsWith('Bearer ') || !authorization.slice(7).trim()) {

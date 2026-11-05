@@ -97,6 +97,38 @@ Deno.test('join-game: настоящий HTTP и SDK против локальн
         await failure(await post(), status)
       })
     }
+    for (const [code, error] of [
+      ['LOBBY_NOT_OPEN', 'Комната больше не принимает участников'],
+      ['OWN_LOBBY_EXISTS', 'У вас уже есть открытое лобби'],
+      ['GAME_IN_PROGRESS', 'Вы участвуете в незавершённой партии'],
+    ]) {
+      await test.step(`WEB-018 ${code}: 409 с ID из SQL и безопасным ответом`, async () => {
+        const existingGameId = code === 'LOBBY_NOT_OPEN' ? gameId : '33333333-3333-4333-8333-333333333333'
+        await reset({ rpcResult: { code, gameId: existingGameId, password_hash: 'Private' } })
+        const response = await post()
+        assert.equal(response.status, 409)
+        assert.equal(response.headers.get('access-control-allow-origin'), '*')
+        assert.deepEqual(await response.json(), { code, gameId: existingGameId, error })
+        const captured = await state()
+        assert.deepEqual(captured.calls.map((call: {path: string}) => call.path), ['/auth/v1/user', '/rest/v1/rpc/join_game'])
+        assert.equal(captured.calls[1].body.p_game_id, gameId)
+        assert.equal(captured.options.games[0].occupiedSeatCount, 1)
+      })
+    }
+    for (const rpcResult of [
+      { code: 'UNKNOWN', gameId }, { code: 'SUCCESS', gameId },
+      { code: 'LOBBY_MEMBERSHIP_EXISTS', gameId },
+      { code: 'OWN_LOBBY_EXISTS', gameId: 'invalid' },
+      { code: 'GAME_IN_PROGRESS' }, { code: null, gameId },
+      { ...room, code: 'UNKNOWN', gameId },
+      { ...room, code: 'OWN_LOBBY_EXISTS', gameId: 'invalid' },
+    ]) {
+      await test.step(`WEB-018 некорректный отказ ${JSON.stringify(rpcResult)}: 500`, async () => {
+        await reset({ rpcResult })
+        await failure(await post(), 500)
+        assert.equal((await state()).options.games[0].occupiedSeatCount, 1)
+      })
+    }
     for (const authStatus of [400, 401, 403, 503]) {
       await test.step('Отказ Auth ' + authStatus + ' без RPC', async () => {
         await reset({authStatus})

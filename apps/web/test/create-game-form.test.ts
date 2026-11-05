@@ -23,6 +23,49 @@ beforeEach(() => {
 })
 
 describe('WEB-002: форма создания комнаты и лобби', () => {
+  it.each([
+    ['OWN_LOBBY_EXISTS', 'У вас уже есть открытое лобби'],
+    ['GAME_IN_PROGRESS', 'Вы участвуете в незавершённой партии'],
+    ['LOBBY_MEMBERSHIP_EXISTS', 'Вы уже участвуете в другом открытом лобби'],
+  ])('WEB-018: показывает серверное сообщение для %s без ложного создания', async (code, message) => {
+    api.invoke.mockResolvedValueOnce({data: null, error: {context: new Response(
+      JSON.stringify({code, gameId, error: message}),
+      {status: 409, headers: {'Content-Type': 'application/json'}},
+    )}})
+    const wrapper = mount(CreateGameForm)
+    await wrapper.get('input[type="number"]').setValue('3')
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+    expect(wrapper.text()).toContain(message)
+    expect(wrapper.text()).not.toContain(errorMessage)
+    expect(wrapper.text()).not.toContain('Private upstream diagnostic')
+    expect(wrapper.text()).not.toContain('Создаём комнату…')
+    expect(wrapper.find('form').exists()).toBe(true)
+    expect(wrapper.get('button').attributes('disabled')).toBeUndefined()
+    expect(wrapper.emitted('gameCreated')).toBeUndefined()
+  })
+
+  it.each([
+    ['нестроковый текст', 409, JSON.stringify({code: 'UNKNOWN', error: 7})],
+    ['код только для входа', 409, JSON.stringify({code: 'LOBBY_NOT_OPEN'})],
+    ['пустой текст', 409, JSON.stringify({error: ''})],
+    ['числовой код', 409, JSON.stringify({code: 7})],
+    ['null', 409, 'null'], ['массив', 409, '[]'], ['строка', 409, '"OWN_LOBBY_EXISTS"'],
+    ['сломанный JSON', 409, '{'],
+    ['ошибка сервера с известным кодом', 500, JSON.stringify({code: 'OWN_LOBBY_EXISTS'})],
+  ])('WEB-018: общее сообщение при ответе %s', async (_name, status, body) => {
+    api.invoke.mockResolvedValueOnce({data: null, error: {context: new Response(String(body), {status: Number(status)})}})
+    const wrapper = mount(CreateGameForm)
+    await wrapper.get('input[type="number"]').setValue('3')
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+    expect(wrapper.text()).toContain(errorMessage)
+    expect(wrapper.text()).not.toContain('Private diagnostic')
+    expect(wrapper.find('form').exists()).toBe(true)
+    expect(wrapper.get('button').attributes('disabled')).toBeUndefined()
+    expect(wrapper.emitted('gameCreated')).toBeUndefined()
+  })
+
   it.each([1, 7, 10])('сохраняет выбранные %s минут и показывает подтверждённые минуты', async (minutes) => {
     api.invoke.mockResolvedValueOnce({ data: { ...lobby, turnDurationMinutes: minutes }, error: null })
     const wrapper = mount(CreateGameForm)

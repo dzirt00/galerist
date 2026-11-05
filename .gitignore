@@ -9,6 +9,7 @@ dist/
 .output/
 coverage/
 supabase/functions/deno-runtime.d.ts
+supabase/deploy/.bundles/
 
 # Environment files
 .env

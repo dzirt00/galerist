@@ -180,6 +180,40 @@ Deno.test('create-game через настоящий SDK и HTTP к локаль
       })
     }
 
+    for (const [code, error] of [
+      ['OWN_LOBBY_EXISTS', 'У вас уже есть открытое лобби'],
+      ['GAME_IN_PROGRESS', 'Вы участвуете в незавершённой партии'],
+      ['LOBBY_MEMBERSHIP_EXISTS', 'Вы уже участвуете в другом открытом лобби'],
+    ]) {
+      await test.step(`WEB-018 ${code}: 409 с ID существующей комнаты без чтений`, async () => {
+        const existingGameId = '33333333-3333-4333-8333-333333333333'
+        await reset({ rpcResult: { code, gameId: existingGameId, password_hash: 'Private' } })
+        const response = await post()
+        assert.equal(response.status, 409)
+        assert.equal(response.headers.get('Access-Control-Allow-Origin'), '*')
+        assert.deepEqual(await response.json(), { code, gameId: existingGameId, error })
+        const captured = await state()
+        assert.deepEqual(captured.calls.map((call) => call.path), ['/auth/v1/user', '/rest/v1/rpc/create_game'])
+        assert.deepEqual(captured.games, {})
+      })
+    }
+
+    const invalidRpcResults: unknown[] = [
+      [], userId, { code: 'SUCCESS' }, { gameId: userId },
+      { code: 'SUCCESS', gameId: 'invalid' },
+      { code: 'UNKNOWN', gameId: userId },
+      { code: 'LOBBY_NOT_OPEN', gameId: userId },
+      { code: 1, gameId: userId },
+      { code: 'OWN_LOBBY_EXISTS', gameId: null },
+    ]
+    for (const rpcResult of invalidRpcResults) {
+      await test.step(`WEB-018 неверный результат ${JSON.stringify(rpcResult)}: 500 до чтений`, async () => {
+        await reset({ rpcResult })
+        await assertError(await post(), 500)
+        assert.deepEqual((await state()).calls.map((call) => call.path), ['/auth/v1/user', '/rest/v1/rpc/create_game'])
+      })
+    }
+
     const failedResults: [string, Record<string, unknown>][] = [
       ['ошибка RPC', { rpcError: true }], ['RPC null', { rpcResult: null }],
       ['RPC объект', { rpcResult: { id: userId } }], ['RPC не UUID', { rpcResult: 'invalid' }],

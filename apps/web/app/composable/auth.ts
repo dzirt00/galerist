@@ -1,5 +1,7 @@
 import {useNuxtApp} from 'nuxt/app'
 import {computed, onMounted, ref} from 'vue'
+import {isProfile} from '../utils/lobby-validation'
+import {getSupabaseErrorMessage} from '../utils/api-errors'
 
 interface Profile {
   id: string;
@@ -21,15 +23,18 @@ export function useProfile() {
     try {
       const response = await $supabase.auth.getSession()
       if (response.error) {
-        profileMessage.value = 'Не удалось проверить вход'
+        profileMessage.value = getSupabaseErrorMessage(response.error, 'Не удалось проверить вход')
         hasProfileError.value = true
       } else if (response.data.session) {
         const profileResponse = await $supabase.from('profiles').select('id, created_at').eq('id', response.data.session.user.id).maybeSingle()
         if (profileResponse.error) {
-          profileMessage.value = 'Не удалось загрузить профиль'
+          profileMessage.value = getSupabaseErrorMessage(profileResponse.error, 'Не удалось загрузить профиль')
           hasProfileError.value = true
         } else if (profileResponse.data === null) {
           profileMessage.value = 'Профиль не найден'
+          hasProfileError.value = true
+        } else if (!isProfile(profileResponse.data)) {
+          profileMessage.value = 'Некорректный ответ сервера'
           hasProfileError.value = true
         } else {
           profileMessage.value = 'Профиль загружен'
@@ -75,7 +80,7 @@ export function useSignInLink() {
     signInMessage.value = ''
     try {
       const response = await $supabase.auth.signInWithOtp({email: email.value})
-      signInMessage.value = response.error ? 'Не удалось отправить письмо. Попробуйте ещё раз' : 'Письмо отправлено. Проверьте почту'
+      signInMessage.value = response.error ? getSupabaseErrorMessage(response.error, 'Не удалось отправить письмо. Попробуйте ещё раз') : 'Письмо отправлено. Проверьте почту'
     } catch {
       signInMessage.value = 'Не удалось отправить письмо. Попробуйте ещё раз'
     } finally {

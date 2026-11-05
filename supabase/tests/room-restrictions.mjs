@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 // Reuses the main runner's disposable PostgreSQL container and migration setup.
 export async function testRoomRestrictions({ setup, execute, concurrentSql }) {
   execute(`BEGIN;\n${setup}\n${readFileSync(new URL('./room-restrictions.sql', import.meta.url), 'utf8')}\nROLLBACK;`)
+  execute(`BEGIN;\n${setup}\nINSERT INTO auth.users VALUES ('11111111-1111-4111-8111-111111111111'), ('22222222-2222-4222-8222-222222222222');\n${readFileSync(new URL('./own-lobby.sql', import.meta.url), 'utf8')}\nROLLBACK;`)
   console.log('PASS: room status, request replay, creation/join restrictions, safe DTO, permissions and rollback')
 
   execute(`${setup}
@@ -89,4 +90,39 @@ export async function testRoomRestrictions({ setup, execute, concurrentSql }) {
     console.log(`PASS: overlapping ${createFirst ? 'create then join' : 'join then create'} preserves restriction`)
     reset()
   }
+
+  // Status/ownership updates are test transactions, not future start/leave commands.
+  // They verify the restoration reader's lock contract in both commit orders.
+  execute(`CREATE FUNCTION public.try_restore_test(p_game_id uuid, p_user_id uuid) RETURNS jsonb
+    LANGUAGE plpgsql AS $$ BEGIN RETURN public.get_own_lobby(p_game_id, p_user_id);
+    EXCEPTION WHEN no_data_found THEN RETURN '{"code":"NOT_FOUND"}'::jsonb; END; $$;`)
+  for (const mutation of [
+    "status = 'CLOSED'", "status = 'GAME_STARTED'", `creator_id = '${other}'`,
+  ]) {
+    for (const restoreFirst of [true, false]) {
+      execute(`INSERT INTO public.games(id, creator_id, seat_count) VALUES ('${room}', '${user}', 3);
+        INSERT INTO public.game_players(game_id, user_id) VALUES ('${room}', '${user}'), ('${room}', '${other}');`)
+      const restore = `public.try_restore_test('${room}', '${user}')`
+      const update = `BEGIN; SET LOCAL ROLE service_role; SET LOCAL application_name = 'web018-first';
+        SELECT pg_advisory_xact_lock(hashtextextended('${user}', 0));
+        UPDATE public.games SET ${mutation} WHERE id = '${room}';
+        SELECT pg_sleep(1); COMMIT;`
+      const first = concurrentSql(restoreFirst ? firstCall(restore) : update)
+      await waitUntilLocked(first)
+      await Promise.all([first, concurrentSql(restoreFirst
+        ? update.replace("SET LOCAL application_name = 'web018-first';", '')
+        : resultCall('second', restore))])
+      execute(`DO $$ DECLARE result jsonb; BEGIN
+        SELECT r.result INTO result FROM public.restriction_test_results r WHERE label = '${restoreFirst ? 'first' : 'second'}';
+        IF ${restoreFirst ? `result->>'id' IS DISTINCT FROM '${room}'` : "result->>'code' IS DISTINCT FROM 'NOT_FOUND'"} THEN
+          RAISE EXCEPTION 'Restoration returned stale status or ownership';
+        END IF;
+        IF (SELECT count(*) FROM public.game_players) <> 2 THEN
+          RAISE EXCEPTION 'Restoration modified membership';
+        END IF;
+      END; $$;`)
+      reset()
+    }
+  }
+  console.log('PASS: own-lobby restoration serializes with status/owner updates in both orders without writes')
 }
