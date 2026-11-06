@@ -41,7 +41,7 @@ describe('WEB-002: форма создания комнаты и лобби', ()
     expect(wrapper.text()).not.toContain('Private upstream diagnostic')
     expect(wrapper.text()).not.toContain('Создаём комнату…')
     expect(wrapper.find('form').exists()).toBe(true)
-    expect(wrapper.get('button').attributes('disabled')).toBeUndefined()
+    expect(wrapper.get('button[type="submit"]').attributes('disabled')).toBeUndefined()
     expect(wrapper.emitted('gameCreated')).toBeUndefined()
   })
 
@@ -62,7 +62,7 @@ describe('WEB-002: форма создания комнаты и лобби', ()
     expect(wrapper.text()).toContain(errorMessage)
     expect(wrapper.text()).not.toContain('Private diagnostic')
     expect(wrapper.find('form').exists()).toBe(true)
-    expect(wrapper.get('button').attributes('disabled')).toBeUndefined()
+    expect(wrapper.get('button[type="submit"]').attributes('disabled')).toBeUndefined()
     expect(wrapper.emitted('gameCreated')).toBeUndefined()
   })
 
@@ -118,7 +118,7 @@ describe('WEB-002: форма создания комнаты и лобби', ()
     for (const field of wrapper.findAll('input, select')) {
       expect(field.attributes('disabled')).toBeUndefined()
     }
-    expect(wrapper.get('button').text()).toBe('Создать комнату')
+    expect(wrapper.get('button[type="submit"]').text()).toBe('Создать комнату')
   })
 
   it('сохраняет короткий пароль после ошибки и принимает исправление до 8 символов', async () => {
@@ -158,7 +158,7 @@ describe('WEB-002: форма создания комнаты и лобби', ()
     await wrapper.get('input[type="number"]').setValue('3')
     await wrapper.get('form').trigger('submit')
     expect(wrapper.text()).toContain('Создаём комнату…')
-    expect(wrapper.get('button').attributes('disabled')).toBeDefined()
+    expect(wrapper.get('button[type="submit"]').attributes('disabled')).toBeDefined()
     for (const field of wrapper.findAll('input, select')) {
       expect(field.attributes('disabled')).toBeDefined()
     }
@@ -183,8 +183,8 @@ describe('WEB-002: форма создания комнаты и лобби', ()
     await flushPromises()
     expect(wrapper.text()).toContain(errorMessage)
     expect(wrapper.text()).not.toContain(gameId)
-    expect(wrapper.get('button').attributes('disabled')).toBeUndefined()
-    expect(wrapper.get('button').text()).toBe('Повторить')
+    expect(wrapper.get('button[type="submit"]').attributes('disabled')).toBeUndefined()
+    expect(wrapper.get('button[type="submit"]').text()).toBe('Повторить')
     for (const field of wrapper.findAll('input, select')) {
       expect(field.attributes('disabled')).toBeDefined()
     }
@@ -224,8 +224,8 @@ describe('WEB-002: форма создания комнаты и лобби', ()
     expect(wrapper.text()).toContain(errorMessage)
     expect(wrapper.find('form').exists()).toBe(true)
     expect(wrapper.text()).not.toContain('Занятые места')
-    expect(wrapper.get('button').attributes('disabled')).toBeUndefined()
-    expect(wrapper.get('button').text()).toBe('Повторить')
+    expect(wrapper.get('button[type="submit"]').attributes('disabled')).toBeUndefined()
+    expect(wrapper.get('button[type="submit"]').text()).toBe('Повторить')
     for (const field of wrapper.findAll('input, select')) {
       expect(field.attributes('disabled')).toBeDefined()
     }

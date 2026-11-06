@@ -33,7 +33,9 @@ beforeEach(() => {
 type View = ReturnType<typeof mount>
 const returnButton = (view: View) => view.findAll('button').find(button => button.text() === 'Вернуться в своё лобби')
 async function refuse(view: View, path: string) {
+  await flushPromises()
   if (path === 'create') {
+    await view.findAll('button').find(button => button.text().replace(/\s+/g, ' ') === 'Создать комнату')!.trigger('click')
     const form = view.getComponent(CreateGameForm)
     await form.get('input[type="number"]').setValue('3')
     await form.get('form').trigger('submit')

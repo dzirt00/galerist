@@ -35,6 +35,7 @@ beforeEach(() => {
 })
 
 async function submit(view: ReturnType<typeof mount>) {
+  await view.findAll('button').find(button => button.text().replace(/\s+/g, ' ') === 'Создать комнату')!.trigger('click')
   const form = view.getComponent(CreateGameForm)
   await form.get('input[type="number"]').setValue('3')
   await form.get('select').setValue('7')
@@ -43,10 +44,10 @@ async function submit(view: ReturnType<typeof mount>) {
 }
 
 describe('WEB-004: созданная комната сразу открывает настройки', () => {
-  it('показывает единственное лобби из create-game и позволяет менять таймер без join/list', async () => {
+  it('показывает единственное лобби из create-game и позволяет менять таймер без повторного join', async () => {
     const view = mount(App)
     await submit(view)
-    expect(api.invoke.mock.calls.map(([name]) => name)).toEqual(['create-game'])
+    expect(api.invoke.mock.calls.map(([name]) => name)).toEqual(['game-list', 'create-game'])
     expect(view.findAll('[aria-label="Лобби"]')).toHaveLength(1)
     expect(view.findComponent(CreateGameForm).exists()).toBe(false)
     const lobby = view.get('[aria-label="Лобби"]')
@@ -61,24 +62,25 @@ describe('WEB-004: созданная комната сразу открывае
     })
     expect(lobby.text()).toContain('Количество минут на ход игрока 5')
     expect(view.get('article').text()).toContain('Количество минут на ход игрока 5')
-    expect(api.invoke.mock.calls.map(([name]) => name)).toEqual(['create-game', 'change-settings-game'])
+    expect(api.invoke.mock.calls.map(([name]) => name)).toEqual(['game-list', 'create-game', 'change-settings-game'])
   })
 
   it.each(['error', 'invalid'])('после %s не открывает лобби, повтор открывает сохранённую комнату', async (kind) => {
+    const view = mount(App)
+    await flushPromises()
     api.invoke.mockResolvedValueOnce(kind === 'error'
       ? {data: null, error: new Error('offline')}
       : {data: {...dto, turnDurationMinutes: null}, error: null})
-    const view = mount(App)
     await submit(view)
     expect(view.find('[aria-label="Лобби"]').exists()).toBe(false)
     const form = view.getComponent(CreateGameForm)
-    expect(form.get('button').text()).toBe('Повторить')
-    const first = JSON.parse(JSON.stringify(api.invoke.mock.calls[0][1].body))
+    expect(form.get('button[type="submit"]').text()).toBe('Повторить')
+    const first = JSON.parse(JSON.stringify(api.invoke.mock.calls[1][1].body))
     await form.get('form').trigger('submit')
     await flushPromises()
-    expect(api.invoke.mock.calls[1][1].body).toEqual(first)
+    expect(api.invoke.mock.calls[2][1].body).toEqual(first)
     expect(view.get('[aria-label="Лобби"]').text()).toContain('Количество минут на ход игрока 7')
-    expect(api.invoke.mock.calls.map(([name]) => name)).toEqual(['create-game', 'create-game'])
+    expect(api.invoke.mock.calls.map(([name]) => name)).toEqual(['game-list', 'create-game', 'create-game'])
   })
 
   it('обновление списка не сбрасывает лобби созданной комнаты и не дублирует карточку', async () => {
@@ -138,5 +140,54 @@ describe('WEB-004: созданная комната сразу открывае
     expect(view.get('[aria-label="Лобби"]').text()).toContain(game.id)
     expect(view.get('[aria-label="Лобби"]').text()).toContain('Количество минут на ход игрока 7')
     expect(view.getComponent(GameList).get('button').attributes('disabled')).toBeUndefined()
+  })
+})
+
+
+describe('WEB-006: открытие и отмена создания', () => {
+  it('загружает список автоматически, открывает и отменяет форму без команды создания', async () => {
+    const view = mount(App)
+    await flushPromises()
+    expect(view.findComponent(CreateGameForm).exists()).toBe(false)
+    expect(view.get('article').text()).toContain(game.id)
+    const open = () => view.findAll('button').find(button => button.text().replace(/\s+/g, ' ') === 'Создать комнату')!
+    await open().trigger('click')
+    const form = view.getComponent(CreateGameForm)
+    await form.get('input[type="number"]').setValue('3')
+    await form.findAll('button').find(button => button.text() === 'Отмена')!.trigger('click')
+    expect(view.findComponent(CreateGameForm).exists()).toBe(false)
+    expect(open()).toBeDefined()
+    expect(view.get('article').text()).toContain(game.id)
+    expect(api.invoke.mock.calls.map(([name]) => name)).toEqual(['game-list'])
+    await open().trigger('click')
+    expect((view.get('input[type="number"]').element as HTMLInputElement).value).toBe('')
+  })
+
+  it('запрещает отмену во время запроса и после сетевой ошибки, сохраняя повтор', async () => {
+    const view = mount(App)
+    await flushPromises()
+    let resolve!: (value: unknown) => void
+    api.invoke.mockReturnValueOnce(new Promise(done => { resolve = done }))
+    await view.findAll('button').find(button => button.text().replace(/\s+/g, ' ') === 'Создать комнату')!.trigger('click')
+    const form = view.getComponent(CreateGameForm)
+    await form.get('input[type="number"]').setValue('3')
+    await form.get('form').trigger('submit')
+    const cancel = form.findAll('button').find(button => button.text() === 'Отмена')!
+    expect(cancel.attributes('disabled')).toBeDefined()
+    await cancel.trigger('click')
+    expect(view.findComponent(CreateGameForm).exists()).toBe(true)
+    const original = {...api.invoke.mock.calls[1][1].body}
+    resolve({data: null, error: new Error('offline')})
+    await flushPromises()
+    expect(cancel.attributes('disabled')).toBeDefined()
+    expect(form.get('button[type="submit"]').attributes('disabled')).toBeUndefined()
+    await cancel.trigger('click')
+    expect(view.findComponent(CreateGameForm).exists()).toBe(true)
+    await form.get('form').trigger('submit')
+    await flushPromises()
+    expect(api.invoke.mock.calls[2][1].body).toEqual(original)
+    expect(view.get('[aria-label="Лобби"]').text()).toContain(game.id)
+    expect(view.findComponent(CreateGameForm).exists()).toBe(false)
+    expect(view.findAll('button').some(button => button.text().replace(/\s+/g, ' ') === 'Создать комнату')).toBe(false)
   })
 })

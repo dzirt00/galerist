@@ -21,20 +21,20 @@ beforeEach(() => {
 })
 
 describe('WEB-003: загрузка списка комнат', () => {
-  it('до нажатия не запрашивает список и не сообщает об отсутствии комнат', () => {
+  it('при монтировании запрашивает список и показывает ожидание без ложного пустого результата', async () => {
     const wrapper = mount(GameList)
-    expect(api.invoke).not.toHaveBeenCalled()
+    expect(api.invoke).toHaveBeenCalledExactlyOnceWith('game-list', { method: 'GET' })
+    await wrapper.vm.$nextTick()
     expect(wrapper.text()).not.toContain('Комнат пока нет')
-    expect(wrapper.text()).not.toContain('Загружаем комнаты…')
+    expect(wrapper.text()).toContain('Загружаем комнаты…')
     expect(wrapper.text()).not.toContain(errorMessage)
   })
 
-  it('по кнопке отправляет GET и показывает отдельные данные каждой комнаты', async () => {
+  it('при монтировании отправляет GET и показывает отдельные данные каждой комнаты', async () => {
     const second = { ...room, id: '22222222-2222-4222-8222-222222222222',
       seat_count: 2, occupiedSeatCount: 2, hasPassword: false, turnDurationMinutes: 3 }
     api.invoke.mockResolvedValueOnce({ data: [room, second], error: null })
     const wrapper = mount(GameList)
-    await wrapper.get('button').trigger('click')
     await flushPromises()
     expect(api.invoke).toHaveBeenCalledExactlyOnceWith('game-list', { method: 'GET' })
     const rows = wrapper.findAll('p').filter((p) => p.text().startsWith('Комната '))
@@ -73,7 +73,6 @@ describe('WEB-003: загрузка списка комнат', () => {
     if (kind === 'response') api.invoke.mockResolvedValueOnce({ data: [room], error: new Error('Private diagnostic') })
     else api.invoke.mockRejectedValueOnce(new Error('Private diagnostic'))
     const wrapper = mount(GameList)
-    await wrapper.get('button').trigger('click')
     await flushPromises()
     expect(wrapper.text()).toContain(errorMessage)
     expect(wrapper.text()).not.toContain('Private diagnostic')
@@ -89,7 +88,6 @@ describe('WEB-003: загрузка списка комнат', () => {
 
   it('повторная загрузка заменяет прежний список актуальным пустым ответом', async () => {
     const wrapper = mount(GameList)
-    await wrapper.get('button').trigger('click')
     await flushPromises()
     expect(wrapper.text()).toContain(room.id)
     api.invoke.mockResolvedValueOnce({ data: [], error: null })
@@ -119,7 +117,6 @@ describe('WEB-003: загрузка списка комнат', () => {
   it.each(malformed)('не отображает неверный ответ (%s), после повтора восстанавливается', async (_name, data) => {
     api.invoke.mockResolvedValueOnce({ data, error: null })
     const wrapper = mount(GameList)
-    await wrapper.get('button').trigger('click')
     await flushPromises()
     expect(wrapper.text()).toContain(errorMessage)
     expect(wrapper.text()).not.toContain(room.id)
@@ -129,5 +126,23 @@ describe('WEB-003: загрузка списка комнат', () => {
     await flushPromises()
     expect(wrapper.text()).toContain(room.id)
     expect(wrapper.text()).not.toContain(errorMessage)
+  })
+})
+
+
+describe('WEB-006: ответ после размонтирования', () => {
+  it('не читает тело поздней серверной ошибки после удаления списка', async () => {
+    let resolve!: (value: unknown) => void
+    api.invoke.mockReturnValueOnce(new Promise(done => { resolve = done }))
+    const view = mount(GameList)
+    await view.vm.$nextTick()
+    expect(view.text()).toContain('Загружаем комнаты…')
+    view.unmount()
+    const context = Response.json({error: 'Поздняя ошибка'}, {status: 500})
+    const read = vi.spyOn(context, 'json')
+    resolve({data: null, error: {context}})
+    await flushPromises()
+    expect(read).not.toHaveBeenCalled()
+    expect(api.invoke).toHaveBeenCalledTimes(1)
   })
 })

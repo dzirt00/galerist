@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {useNuxtApp} from 'nuxt/app'
-import {computed, ref, watch} from 'vue'
+import {computed, ref, watch, onMounted, onUnmounted} from 'vue'
 import GameLobby from './GameLobby.vue'
 import type {GameListItem} from './types/lobby'
 import {isGameList, isGameListItem} from './utils/lobby-validation'
@@ -8,7 +8,7 @@ import {getFunctionError, getFunctionErrorMessage} from './utils/api-errors'
 import {useOwnLobby} from './composable/own-lobby'
 
 const props = defineProps<{ createdGame?: GameListItem | null }>()
-const emit = defineEmits<{lobbyReturned: [value: GameListItem]}>()
+const emit = defineEmits<{ lobbyReturned: [value: GameListItem] }>()
 
 interface ChangeData {
   seat_count: number
@@ -33,7 +33,7 @@ const {ownLobbyId, isReturning, returnMessage, clearOwnLobby, offerOwnLobby, ret
     joinMessage.value = ''
     emit('lobbyReturned', game)
   })
-
+let active = true
 const isBusy = computed(() => isLoading.value || pendingGameId.value !== null || waiting.value || isReturning.value)
 const isReturnDisabled = computed(() => isReturning.value || pendingGameId.value !== null || waiting.value)
 const showEmptyList = computed(() => !isLoading.value && hasLoaded.value && state.value.length === 0 && message.value === '')
@@ -46,8 +46,13 @@ const roomCards = computed(() => state.value.map(game => ({
   passwordLabel: game.hasPassword ? 'требуется' : 'не требуется',
   joinLabel: pendingGameId.value === game.id ? 'Присоединяемся…' : 'Присоединиться',
 })))
-const setWaiting = (value: boolean) => { waiting.value = value }
+const setWaiting = (value: boolean) => {
+  waiting.value = value
+}
+onMounted(() => {
 
+  loadList()
+})
 watch(() => props.createdGame, (game) => {
   if (!game) return
   clearOwnLobby()
@@ -57,7 +62,9 @@ watch(() => props.createdGame, (game) => {
   joinMessage.value = ''
   waiting.value = false
 }, {immediate: true})
-
+onUnmounted(() => {
+  active = false
+})
 const loadList = async () => {
   if (isBusy.value) return
   const creationAtStart = props.createdGame
@@ -66,8 +73,10 @@ const loadList = async () => {
     isLoading.value = true
     hasLoaded.value = false
     const response = await $supabase.functions.invoke('game-list', {method: 'GET'})
+    if (!active) return
     if (response.error) {
       const errorMessage = await getFunctionErrorMessage(response.error, 'Не удалось загрузить комнаты. Попробуйте ещё раз')
+      if (!active) return
       if (props.createdGame !== creationAtStart) return
       message.value = errorMessage
       return
@@ -84,9 +93,10 @@ const loadList = async () => {
     }
     hasLoaded.value = true
   } catch {
-    message.value = 'Не удалось загрузить комнаты. Попробуйте ещё раз'
+    if (active) message.value = 'Не удалось загрузить комнаты. Попробуйте ещё раз'
+
   } finally {
-    isLoading.value = false
+    if (active) isLoading.value = false
   }
 }
 
@@ -103,6 +113,7 @@ const joinGame = async (game: GameListItem) => {
     const response = await $supabase.functions.invoke('join-game', {
       body: {gameId: game.id, ...(password !== '' && {password})},
     })
+    if (!active) return
     if (props.createdGame !== creationAtStart) return
     if (response.error) {
       const failure = await getFunctionError(response.error, 'Не удалось присоединиться к комнате. Попробуйте ещё раз')

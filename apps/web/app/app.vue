@@ -3,7 +3,7 @@ import SignInForm from './SignInForm.vue'
 import {useProfile} from './composable/auth'
 import CreateGameForm from './CreateGameForm.vue'
 import GameList from './GameList.vue'
-import {computed, shallowRef} from 'vue'
+import {computed, shallowRef, ref} from 'vue'
 import type {GameListItem} from './types/lobby'
 
 const createdGame = shallowRef<GameListItem | null>(null)
@@ -16,9 +16,22 @@ const {
   loadProfile,
 } = useProfile()
 const showSignIn = computed(() => !profile.value && !isLoadingProfile.value && !hasProfileError.value)
-const showCreateGame = computed(() => !createdGame.value)
-const clearProfileMessage = () => { profileMessage.value = '' }
-const openLobby = (game: GameListItem) => { createdGame.value = game }
+const showCreateGame = computed(() => isCreateFormOpen.value && createdGame.value === null)
+const showCreateButton = computed(() => !isCreateFormOpen.value && !createdGame.value)
+const openCreateForm = () => {
+  if (showCreateButton.value) isCreateFormOpen.value = true
+}
+const closeCreateForm = () => {
+  isCreateFormOpen.value = false
+}
+const clearProfileMessage = () => {
+  profileMessage.value = ''
+}
+const openLobby = (game: GameListItem) => {
+  createdGame.value = game
+  isCreateFormOpen.value = false
+}
+const isCreateFormOpen = ref(false)
 </script>
 
 <template>
@@ -30,11 +43,17 @@ const openLobby = (game: GameListItem) => { createdGame.value = game }
   <section v-if="profile">
     <h2>Мой профиль</h2>
     <p>{{ profile.id }}</p>
+
     <CreateGameForm
       v-if="showCreateGame"
       @game-created="openLobby"
       @lobby-returned="openLobby"
+      @cancel="closeCreateForm"
     />
+    <button type="button" v-if="showCreateButton" @click="openCreateForm">Создать
+      комнату
+    </button>
+
 
     <GameList :created-game="createdGame" @lobby-returned="openLobby"/>
   </section>
@@ -43,7 +62,7 @@ const openLobby = (game: GameListItem) => { createdGame.value = game }
     v-if="hasProfileError"
     type="button"
     :disabled="isLoadingProfile"
-    @click="loadProfile"
+    @click="loadProfile()"
   >
     Повторить загрузку
   </button>

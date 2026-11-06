@@ -10,6 +10,7 @@ const api = vi.hoisted(() => ({
   select: vi.fn(),
   eq: vi.fn(),
   maybeSingle: vi.fn(),
+  invoke: vi.fn(),
 }))
 
 vi.mock('nuxt/app', () => ({
@@ -17,6 +18,7 @@ vi.mock('nuxt/app', () => ({
     $supabase: {...passiveRealtime,
       auth: { getSession: api.getSession, signInWithOtp: api.signInWithOtp },
       from: api.from,
+      functions: {invoke: api.invoke},
     },
   }),
 }))
@@ -37,6 +39,7 @@ function deferred<T>() {
 
 beforeEach(() => {
   vi.resetAllMocks()
+  api.invoke.mockResolvedValue({data: [], error: null})
   window.history.replaceState(null, '', '/')
   api.getSession.mockResolvedValue(signedOut)
   api.signInWithOtp.mockResolvedValue({ error: null })
@@ -118,7 +121,7 @@ describe('WEB-001: вход и собственный профиль', () => {
     expect(wrapper.get('section').text()).toContain(userId)
     expect(wrapper.text()).not.toContain(otherId)
     expect(wrapper.find('input[type="email"]').exists()).toBe(false)
-    expect(wrapper.find('input[type="number"]').exists()).toBe(true)
+    expect(wrapper.find('input[type="number"]').exists()).toBe(false)
     expect(wrapper.text()).not.toContain('Загружаем профиль…')
     wrapper.unmount()
 
@@ -162,7 +165,7 @@ describe('WEB-001: вход и собственный профиль', () => {
       expect(wrapper.get('section').text()).toContain(userId)
       expect(wrapper.findAll('button').some((button) => button.text() === 'Повторить загрузку')).toBe(false)
       expect(wrapper.find('input[type="email"]').exists()).toBe(false)
-      expect(wrapper.find('input[type="number"]').exists()).toBe(true)
+      expect(wrapper.find('input[type="number"]').exists()).toBe(false)
       expect(api.signInWithOtp).not.toHaveBeenCalled()
     },
   )

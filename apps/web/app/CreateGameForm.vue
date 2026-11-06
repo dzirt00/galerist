@@ -6,7 +6,11 @@ import {isSeatCount, isResponseCreateGame} from './utils/lobby-validation'
 import {getFunctionError} from './utils/api-errors'
 import {useOwnLobby} from './composable/own-lobby'
 
-const emit = defineEmits<{ gameCreated: [value: GameListItem]; lobbyReturned: [value: GameListItem] }>()
+const emit = defineEmits<{
+  gameCreated: [value: GameListItem]
+  lobbyReturned: [value: GameListItem]
+  cancel: []
+}>()
 const {ownLobbyId, isReturning, returnMessage, clearOwnLobby, offerOwnLobby, returnToOwnLobby} =
   useOwnLobby(game => emit('lobbyReturned', game))
 const {$supabase} = useNuxtApp()
@@ -36,7 +40,11 @@ const submitLabel = computed(() => request.value !== null ? 'Повторить'
 const returnLabel = computed(() => isReturning.value ? 'Возвращаемся…' : 'Вернуться в своё лобби')
 const occupiedSeatCount = computed(() => resCreateGame.value?.occupiedSeats.length ?? 0)
 const freeSeatCount = computed(() => (resCreateGame.value?.seat_count ?? 0) - occupiedSeatCount.value)
-
+const isCancelDisabled = computed(() => (request.value !== null || requestPending.value || isReturning.value))
+const cancelCreate = () => {
+  if (isCancelDisabled.value) return
+  emit('cancel')
+}
 const createGame = async () => {
   if (isSubmitDisabled.value) return
   clearOwnLobby()
@@ -150,4 +158,5 @@ const createGame = async () => {
     {{ returnLabel }}
   </button>
   <p v-if="returnMessage" role="alert">{{ returnMessage }}</p>
+  <button type="button" :disabled="isCancelDisabled" @click="cancelCreate()">Отмена</button>
 </template>
