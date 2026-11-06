@@ -5,12 +5,12 @@ import App from '../app/app.vue'
 import GameList from '../app/GameList.vue'
 import CreateGameForm from '../app/CreateGameForm.vue'
 
-const api = vi.hoisted(() => ({invoke: vi.fn()}))
+const api = vi.hoisted(() => ({invoke: vi.fn(), authenticated: true}))
 vi.mock('nuxt/app', () => ({useNuxtApp: () => ({$supabase: {...passiveRealtime,functions: {invoke: api.invoke}}})}))
 vi.mock('../app/composable/auth', async () => {
   const {ref} = await import('vue')
   return {useProfile: () => ({
-    profile: ref({id: '11111111-1111-4111-8111-111111111111'}),
+    profile: ref(api.authenticated ? {id: '11111111-1111-4111-8111-111111111111'} : null),
     isLoadingProfile: ref(false), hasProfileError: ref(false), profileMessage: ref(''), loadProfile: vi.fn(),
   })}
 })
@@ -24,6 +24,7 @@ const dto = {id: game.id, creator_id: '11111111-1111-4111-8111-111111111111',
 
 beforeEach(() => {
   vi.resetAllMocks()
+  api.authenticated = true
   api.invoke.mockImplementation(async (name, options) => {
     if (name === 'create-game') return {data: dto, error: null}
     if (name === 'change-settings-game') return {data: {
@@ -61,7 +62,8 @@ describe('WEB-004: созданная комната сразу открывае
       body: {gameId: game.id, seatCount: 3, turnDurationMinutes: 5},
     })
     expect(lobby.text()).toContain('Количество минут на ход игрока 5')
-    expect(view.get('article').text()).toContain('Количество минут на ход игрока 5')
+    expect(view.findComponent(GameList).exists()).toBe(false)
+    expect(view.find('article').exists()).toBe(false)
     expect(api.invoke.mock.calls.map(([name]) => name)).toEqual(['game-list', 'create-game', 'change-settings-game'])
   })
 
@@ -83,14 +85,13 @@ describe('WEB-004: созданная комната сразу открывае
     expect(api.invoke.mock.calls.map(([name]) => name)).toEqual(['game-list', 'create-game', 'create-game'])
   })
 
-  it('обновление списка не сбрасывает лобби созданной комнаты и не дублирует карточку', async () => {
+  it('создание скрывает список, форму и кнопку создания', async () => {
     const view = mount(App)
     await submit(view)
-    await view.getComponent(GameList).get('button').trigger('click')
-    await flushPromises()
-    expect(view.findAll('article')).toHaveLength(1)
+    expect(view.findComponent(GameList).exists()).toBe(false)
+    expect(view.findComponent(CreateGameForm).exists()).toBe(false)
     expect(view.findAll('[aria-label="Лобби"]')).toHaveLength(1)
-    expect(view.get('[aria-label="Лобби"]').text()).toContain('Количество минут на ход игрока 7')
+    expect(view.findAll('button').some(button => button.text().replace(/\s+/g, ' ') === 'Создать комнату')).toBe(false)
   })
 
   it('запоздалый список, начатый до создания, не удаляет новую комнату', async () => {
@@ -101,7 +102,7 @@ describe('WEB-004: созданная комната сразу открывае
     await submit(view)
     resolve({data: [], error: null})
     await flushPromises()
-    expect(view.get('article').text()).toContain(game.id)
+    expect(view.find('article').exists()).toBe(false)
     expect(view.get('[aria-label="Лобби"]').text()).toContain(game.id)
   })
 
@@ -120,27 +121,7 @@ describe('WEB-004: созданная комната сразу открывае
     expect(view.get('[aria-label="Лобби"]').text()).toContain(game.id)
   })
 
-  it('ответ настроек прежней комнаты не изменяет созданную комнату', async () => {
-    const other = {...game, id: '33333333-3333-4333-8333-333333333333'}
-    api.invoke.mockResolvedValueOnce({data: [other], error: null})
-    const view = mount(App)
-    await view.getComponent(GameList).get('button').trigger('click')
-    await flushPromises()
-    api.invoke.mockResolvedValueOnce({data: other, error: null})
-    await view.get('article form').trigger('submit')
-    await flushPromises()
-    const oldLobby = view.get('[aria-label="Лобби"]')
-    await oldLobby.get('#lobby-turn-duration').setValue('10')
-    let resolve!: (value: unknown) => void
-    api.invoke.mockReturnValueOnce(new Promise(done => { resolve = done }))
-    await oldLobby.findAll('button').find(button => button.text() === 'Изменить')!.trigger('click')
-    await submit(view)
-    resolve({data: {seat_count: 3, turnDurationMinutes: 10}, error: null})
-    await flushPromises()
-    expect(view.get('[aria-label="Лобби"]').text()).toContain(game.id)
-    expect(view.get('[aria-label="Лобби"]').text()).toContain('Количество минут на ход игрока 7')
-    expect(view.getComponent(GameList).get('button').attributes('disabled')).toBeUndefined()
-  })
+
 })
 
 
@@ -190,4 +171,81 @@ describe('WEB-006: открытие и отмена создания', () => {
     expect(view.findComponent(CreateGameForm).exists()).toBe(false)
     expect(view.findAll('button').some(button => button.text().replace(/\s+/g, ' ') === 'Создать комнату')).toBe(false)
   })
+})
+
+
+describe('WEB-006: отдельный экран после входа', () => {
+  it.each([false, true])('вход (пароль: %s) скрывает список и открытую форму', async (hasPassword) => {
+    api.invoke.mockResolvedValueOnce({data: [{...game, hasPassword}], error: null})
+    const view = mount(App)
+    await flushPromises()
+    await view.findAll('button').find(button => button.text().replace(/\s+/g, ' ') === 'Создать комнату')!.trigger('click')
+    if (hasPassword) await view.get('article input').setValue('password')
+    api.invoke.mockResolvedValueOnce({data: {...game, hasPassword, occupiedSeatCount: 2}, error: null})
+    await view.get('article form').trigger('submit')
+    await flushPromises()
+    expect(view.findComponent(GameList).exists()).toBe(false)
+    expect(view.findComponent(CreateGameForm).exists()).toBe(false)
+    expect(view.findAll('[aria-label="Лобби"]')).toHaveLength(1)
+    expect(view.get('[aria-label="Лобби"]').text()).toContain(game.id)
+    expect(view.get('[aria-label="Лобби"]').text()).toContain('Занято: 2')
+    expect(view.findAll('button').some(button => button.text().replace(/\s+/g, ' ') === 'Создать комнату')).toBe(false)
+    expect(api.invoke.mock.calls.filter(([name]) => name === 'join-game')).toHaveLength(1)
+    expect(api.invoke.mock.calls.some(([name]) => name === 'create-game')).toBe(false)
+  })
+
+  it.each(['error', 'wrong-room', 'invalid'])('отказ входа %s сохраняет список без ложного лобби и допускает повтор', async (kind) => {
+    const view = mount(App)
+    await flushPromises()
+    api.invoke.mockResolvedValueOnce(kind === 'error'
+      ? {data: null, error: new Error('offline')}
+      : {data: {...game, ...(kind === 'wrong-room' ? {id: '33333333-3333-4333-8333-333333333333'} : {occupiedSeatCount: 0})}, error: null})
+    await view.get('article form').trigger('submit')
+    await flushPromises()
+    expect(view.find('[aria-label="Лобби"]').exists()).toBe(false)
+    expect(view.getComponent(GameList).text()).toContain('Не удалось присоединиться')
+    expect(view.get('article').text()).toContain('Занято: 1')
+    api.invoke.mockResolvedValueOnce({data: {...game, occupiedSeatCount: 2}, error: null})
+    await view.get('article form').trigger('submit')
+    await flushPromises()
+    expect(view.findComponent(GameList).exists()).toBe(false)
+    expect(view.get('[aria-label="Лобби"]').text()).toContain(game.id)
+  })
+})
+
+
+it('до авторизации не монтирует список и не запрашивает комнаты', async () => {
+  api.authenticated = false
+  const view = mount(App, {global: {stubs: {SignInForm: true}}})
+  await flushPromises()
+  expect(view.findComponent(GameList).exists()).toBe(false)
+  expect(view.findComponent(CreateGameForm).exists()).toBe(false)
+  expect(view.find('[aria-label="Лобби"]').exists()).toBe(false)
+  expect(api.invoke).not.toHaveBeenCalled()
+})
+
+it.each(['resolve', 'reject'])('чтение старой ошибки входа (%s) не меняет созданное лобби', async (outcome) => {
+  const view = mount(App)
+  await flushPromises()
+  let resolve!: (value: unknown) => void
+  let reject!: (reason: Error) => void
+  const context = new Response('', {status: 409})
+  const readBody = vi.fn(() => new Promise((done, fail) => {resolve = done; reject = fail}))
+  context.json = readBody
+  api.invoke.mockResolvedValueOnce({data: null, error: {context}})
+  await view.get('article form').trigger('submit')
+  await flushPromises()
+  expect(readBody).toHaveBeenCalledOnce()
+  const list = view.getComponent(GameList)
+  await submit(view)
+  expect(view.findComponent(GameList).exists()).toBe(false)
+  if (outcome === 'resolve') resolve({error: 'Старый отказ', code: 'OWN_LOBBY_EXISTS', gameId: game.id})
+  else reject(new Error('Private read diagnostic'))
+  await flushPromises()
+  expect(view.get('[aria-label="Лобби"]').text()).toContain(game.id)
+  expect(view.text()).not.toContain('Старый отказ')
+  expect(view.text()).not.toContain('Вернуться в своё лобби')
+  expect(view.text()).not.toContain('Private read diagnostic')
+  expect(list.emitted('gameJoined')).toBeUndefined()
+  expect(list.emitted('lobbyReturned')).toBeUndefined()
 })

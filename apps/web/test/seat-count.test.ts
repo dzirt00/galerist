@@ -1,10 +1,17 @@
 import {passiveRealtime} from './helpers/passive-realtime'
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 import {enableAutoUnmount, flushPromises, mount} from '@vue/test-utils'
-import GameList from '../app/GameList.vue'
+import App from '../app/app.vue'
 
 const api = vi.hoisted(() => ({invoke: vi.fn()}))
 vi.mock('nuxt/app', () => ({useNuxtApp: () => ({$supabase: {...passiveRealtime,functions: {invoke: api.invoke}}})}))
+vi.mock('../app/composable/auth', async () => {
+  const {ref} = await import('vue')
+  return {useProfile: () => ({
+    profile: ref({id: '11111111-1111-4111-8111-111111111111'}),
+    isLoadingProfile: ref(false), hasProfileError: ref(false), profileMessage: ref(''), loadProfile: vi.fn(),
+  })}
+})
 enableAutoUnmount(afterEach)
 
 const room = {id: '11111111-1111-4111-8111-111111111111',
@@ -17,10 +24,8 @@ const save = (view: View) => lobby(view).findAll('button').find((button) => butt
 const card = (view: View, id = room.id) => view.get('article[aria-label="Комната ' + id + '"]')
 const capacity = (view: View, value: number, occupiedSeatCount = room.occupiedSeatCount) => {
   expect(lobby(view).text()).toContain('Всего мест: ' + value)
-  expect(card(view).text()).toContain('Всего мест: ' + value)
   expect(lobby(view).text()).toContain('Свободно: ' + (value - occupiedSeatCount))
-  expect(card(view).text()).toContain('Свободно: ' + (value - occupiedSeatCount))
-  expect(card(view, otherRoom.id).text()).toContain('Всего мест: 3')
+  expect(view.find('article').exists()).toBe(false)
 }
 
 beforeEach(() => {
@@ -36,17 +41,16 @@ beforeEach(() => {
   })
 })
 
-async function openLobby() {
-  const view = mount(GameList)
-  await view.get('button').trigger('click')
+async function openLobby(selectedId = room.id) {
+  const view = mount(App)
   await flushPromises()
-  await card(view).get('form').trigger('submit')
+  await card(view, selectedId).get('form').trigger('submit')
   await flushPromises()
   return view
 }
 
 describe('WEB-004: изменение вместимости через UI', () => {
-  it.each([1, 7, 10])('меняет только таймер на %i минут и показывает подтверждение в лобби и списке', async (minutes) => {
+  it.each([1, 7, 10])('меняет только таймер на %i минут и показывает подтверждение в отдельном лобби', async (minutes) => {
     const view = await openLobby()
     expect(lobby(view).text()).toContain('Количество минут на ход игрока 3')
     await lobby(view).get('#lobby-turn-duration').setValue(String(minutes))
@@ -63,8 +67,7 @@ describe('WEB-004: изменение вместимости через UI', () 
     resolve({data: {seat_count: 3, turnDurationMinutes: minutes}, error: null})
     await flushPromises()
     expect(lobby(view).text()).toContain('Количество минут на ход игрока ' + minutes)
-    expect(card(view).text()).toContain('Количество минут на ход игрока ' + minutes)
-    expect(card(view, otherRoom.id).text()).toContain('Количество минут на ход игрока 3')
+    expect(view.find('article').exists()).toBe(false)
   })
 
   it('отказ сохраняет подтверждённые настройки и выбор для повтора', async () => {
@@ -79,7 +82,6 @@ describe('WEB-004: изменение вместимости через UI', () 
     await flushPromises()
     capacity(view, 3)
     expect(lobby(view).text()).toContain('Количество минут на ход игрока 7')
-    expect(card(view).text()).toContain('Количество минут на ход игрока 7')
     expect((lobby(view).get('#lobby-turn-duration').element as HTMLSelectElement).value).toBe('5')
     await save(view).trigger('click')
     await flushPromises()
@@ -99,20 +101,16 @@ describe('WEB-004: изменение вместимости через UI', () 
     expect(view.find('[role="alert"]').exists()).toBe(true)
   })
 
-  it('при повторном входе берёт длительность из свежего ответа сервера', async () => {
-    const view = await openLobby()
-    api.invoke.mockResolvedValueOnce({data: {...otherRoom, turnDurationMinutes: 9}, error: null})
-    await card(view, otherRoom.id).get('form').trigger('submit')
-    await flushPromises()
+  it('берёт длительность из подтверждённого ответа входа', async () => {
+    api.invoke.mockImplementationOnce(async () => ({data: [otherRoom], error: null}))
+    api.invoke.mockImplementationOnce(async () => ({data: {...otherRoom, turnDurationMinutes: 9}, error: null}))
+    const view = await openLobby(otherRoom.id)
     expect(lobby(view).text()).toContain('Количество минут на ход игрока 9')
     expect((lobby(view).get('#lobby-turn-duration').element as HTMLSelectElement).value).toBe('9')
   })
 
-  it.each([2, 3, 4])('сохраняет %i мест и обновляет лобби и карточку даже после обновления списка', async (seatCount) => {
+  it.each([2, 3, 4])('сохраняет %i мест и обновляет отдельное лобби', async (seatCount) => {
     const view = await openLobby()
-    // Replace list objects: success must not depend on shared references.
-    await view.get('button').trigger('click')
-    await flushPromises()
     await lobby(view).get('select').setValue(String(seatCount))
     capacity(view, 3)
     await save(view).trigger('click')
@@ -123,7 +121,7 @@ describe('WEB-004: изменение вместимости через UI', () 
     expect(view.find('[role="alert"]').exists()).toBe(false)
   })
 
-  it('без выбора не отправляет запрос и не блокирует смену комнаты', async () => {
+  it('без выбора не отправляет запрос и позволяет исправить выбор', async () => {
     const view = await openLobby()
     await lobby(view).get('select').setValue('')
     const calls = api.invoke.mock.calls.length
@@ -131,10 +129,8 @@ describe('WEB-004: изменение вместимости через UI', () 
     await flushPromises()
     expect(api.invoke).toHaveBeenCalledTimes(calls)
     expect(view.find('[role="alert"]').exists()).toBe(true)
-    expect(card(view, otherRoom.id).get('button').attributes('disabled')).toBeUndefined()
-    await card(view, otherRoom.id).get('form').trigger('submit')
-    await flushPromises()
-    expect(lobby(view).text()).toContain(otherRoom.id)
+    expect(view.find('article').exists()).toBe(false)
+    expect(save(view).attributes('disabled')).toBeUndefined()
   })
 
   it('до ответа сохраняет прежнюю вместимость и блокирует выбор, действия и смену комнаты', async () => {
@@ -146,17 +142,16 @@ describe('WEB-004: изменение вместимости через UI', () 
     capacity(view, 3)
     expect(lobby(view).get('select').attributes('disabled')).toBeDefined()
     expect(lobby(view).findAll('button').every((button) => button.attributes('disabled') !== undefined)).toBe(true)
-    expect(view.findAll('form button').every((button) => button.attributes('disabled') !== undefined)).toBe(true)
+    expect(view.find('article').exists()).toBe(false)
     const calls = api.invoke.mock.calls.length
     for (const button of lobby(view).findAll('button')) await button.trigger('click')
-    await card(view, otherRoom.id).get('form').trigger('submit')
     expect(api.invoke).toHaveBeenCalledTimes(calls)
     resolve({data: {seat_count: 4, turnDurationMinutes: 3}, error: null})
     await flushPromises()
     capacity(view, 4)
     expect(lobby(view).get('select').attributes('disabled')).toBeUndefined()
     expect(lobby(view).findAll('button').every((button) => button.attributes('disabled') === undefined)).toBe(true)
-    expect(view.findAll('form button').every((button) => button.attributes('disabled') === undefined)).toBe(true)
+    expect(view.find('article').exists()).toBe(false)
   })
 
   it.each(['ready-to-game', 'get-game-players'])('не позволяет менять вместимость во время %s', async (operation) => {
@@ -191,7 +186,7 @@ describe('WEB-004: изменение вместимости через UI', () 
     expect(view.find('[role="alert"]').exists()).toBe(true)
     expect(view.text()).not.toContain('Private diagnostic')
     expect(save(view).attributes('disabled')).toBeUndefined()
-    expect(card(view, otherRoom.id).get('button').attributes('disabled')).toBeUndefined()
+    expect(view.find('article').exists()).toBe(false)
     await save(view).trigger('click')
     await flushPromises()
     capacity(view, 4)
@@ -227,20 +222,14 @@ describe('WEB-004: изменение вместимости через UI', () 
     capacity(view, 4, 1)
   })
 
-  it('новая комната не наследует выбранную или подтверждённую вместимость предыдущей', async () => {
-    const view = await openLobby()
-    await lobby(view).get('select').setValue('4')
-    await save(view).trigger('click')
+  it('новое открытие приложения не наследует настройки прошлого лобби', async () => {
+    const previous = await openLobby()
+    await lobby(previous).get('select').setValue('4')
+    await save(previous).trigger('click')
     await flushPromises()
-    await card(view, otherRoom.id).get('form').trigger('submit')
-    await flushPromises()
+    previous.unmount()
+    const view = await openLobby(otherRoom.id)
     expect(lobby(view).text()).toContain(otherRoom.id)
-    expect(lobby(view).text()).toContain('Всего мест: 3')
-    await lobby(view).get('select').setValue('')
-    const calls = api.invoke.mock.calls.length
-    await save(view).trigger('click')
-    await flushPromises()
-    expect(api.invoke).toHaveBeenCalledTimes(calls)
-    expect(view.find('[role="alert"]').exists()).toBe(true)
+    capacity(view, 3)
   })
 })

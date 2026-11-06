@@ -1,12 +1,19 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 import {enableAutoUnmount, flushPromises, mount} from '@vue/test-utils'
 import GameLobby from '../app/GameLobby.vue'
-import GameList from '../app/GameList.vue'
+import App from '../app/app.vue'
 
 const api = vi.hoisted(() => ({invoke: vi.fn(), channel: vi.fn(), removeChannel: vi.fn()}))
 vi.mock('nuxt/app', () => ({useNuxtApp: () => ({$supabase: {
   functions: {invoke: api.invoke}, channel: api.channel, removeChannel: api.removeChannel,
 }})}))
+vi.mock('../app/composable/auth', async () => {
+  const {ref} = await import('vue')
+  return {useProfile: () => ({
+    profile: ref({id: '11111111-1111-4111-8111-111111111111'}),
+    isLoadingProfile: ref(false), hasProfileError: ref(false), profileMessage: ref(''), loadProfile: vi.fn(),
+  })}
+})
 enableAutoUnmount(afterEach)
 
 const room = {id: '11111111-1111-4111-8111-111111111111', seat_count: 3,
@@ -166,20 +173,16 @@ describe('WEB-004: уведомление Realtime → подтверждённ�
     expect(api.channel).not.toHaveBeenCalled()
   })
 
-  it('после входа участника обновляет состав и оба счётчика только выбранной комнаты', async () => {
-    const wrapper = mount(GameList)
-    await wrapper.get('button').trigger('click')
+  it('после входа участника обновляет состав и счётчики отдельного лобби', async () => {
+    const wrapper = mount(App)
     await flushPromises()
     await wrapper.findAll('form')[0]!.trigger('submit')
     await flushPromises()
     connections[0]!.status('SUBSCRIBED')
     await flushPromises()
     const lobby = wrapper.get('[aria-label="Лобби"]')
-    const card = wrapper.get(`[aria-label="Комната ${room.id}"]`)
-    const other = wrapper.get('[aria-label="Комната other-room"]')
     expect(lobby.text()).toContain('Занято: 1')
-    expect(card.text()).toContain('Свободно: 2')
-    const otherBefore = other.text()
+    expect(wrapper.find('article').exists()).toBe(false)
     const pending = deferred()
     api.invoke.mockReturnValueOnce(pending.promise)
     connections[0]!.receive()
@@ -189,13 +192,10 @@ describe('WEB-004: уведомление Realtime → подтверждённ�
       {user_id: user, isReady: false}, {user_id: 'new-participant', isReady: false},
     ]}, error: null})
     await flushPromises()
-    for (const view of [lobby, card]) {
-      expect(view.text()).toContain('Занято: 2')
-      expect(view.text()).toContain('Свободно: 1')
-      expect(view.text()).toContain('Всего мест: 3')
-    }
+    expect(lobby.text()).toContain('Занято: 2')
+    expect(lobby.text()).toContain('Свободно: 1')
+    expect(lobby.text()).toContain('Всего мест: 3')
     expect(lobby.text()).toContain('new-participant')
-    expect(other.text()).toBe(otherBefore)
     // Readiness notification still uses the same roster path and does not add seats.
     api.invoke.mockResolvedValueOnce({data: {gameId: room.id, players: [
       {user_id: user, isReady: true}, {user_id: 'new-participant', isReady: false},
@@ -206,9 +206,8 @@ describe('WEB-004: уведомление Realtime → подтверждённ�
     expect(lobby.text()).toContain('Занято: 2')
   })
 
-  it.each(['error', 'wrong-room'])('не меняет занятость по %s, повтор обновляет оба представления', async (kind) => {
-    const wrapper = mount(GameList)
-    await wrapper.get('button').trigger('click')
+  it.each(['error', 'wrong-room'])('не меняет занятость по %s, повтор обновляет лобби', async (kind) => {
+    const wrapper = mount(App)
     await flushPromises()
     await wrapper.findAll('form')[0]!.trigger('submit')
     await flushPromises()
@@ -219,9 +218,7 @@ describe('WEB-004: уведомление Realtime → подтверждённ�
       : {data: {gameId: 'other-room', players: []}, error: null})
     connections[0]!.receive()
     await flushPromises()
-    for (const selector of ['[aria-label="Лобби"]', `[aria-label="Комната ${room.id}"]`]) {
-      expect(wrapper.get(selector).text()).toContain('Занято: 1')
-    }
+    expect(wrapper.get('[aria-label="Лобби"]').text()).toContain('Занято: 1')
     expect(wrapper.find('[role="alert"]').exists()).toBe(true)
     api.invoke.mockResolvedValueOnce({data: {gameId: room.id, players: [
       {user_id: user, isReady: false}, {user_id: 'new-participant', isReady: false},
@@ -229,6 +226,6 @@ describe('WEB-004: уведомление Realtime → подтверждённ�
     connections[0]!.receive()
     await flushPromises()
     expect(wrapper.get('[aria-label="Лобби"]').text()).toContain('Занято: 2')
-    expect(wrapper.get(`[aria-label="Комната ${room.id}"]`).text()).toContain('Занято: 2')
+    expect(wrapper.find('article').exists()).toBe(false)
   })
 })

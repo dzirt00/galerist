@@ -5,6 +5,12 @@ import CreateGameForm from './CreateGameForm.vue'
 import GameList from './GameList.vue'
 import {computed, shallowRef, ref} from 'vue'
 import type {GameListItem} from './types/lobby'
+import GameLobby from './GameLobby.vue'
+
+interface ChangeData {
+  seat_count: number
+  turnDurationMinutes: number
+}
 
 const createdGame = shallowRef<GameListItem | null>(null)
 
@@ -32,6 +38,16 @@ const openLobby = (game: GameListItem) => {
   isCreateFormOpen.value = false
 }
 const isCreateFormOpen = ref(false)
+const showGameList = computed(() => createdGame.value === null)
+const editState = (changeData: ChangeData) => {
+  if (createdGame.value === null) return
+  createdGame.value = {...createdGame.value, ...changeData}
+}
+const updateOccupiedSeatCount = (value: number) => {
+  if (createdGame.value === null) return
+  createdGame.value = {...createdGame.value, occupiedSeatCount: value}
+}
+
 </script>
 
 <template>
@@ -55,7 +71,16 @@ const isCreateFormOpen = ref(false)
     </button>
 
 
-    <GameList :created-game="createdGame" @lobby-returned="openLobby"/>
+    <GameList v-if="showGameList" @lobby-returned="openLobby"
+              @game-joined="openLobby($event)"/>
+    <GameLobby
+      v-if="createdGame"
+      :key="createdGame.id"
+      :joined-game="createdGame"
+      @change-data="editState"
+      @occupied-seat-count-change="updateOccupiedSeatCount"
+    />
+
   </section>
   <p v-if="isLoadingProfile">Загружаем профиль…</p>
   <button

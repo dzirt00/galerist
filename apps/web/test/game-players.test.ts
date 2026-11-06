@@ -1,12 +1,19 @@
 import {passiveRealtime} from './helpers/passive-realtime'
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 import {enableAutoUnmount, flushPromises, mount} from '@vue/test-utils'
-import GameList from '../app/GameList.vue'
+import App from '../app/app.vue'
 
 const api = vi.hoisted(() => ({invoke: vi.fn()}))
 vi.mock('nuxt/app', () => ({
   useNuxtApp: () => ({$supabase: {...passiveRealtime,functions: {invoke: api.invoke}}}),
 }))
+vi.mock('../app/composable/auth', async () => {
+  const {ref} = await import('vue')
+  return {useProfile: () => ({
+    profile: ref({id: '11111111-1111-4111-8111-111111111111'}),
+    isLoadingProfile: ref(false), hasProfileError: ref(false), profileMessage: ref(''), loadProfile: vi.fn(),
+  })}
+})
 enableAutoUnmount(afterEach)
 
 const room = {id: '11111111-1111-4111-8111-111111111111',
@@ -33,11 +40,10 @@ beforeEach(() => {
   })
 })
 
-async function openLobby() {
-  const wrapper = mount(GameList)
-  await wrapper.get('button').trigger('click')
+async function openLobby(index = 0) {
+  const wrapper = mount(App)
   await flushPromises()
-  await wrapper.findAll('form')[0]!.trigger('submit')
+  await wrapper.findAll('form')[index]!.trigger('submit')
   await flushPromises()
   return wrapper
 }
@@ -80,18 +86,17 @@ describe('WEB-004: чтение состава лобби', () => {
     expect(refreshButton(wrapper).attributes('disabled')).toBeDefined()
     expect(readyButton(wrapper).attributes('disabled')).toBeDefined()
     expect(readyButton(wrapper).text()).not.toBe('Сохраняем…')
-    expect(wrapper.findAll('form button').every((button) => button.attributes('disabled') !== undefined)).toBe(true)
+    expect(wrapper.find('article').exists()).toBe(false)
     const callCount = api.invoke.mock.calls.length
     await refreshButton(wrapper).trigger('click')
     await readyButton(wrapper).trigger('click')
-    await wrapper.findAll('form')[1]!.trigger('submit')
     expect(api.invoke).toHaveBeenCalledTimes(callCount)
     resolve({data: roster, error: null})
     await flushPromises()
     expect(playerRows(wrapper)).toHaveLength(2)
     expect(refreshButton(wrapper).attributes('disabled')).toBeUndefined()
     expect(readyButton(wrapper).attributes('disabled')).toBeUndefined()
-    expect(wrapper.findAll('form button').every((button) => button.attributes('disabled') === undefined)).toBe(true)
+    expect(wrapper.find('article').exists()).toBe(false)
   })
 
   it('блокирует чтение во время сохранения готовности', async () => {
@@ -148,13 +153,12 @@ describe('WEB-004: чтение состава лобби', () => {
     },
   )
 
-  it('сбрасывает состав при новом присоединении и читает уже новую комнату', async () => {
-    const wrapper = await openLobby()
-    await refreshButton(wrapper).trigger('click')
+  it('после нового открытия читает состав выбранной комнаты', async () => {
+    const previous = await openLobby()
+    await refreshButton(previous).trigger('click')
     await flushPromises()
-    expect(playerRows(wrapper)).toHaveLength(2)
-    await wrapper.findAll('form')[1]!.trigger('submit')
-    await flushPromises()
+    previous.unmount()
+    const wrapper = await openLobby(1)
     expect(wrapper.get(lobbySelector).text()).toContain(otherRoom.id)
     expect(playerRows(wrapper)).toHaveLength(0)
     await refreshButton(wrapper).trigger('click')

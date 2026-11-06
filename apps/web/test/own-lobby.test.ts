@@ -115,7 +115,7 @@ describe('WEB-018: возврат в своё лобби', () => {
     expect(view.text()).toContain('Некорректный ответ сервера')
     expect(view.find('[aria-label="Лобби"]').exists()).toBe(false)
   })
-  it('устаревший возврат не заменяет новое лобби', async () => {
+  it('возврат после размонтирования не отправляет событие', async () => {
     const view = mount(GameList)
     await view.get('button').trigger('click')
     await flushPromises()
@@ -124,10 +124,9 @@ describe('WEB-018: возврат в своё лобби', () => {
     let resolve!: (value: unknown) => void
     api.invoke.mockReturnValueOnce(new Promise(done => { resolve = done }))
     await returnButton(view)!.trigger('click')
-    await view.setProps({createdGame: foreign})
+    view.unmount()
     resolve({data: own, error: null})
     await flushPromises()
-    expect(view.get('[aria-label="Лобби"]').text()).toContain(foreign.id)
     expect(view.emitted('lobbyReturned')).toBeUndefined()
   })
 })

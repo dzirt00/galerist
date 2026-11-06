@@ -40,7 +40,7 @@ describe('WEB-003: присоединение из списка', () => {
     await flushPromises()
     expect(wrapper.get('[role="alert"]').text()).toBe(message)
     expect(wrapper.text()).not.toContain('Private diagnostic')
-    expect(wrapper.find('[aria-label="Лобби"]').exists()).toBe(false)
+    expect(wrapper.emitted('gameJoined')).toBeUndefined()
     expect(wrapper.findAll('article')[0].text()).toContain('Занято: 1')
     expect(wrapper.get('button').attributes('disabled')).toBeUndefined()
     expect(wrapper.text()).not.toContain('Присоединяемся…')
@@ -60,11 +60,11 @@ describe('WEB-003: присоединение из списка', () => {
     await flushPromises()
     expect(wrapper.get('[role="alert"]').text()).toBe(failureMessage)
     expect(wrapper.text()).not.toContain('Private diagnostic')
-    expect(wrapper.find('[aria-label="Лобби"]').exists()).toBe(false)
+    expect(wrapper.emitted('gameJoined')).toBeUndefined()
     expect(wrapper.get('button').attributes('disabled')).toBeUndefined()
   })
 
-  it.each(['resolve', 'reject'])('WEB-018: создание лобби во время чтения JSON (%s) защищено от старого ответа', async (outcome) => {
+  it.each(['resolve', 'reject'])('WEB-018: размонтирование во время чтения JSON (%s) защищено от старого ответа', async (outcome) => {
     const wrapper = await openList()
     let resolve!: (value: unknown) => void
     let reject!: (reason: Error) => void
@@ -75,18 +75,19 @@ describe('WEB-003: присоединение из списка', () => {
     await wrapper.findAll('form')[0].trigger('submit')
     await flushPromises()
     expect(readBody).toHaveBeenCalledOnce()
-    await wrapper.setProps({createdGame: protectedRoom})
+    wrapper.unmount()
     await flushPromises()
     if (outcome === 'resolve') resolve({code: 'OWN_LOBBY_EXISTS', gameId: room.id})
     else reject(new Error('Private body read diagnostic'))
     await flushPromises()
-    expect(wrapper.get('[aria-label="Лобби"]').text()).toContain(protectedRoom.id)
+    expect(wrapper.emitted('gameJoined')).toBeUndefined()
+    expect(wrapper.emitted('lobbyReturned')).toBeUndefined()
     expect(wrapper.text()).not.toContain('У вас уже есть открытое лобби')
     expect(wrapper.text()).not.toContain(failureMessage)
     expect(wrapper.text()).not.toContain('Private body read diagnostic')
   })
 
-  it.each([false, true])('передаёт выбранную комнату (пароль: %s), показывает подтверждённое лобби', async (protectedEntry) => {
+  it.each([false, true])('передаёт выбранную комнату (пароль: %s), передаёт подтверждённый DTO родителю', async (protectedEntry) => {
     const wrapper = await openList()
     const selected = protectedEntry ? protectedRoom : room
     const article = wrapper.findAll('article')[protectedEntry ? 1 : 0]
@@ -97,9 +98,7 @@ describe('WEB-003: присоединение из списка', () => {
     expect(api.invoke).toHaveBeenLastCalledWith('join-game', {
       body: {gameId: selected.id, ...(protectedEntry && {password: '  пароль 🎨  '})},
     })
-    expect(wrapper.get('[aria-label="Лобби"]').text()).toContain('Вы в комнате ' + selected.id)
-    expect(wrapper.get('[aria-label="Лобби"]').text()).toContain('Занято: 2')
-    expect(wrapper.get('[aria-label="Лобби"]').text()).toContain('Свободно: 1')
+    expect(wrapper.emitted('gameJoined')).toEqual([[{...selected, occupiedSeatCount: 2}]])
     expect(article.text()).toContain('Занято: 2')
     if (protectedEntry) expect((article.get('input').element as HTMLInputElement).value).toBe('')
   })
@@ -110,13 +109,13 @@ describe('WEB-003: присоединение из списка', () => {
     api.invoke.mockReturnValueOnce(new Promise((done) => { resolve = done }))
     await wrapper.findAll('form')[0].trigger('submit')
     expect(wrapper.text()).toContain('Присоединяемся…')
-    expect(wrapper.find('[aria-label="Лобби"]').exists()).toBe(false)
+    expect(wrapper.emitted('gameJoined')).toBeUndefined()
     expect(wrapper.get('button').attributes('disabled')).toBeDefined()
     await wrapper.findAll('form')[1].trigger('submit')
     expect(api.invoke).toHaveBeenCalledTimes(2)
     resolve({data: {...room, occupiedSeatCount: 2}, error: null})
     await flushPromises()
-    expect(wrapper.find('[aria-label="Лобби"]').exists()).toBe(true)
+    expect(wrapper.emitted('gameJoined')).toHaveLength(1)
   })
 
   it.each([
@@ -134,14 +133,14 @@ describe('WEB-003: присоединение из списка', () => {
     await article.get('form').trigger('submit')
     await flushPromises()
     expect(wrapper.get('[role="alert"]').text()).toContain(String(message))
-    expect(wrapper.find('[aria-label="Лобби"]').exists()).toBe(false)
+    expect(wrapper.emitted('gameJoined')).toBeUndefined()
     expect(article.text()).toContain('Занято: 1')
     expect((article.get('input').element as HTMLInputElement).value).toBe('password')
     api.invoke.mockResolvedValueOnce({data: {...protectedRoom, occupiedSeatCount: 2}, error: null})
     await article.get('form').trigger('submit')
     await flushPromises()
     expect(wrapper.find('[role="alert"]').exists()).toBe(false)
-    expect(wrapper.find('[aria-label="Лобби"]').exists()).toBe(true)
+    expect(wrapper.emitted('gameJoined')).toHaveLength(1)
   })
 
   it.each(['exception', 'wrong-room', 'invalid-count'])('не подтверждает вход при %s', async (kind) => {
@@ -153,7 +152,28 @@ describe('WEB-003: присоединение из списка', () => {
     await wrapper.findAll('form')[0].trigger('submit')
     await flushPromises()
     expect(wrapper.get('[role="alert"]').text()).toBe(failureMessage)
-    expect(wrapper.find('[aria-label="Лобби"]').exists()).toBe(false)
+    expect(wrapper.emitted('gameJoined')).toBeUndefined()
     expect(wrapper.text()).not.toContain('private diagnostic')
   })
+})
+
+
+it.each(['success', 'error', 'exception'])('поздний ответ входа %s после размонтирования не подтверждает выбор', async (kind) => {
+  const wrapper = await openList()
+  let resolve!: (value: unknown) => void
+  let reject!: (reason: Error) => void
+  api.invoke.mockReturnValueOnce(new Promise((done, fail) => {resolve = done; reject = fail}))
+  await wrapper.get('article form').trigger('submit')
+  wrapper.unmount()
+  const readBody = vi.fn()
+  const context = new Response('', {status: 409})
+  context.json = readBody
+  if (kind === 'exception') reject(new Error('offline'))
+  else resolve(kind === 'success'
+    ? {data: {...room, occupiedSeatCount: 2}, error: null}
+    : {data: null, error: {context}})
+  await flushPromises()
+  expect(readBody).not.toHaveBeenCalled()
+  expect(wrapper.emitted('gameJoined')).toBeUndefined()
+  expect(wrapper.emitted('lobbyReturned')).toBeUndefined()
 })

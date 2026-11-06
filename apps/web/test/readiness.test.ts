@@ -1,12 +1,19 @@
 import {passiveRealtime} from './helpers/passive-realtime'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
-import GameList from '../app/GameList.vue'
+import App from '../app/app.vue'
 
 const api = vi.hoisted(() => ({ invoke: vi.fn() }))
 vi.mock('nuxt/app', () => ({
   useNuxtApp: () => ({ $supabase: {...passiveRealtime, functions: { invoke: api.invoke } } }),
 }))
+vi.mock('../app/composable/auth', async () => {
+  const {ref} = await import('vue')
+  return {useProfile: () => ({
+    profile: ref({id: '11111111-1111-4111-8111-111111111111'}),
+    isLoadingProfile: ref(false), hasProfileError: ref(false), profileMessage: ref(''), loadProfile: vi.fn(),
+  })}
+})
 enableAutoUnmount(afterEach)
 
 const room = { id: '11111111-1111-4111-8111-111111111111',
@@ -24,11 +31,10 @@ beforeEach(() => {
   })
 })
 
-async function openLobby() {
-  const wrapper = mount(GameList)
-  await wrapper.get('button').trigger('click')
+async function openLobby(index = 0) {
+  const wrapper = mount(App)
   await flushPromises()
-  await wrapper.findAll('form')[0]!.trigger('submit')
+  await wrapper.findAll('form')[index]!.trigger('submit')
   await flushPromises()
   return wrapper
 }
@@ -64,17 +70,16 @@ describe('WEB-004: подтверждённая готовность участ�
     expect(lobby.get('button').text()).toBe('Сохраняем…')
     expect(lobby.text()).toContain('Готовность неизвестна')
     expect(lobby.get('button').attributes('disabled')).toBeDefined()
-    expect(wrapper.findAll('form button').every((button) => button.attributes('disabled') !== undefined)).toBe(true)
+    expect(wrapper.find('article').exists()).toBe(false)
     const callCount = api.invoke.mock.calls.length
     await lobby.get('button').trigger('click')
-    await wrapper.findAll('form')[1]!.trigger('submit')
     expect(api.invoke).toHaveBeenCalledTimes(callCount)
     expect(lobby.text()).toContain(room.id)
     resolve({ data: { isReady: true }, error: null })
     await flushPromises()
     expect(lobby.findAll('p').map((row) => row.text())).toContain('Готов')
     expect(lobby.get('button').attributes('disabled')).toBeUndefined()
-    expect(wrapper.findAll('form button').every((button) => button.attributes('disabled') === undefined)).toBe(true)
+    expect(wrapper.find('article').exists()).toBe(false)
   })
 
   it.each(['response', 'exception'])('сохраняет готовность при ошибке %s и позволяет повтор', async (kind) => {
@@ -115,20 +120,17 @@ describe('WEB-004: подтверждённая готовность участ�
     },
   )
 
-  it('после смены комнаты сбрасывает готовность и использует новый gameId', async () => {
-    const wrapper = await openLobby()
-    await wrapper.get(lobbySelector).get('button').trigger('click')
+  it('новое открытие не наследует готовность прежней комнаты', async () => {
+    const previous = await openLobby()
+    await previous.get(lobbySelector).get('button').trigger('click')
     await flushPromises()
-    await wrapper.findAll('form')[1]!.trigger('submit')
-    await flushPromises()
+    previous.unmount()
+    const wrapper = await openLobby(1)
     const lobby = wrapper.get(lobbySelector)
     expect(lobby.text()).toContain(other.id)
     expect(lobby.text()).toContain('Готовность неизвестна')
-    expect(lobby.get('button').text()).toBe('Подтвердить готовность')
     await lobby.get('button').trigger('click')
     await flushPromises()
-    expect(api.invoke).toHaveBeenLastCalledWith('ready-to-game', {
-      body: { gameId: other.id, isReady: true },
-    })
+    expect(api.invoke).toHaveBeenLastCalledWith('ready-to-game', {body: {gameId: other.id, isReady: true}})
   })
 })
