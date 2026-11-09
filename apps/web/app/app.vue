@@ -58,7 +58,7 @@ const updateOccupiedSeatCount = (value: number) => {
   <p v-if="profileMessage" role="status">{{ profileMessage }}</p>
   <section v-if="profile">
     <h2>Мой профиль</h2>
-    <p>{{ profile.id }}</p>
+    <p>{{ profile.display_name }}</p>
 
     <CreateGameForm
       v-if="showCreateGame"

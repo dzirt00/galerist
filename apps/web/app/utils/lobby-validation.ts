@@ -24,4 +24,4 @@ export const isGamePlayersResponse = isObject({
 })
 export const isReadyResult = isObject({isReady: isBoolean})
 export const isSettingsResult = isObject({seat_count: isSeatCount, turnDurationMinutes: isTurnDurationMinutes})
-export const isProfile = isObject({id: isNonEmptyString, created_at: isNonEmptyString})
+export const isProfile = isObject({id: isNonEmptyString, created_at: isNonEmptyString, display_name: isNonEmptyString})

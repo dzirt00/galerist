@@ -1,12 +1,15 @@
 import {useNuxtApp} from 'nuxt/app'
-import {computed, onMounted, ref} from 'vue'
+import {computed, onMounted, onUnmounted, ref, watch} from 'vue'
 import {isProfile} from '../utils/lobby-validation'
 import {getSupabaseErrorMessage} from '../utils/api-errors'
 
 interface Profile {
   id: string;
   created_at: string
+  display_name: string
 }
+
+type Auth = 'signIn' | 'register'
 
 export function useProfile() {
   const {$supabase} = useNuxtApp()
@@ -26,7 +29,7 @@ export function useProfile() {
         profileMessage.value = getSupabaseErrorMessage(response.error, 'Не удалось проверить вход')
         hasProfileError.value = true
       } else if (response.data.session) {
-        const profileResponse = await $supabase.from('profiles').select('id, created_at').eq('id', response.data.session.user.id).maybeSingle()
+        const profileResponse = await $supabase.from('profiles').select('id, created_at, display_name').eq('id', response.data.session.user.id).maybeSingle()
         if (profileResponse.error) {
           profileMessage.value = getSupabaseErrorMessage(profileResponse.error, 'Не удалось загрузить профиль')
           hasProfileError.value = true
@@ -68,31 +71,82 @@ export function useProfile() {
 }
 
 export function useSignInLink() {
+  let isActive = true
   const {$supabase} = useNuxtApp()
   const email = ref('')
   const isSubmitting = ref(false)
   const signInMessage = ref('')
+  const authMode = ref<Auth>('signIn')
+  const displayName = ref<string>('')
+  const isRegistration = computed(() => (authMode.value === 'register'))
   const handlerSubmitting = computed(() => isSubmitting.value ? 'Отправляем…' : 'Получить ссылку')
+
+  watch(() => authMode.value, () => {
+    if (authMode.value === 'signIn') {
+      displayName.value = ''
+    }
+  })
 
   const sendSignInLink = async () => {
     if (isSubmitting.value) return
-    isSubmitting.value = true
-    signInMessage.value = ''
-    try {
-      const response = await $supabase.auth.signInWithOtp({email: email.value})
-      signInMessage.value = response.error ? getSupabaseErrorMessage(response.error, 'Не удалось отправить письмо. Попробуйте ещё раз') : 'Письмо отправлено. Проверьте почту'
-    } catch {
-      signInMessage.value = 'Не удалось отправить письмо. Попробуйте ещё раз'
-    } finally {
-      isSubmitting.value = false
+    if (authMode.value === 'signIn') {
+      isSubmitting.value = true
+      signInMessage.value = ''
+      try {
+        const response = await $supabase.auth.signInWithOtp(
+          {
+            email: email.value,
+            options: {
+              shouldCreateUser: false,
+            }
+          }
+        )
+        if (!isActive) return
+        signInMessage.value = response.error ? getSupabaseErrorMessage(response.error, 'Не удалось отправить письмо. Попробуйте ещё раз') : 'Письмо отправлено. Проверьте почту'
+      } catch {
+        if (isActive) signInMessage.value = 'Не удалось отправить письмо. Попробуйте ещё раз'
+      } finally {
+        if (isActive) isSubmitting.value = false
+      }
+    } else {
+      signInMessage.value = ''
+      const displayNameTrim = displayName.value.trim()
+      if (displayNameTrim === '' || displayNameTrim.length > 30) {
+        signInMessage.value = 'Имя должно быть не пустым'
+        return
+      }
+      isSubmitting.value = true
+      try {
+        const response = await $supabase.auth.signInWithOtp(
+          {
+            email: email.value,
+            options: {
+              shouldCreateUser: true,
+              data: {
+                display_name: displayName.value
+              }
+            }
+          })
+        if (!isActive) return
+        signInMessage.value = response.error ? getSupabaseErrorMessage(response.error, 'Не удалось отправить письмо. Попробуйте ещё раз') : 'Письмо отправлено. Проверьте почту'
+      } catch {
+        if (isActive) signInMessage.value = 'Не удалось отправить письмо. Попробуйте ещё раз'
+      } finally {
+        if (isActive) isSubmitting.value = false
+      }
     }
   }
-
+  onUnmounted(() => {
+    isActive = false
+  })
   return {
     email,
     isSubmitting,
     signInMessage,
     handlerSubmitting,
     sendSignInLink,
+    displayName,
+    isRegistration,
+    authMode,
   }
 }

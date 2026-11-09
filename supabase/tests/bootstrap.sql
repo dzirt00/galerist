@@ -5,7 +5,14 @@ CREATE ROLE authenticated NOLOGIN;
 -- Local stand-in for Supabase's server role; never a production migration.
 CREATE ROLE service_role NOLOGIN BYPASSRLS;
 CREATE SCHEMA auth;
-CREATE TABLE auth.users (id uuid PRIMARY KEY);
+-- Older lobby fixtures supply only an ID. Give those test users distinct names;
+-- profile-specific tests pass metadata explicitly, including missing/invalid names.
+CREATE SEQUENCE auth.fixture_profile_name;
+CREATE TABLE auth.users (
+  id uuid PRIMARY KEY,
+  raw_user_meta_data jsonb DEFAULT jsonb_build_object(
+    'display_name', 'fixture-' || nextval('auth.fixture_profile_name'))
+);
 
 CREATE FUNCTION auth.uid() RETURNS uuid
 LANGUAGE sql STABLE

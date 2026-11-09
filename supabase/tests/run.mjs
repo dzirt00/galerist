@@ -2,6 +2,7 @@ import { spawn, spawnSync } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { readFileSync, readdirSync } from 'node:fs'
 import { testRoomRestrictions } from './room-restrictions.mjs'
+import { testProfileDisplayName } from './profile-display-name.mjs'
 
 const testRoot = new URL('./', import.meta.url)
 const migrationRoot = new URL('../migrations/', import.meta.url)
@@ -68,12 +69,22 @@ try {
 
   const migrations = readdirSync(migrationRoot).filter((file) => file.endsWith('.sql')).sort()
   if (migrations.length === 0) throw new Error('No migrations found')
-  const setup = [
+  let setup = [
     readFileSync(new URL('bootstrap.sql', testRoot), 'utf8'),
     readFileSync(new URL('realtime-fixture.sql', testRoot), 'utf8'),
     ...migrations.map((file) => readFileSync(new URL(file, migrationRoot), 'utf8')),
   ].join('\n')
-  if (process.argv.includes('--room-restrictions')) {
+  if (!process.argv.includes('--room-restrictions')) {
+    await testProfileDisplayName({
+      setup, concurrentSql,
+      execute: (input) => docker(['exec', '-i', containerId, ...psqlArgs], { input }),
+    })
+    // Profile tests committed the real migrations for concurrency checks.
+    setup = ''
+  }
+  if (process.argv.includes('--profile-display-name')) {
+    console.log('WEB-009 profile database tests passed (local PostgreSQL fixture).')
+  } else if (process.argv.includes('--room-restrictions')) {
     await testRoomRestrictions({
       setup, concurrentSql,
       execute: (input) => docker(['exec', '-i', containerId, ...psqlArgs], { input }),
