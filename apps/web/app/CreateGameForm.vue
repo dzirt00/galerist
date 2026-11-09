@@ -24,6 +24,7 @@ interface ResponseCreateGame {
   hasPassword: boolean
   occupiedSeats: Seat[]
   turnDurationMinutes: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10
+  display_name: string
 }
 
 const MIN_LENGTH_PASSWORD = 8
@@ -93,6 +94,7 @@ const createGame = async () => {
       occupiedSeatCount: response.data.occupiedSeats.length,
       hasPassword: response.data.hasPassword,
       turnDurationMinutes: response.data.turnDurationMinutes,
+      display_name: response.data.display_name,
     }
     emit('gameCreated', emitGameCreated)
   } catch {

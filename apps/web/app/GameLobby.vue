@@ -14,6 +14,7 @@ interface ChangeData {
 interface GamePlayer {
   isReady: boolean,
   user_id: string
+  display_name: string
 }
 
 const props = defineProps<{ joinedGame: GameListItem | null }>()
@@ -208,7 +209,7 @@ const editChangeSeatCount = async () => {
 <template>
   <p v-if="message" role="alert">{{ message }}</p>
   <section v-if="joinedGame" aria-label="Лобби">
-    <h2>Вы в комнате {{ joinedGame.id }}</h2>
+    <h2>Вы в комнате {{ joinedGame.display_name }}</h2>
     <p>Всего мест: {{ joinedGame.seat_count }}</p>
     <p>Занято: {{ joinedGame.occupiedSeatCount }}</p>
     <p>Свободно: {{ freeSeatCount }}</p>
@@ -219,7 +220,7 @@ const editChangeSeatCount = async () => {
 
     <div v-if="hasPlayerList">
       <p v-for="el of playerRows" :key="el.user_id">
-        <span>{{ el.user_id }}</span>
+        <span>{{ el.display_name }}</span>
         <span>{{ el.readinessLabel }}</span>
       </p>
     </div>

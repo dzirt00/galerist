@@ -4,4 +4,5 @@ export interface GameListItem {
   occupiedSeatCount: number
   hasPassword: boolean
   turnDurationMinutes: number
+  display_name: string
 }

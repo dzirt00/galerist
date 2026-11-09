@@ -36,7 +36,7 @@ DECLARE
 BEGIN
   SELECT jsonb_agg(to_jsonb(gp) ORDER BY gp.game_id, gp.user_id)
     INTO before_rows FROM public.game_players gp;
-  SELECT jsonb_agg(to_jsonb(g) - 'ordinality' ORDER BY g.ordinality)
+  SELECT jsonb_agg(to_jsonb(g) - 'ordinality' - 'display_name' ORDER BY g.ordinality)
     INTO result FROM public.get_game_list() WITH ORDINALITY g;
   IF result IS DISTINCT FROM expected THEN
     RAISE EXCEPTION 'Wrong list DTO, room counts, password flags or ordering: %', result;

@@ -29,3 +29,6 @@ GRANT EXECUTE ON FUNCTION auth.uid() TO anon, authenticated;
 -- separately from row policies; this fixture is not a deployment migration.
 ALTER DEFAULT PRIVILEGES IN SCHEMA public
   GRANT ALL ON TABLES TO anon, authenticated;
+-- Supabase's server role can read profiles; BYPASSRLS alone grants no table access.
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+  GRANT SELECT ON TABLES TO service_role;

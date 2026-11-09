@@ -15,9 +15,9 @@ Deno.test('общая Edge-валидация: вложенные DTO, обяз�
   assert.equal(isCreateGameResult({code: 'LOBBY_NOT_OPEN', gameId: id}), false)
   assert.equal(isJoinGameRefusal({code: 'OWN_LOBBY_EXISTS', gameId: id}), true)
   assert.equal(isJoinGameRefusal({code: 'UNKNOWN', gameId: id}), false)
-  assert.equal(isGamePlayersRows([{user_id: id, is_ready: false}]), true)
-  assert.equal(isGamePlayersRows([{user_id: id, is_ready: 'false'}]), false)
-  assert.equal(isGameListItem({id, seat_count: 2, occupiedSeatCount: 3, hasPassword: false, turnDurationMinutes: 3}), false)
+  assert.equal(isGamePlayersRows([{user_id: id, is_ready: false, display_name: 'anna'}]), true)
+  assert.equal(isGamePlayersRows([{user_id: id, is_ready: 'false', display_name: 'anna'}]), false)
+  assert.equal(isGameListItem({id, seat_count: 2, occupiedSeatCount: 3, hasPassword: false, turnDurationMinutes: 3, display_name: 'anna'}), false)
 })
 Deno.test('единый JSON ошибки сохраняет сообщение, метаданные и CORS', async () => {
   const response = jsonError(409, 'У вас уже есть открытое лобби', {code: 'OWN_LOBBY_EXISTS', gameId: id})

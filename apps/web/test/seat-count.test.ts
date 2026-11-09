@@ -14,14 +14,14 @@ vi.mock('../app/composable/auth', async () => {
 })
 enableAutoUnmount(afterEach)
 
-const room = {id: '11111111-1111-4111-8111-111111111111',
+const room = {display_name: 'anna', id: '11111111-1111-4111-8111-111111111111',
   seat_count: 3, occupiedSeatCount: 2, hasPassword: false, turnDurationMinutes: 3}
-const otherRoom = {...room, id: '22222222-2222-4222-8222-222222222222'}
+const otherRoom = {...room, display_name: 'charlie', id: '22222222-2222-4222-8222-222222222222'}
 const userId = '33333333-3333-4333-8333-333333333333'
 type View = ReturnType<typeof mount>
 const lobby = (view: View) => view.get('[aria-label="Лобби"]')
 const save = (view: View) => lobby(view).findAll('button').find((button) => button.text() === 'Изменить')!
-const card = (view: View, id = room.id) => view.get('article[aria-label="Комната ' + id + '"]')
+const card = (view: View, id = room.id) => view.get('article[aria-label="Комната ' + (id === room.id ? room.display_name : otherRoom.display_name) + '"]')
 const capacity = (view: View, value: number, occupiedSeatCount = room.occupiedSeatCount) => {
   expect(lobby(view).text()).toContain('Всего мест: ' + value)
   expect(lobby(view).text()).toContain('Свободно: ' + (value - occupiedSeatCount))
@@ -32,11 +32,11 @@ beforeEach(() => {
   vi.resetAllMocks()
   api.invoke.mockImplementation(async (name, options) => {
     if (name === 'game-list') return {data: [{...room}, {...otherRoom}], error: null}
-    if (name === 'join-game') return {data: {...room, id: options.body.gameId}, error: null}
+    if (name === 'join-game') return {data: {...(options.body.gameId === otherRoom.id ? otherRoom : room)}, error: null}
     if (name === 'change-settings-game') return {data: {seat_count: options.body.seatCount, turnDurationMinutes: options.body.turnDurationMinutes}, error: null}
     if (name === 'ready-to-game') return {data: {isReady: options.body.isReady}, error: null}
     if (name === 'get-game-players') return {data: {gameId: options.body.gameId,
-      players: [{user_id: userId, isReady: true}]}, error: null}
+      players: [{display_name: 'boris', user_id: userId, isReady: true}]}, error: null}
     throw new Error('Unexpected function ' + name)
   })
 })
@@ -217,7 +217,7 @@ describe('WEB-004: изменение вместимости через UI', () 
     await save(view).trigger('click')
     await flushPromises()
     expect(lobby(view).get('button').text()).toBe('Снять готовность')
-    expect(lobby(view).text()).toContain(userId)
+    expect(lobby(view).text()).toContain('boris')
     expect(lobby(view).get('select').element.value).toBe('4')
     capacity(view, 4, 1)
   })
@@ -229,7 +229,7 @@ describe('WEB-004: изменение вместимости через UI', () 
     await flushPromises()
     previous.unmount()
     const view = await openLobby(otherRoom.id)
-    expect(lobby(view).text()).toContain(otherRoom.id)
+    expect(lobby(view).text()).toContain(otherRoom.display_name)
     capacity(view, 3)
   })
 })

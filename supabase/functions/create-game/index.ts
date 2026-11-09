@@ -2,7 +2,14 @@ import {hashGamePassword} from './game-password.ts'
 import {corsHeaders} from '@supabase/supabase-js/cors'
 import {jsonError, withAuthenticatedRequest} from '../_shared/http.ts'
 import {isRecord, isUUID} from '../_shared/validation.ts'
-import {isCreateGameResult, isGameRow, isGamePlayerRows, isSeatCount, isTurnDurationMinutes} from '../_shared/lobby-validation.ts'
+import {
+  isCreateGameResult,
+  isGameRow,
+  isGamePlayerRows,
+  isSeatCount,
+  isTurnDurationMinutes,
+  isDisplayName
+} from '../_shared/lobby-validation.ts'
 
 const errorMessage = {
   OWN_LOBBY_EXISTS: 'У вас уже есть открытое лобби',
@@ -37,7 +44,6 @@ Deno.serve(withAuthenticatedRequest('POST', 'Не удалось создать 
   if (password !== undefined && typeof password === 'string' && password.length < 8 && password.length > 0) {
     return jsonError(400, 'Пароль должен состоять как минимум из 8 символов')
   }
-
   if (!isTurnDurationMinutes(turnDurationMinutes)) {
     return jsonError(400, 'Укажите количество минут на ход')
   }
@@ -84,13 +90,17 @@ Deno.serve(withAuthenticatedRequest('POST', 'Не удалось создать 
     if (response.error || !isGameRow(response.data)) {
       return jsonError(500, 'Не удалось создать комнату')
     }
-    const id = response.data.id
+
     const creator_id = response.data['creator_id']
+    const id = response.data.id
     const seat_count = response.data['seat_count']
     const turn_duration_minutes = response.data['turn_duration_minutes']
     const responseGamePlayers = await supabaseAdmin.from('game_players').select('user_id').eq('game_id', id)
     const responseGamePasswords = await supabaseAdmin.from('game_passwords').select('game_id').eq('game_id', id).maybeSingle()
-
+    const responseProfiles = await supabaseAdmin.from('profiles').select('display_name').eq('id', creator_id).single()
+    if (responseProfiles.error || !isDisplayName(responseProfiles.data)) {
+      return jsonError(500, 'Не удалось создать комнату')
+    }
     if (!isGamePlayerRows(responseGamePlayers.data) || responseGamePlayers.error || responseGamePasswords.error) {
       return jsonError(500, 'Не удалось создать комнату')
     }
@@ -101,7 +111,8 @@ Deno.serve(withAuthenticatedRequest('POST', 'Не удалось создать 
       seat_count: seat_count,
       hasPassword: (responseGamePasswords.data) ? true : false,
       occupiedSeats: responseGamePlayers.data,
-      turnDurationMinutes: turn_duration_minutes
+      turnDurationMinutes: turn_duration_minutes,
+      display_name: responseProfiles.data.display_name
     }
     return Response.json(request, {status: 200, headers: corsHeaders})
   } catch {

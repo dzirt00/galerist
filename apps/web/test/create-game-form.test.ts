@@ -11,7 +11,7 @@ enableAutoUnmount(afterEach)
 
 const userId = '11111111-1111-4111-8111-111111111111'
 const gameId = '33333333-3333-4333-8333-333333333333'
-const lobby = {
+const lobby = {display_name: 'anna',
   id: gameId, creator_id: userId, seat_count: 3, hasPassword: false,
   occupiedSeats: [{ user_id: userId }], turnDurationMinutes: 3,
 }

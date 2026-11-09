@@ -60,3 +60,23 @@ DTO. HTTP-тест проверяет один RPC после Auth как для
 проверяется в supabase/tests/game-list.sql через npm run test:db.
 
 2026-10-28: fixture расширен для RPC `change_settings_game` (вместимость и таймер), а `join_game` и `get_game_list` возвращают `turnDurationMinutes`. Команды проверки — в `supabase/functions/change-settings-game/README.md`.
+# WEB-009: HTTP-проверки имён
+
+Новый тест использует `rpcResult` для ответа SQL и настоящий Supabase SDK
+и Edge-обработчики. Запустить две существующие локальные симуляции:
+
+```powershell
+postman simulation run postman/simulations/web002.sim.yaml --port 4917 --no-history --output ndjson
+postman simulation run postman/simulations/web003.sim.yaml --port 4919 --no-history --output ndjson
+```
+
+После событий `listening`, в отдельном терминале:
+
+```powershell
+deno test --config supabase/functions/create-game/deno.json --allow-net=127.0.0.1 --allow-env=SUPABASE_URL,SUPABASE_ANON_KEY,SUPABASE_SERVICE_ROLE_KEY supabase/functions/_shared/lobby-names-http.test.ts
+```
+
+Проверяются имена в пяти HTTP-ответах, отклонение отсутствующих/некорректных
+имён, исключение приватных полей и безопасный отказ чтения профиля.
+`rpcResult` не доказывает SQL JOIN: реальная SQL-проекция проверяется через
+`npm run test:db`. После тестов остановить оба процесса симуляции.

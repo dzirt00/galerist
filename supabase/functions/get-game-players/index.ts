@@ -32,7 +32,7 @@ Deno.serve(withAuthenticatedRequest('POST', 'Не удалось загрузи�
       }
       return jsonError(500, 'Не удалось обновить данные')
     }
-    
+
     if (isGamePlayersRows(supabaseAdminResponse.data)) {
 
       const request = {
@@ -40,7 +40,8 @@ Deno.serve(withAuthenticatedRequest('POST', 'Не удалось загрузи�
         players: supabaseAdminResponse.data.map(el => {
           return {
             isReady: el.is_ready,
-            user_id: el.user_id
+            user_id: el.user_id,
+            display_name: el.display_name
           }
         })
       }

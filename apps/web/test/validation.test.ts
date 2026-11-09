@@ -17,10 +17,10 @@ it('общие проверки отклоняют не объекты, непо
   expect(isIntegerInRange(1, 10)(10)).toBe(true)
 })
 it('проверки DTO сохраняют границы вместимости, таймера и состава', () => {
-  const room = {id: 'room', seat_count: 2, occupiedSeatCount: 2, hasPassword: false, turnDurationMinutes: 10}
+  const room = {display_name: 'anna', id: 'room', seat_count: 2, occupiedSeatCount: 2, hasPassword: false, turnDurationMinutes: 10}
   expect(isGameListItem(room)).toBe(true)
   expect(isGameListItem({...room, occupiedSeatCount: 3})).toBe(false)
   expect(isGameListItem({...room, turnDurationMinutes: 11})).toBe(false)
-  expect(isGamePlayersResponse({gameId: 'room', players: [{user_id: 'user', isReady: false}]})).toBe(true)
-  expect(isGamePlayersResponse({gameId: 'room', players: [{user_id: 'user', isReady: 0}]})).toBe(false)
+  expect(isGamePlayersResponse({gameId: 'room', players: [{display_name: 'boris', user_id: 'user', isReady: false}]})).toBe(true)
+  expect(isGamePlayersResponse({gameId: 'room', players: [{display_name: 'boris', user_id: 'user', isReady: 0}]})).toBe(false)
 })

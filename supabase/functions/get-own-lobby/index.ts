@@ -16,6 +16,13 @@ Deno.serve(withAuthenticatedRequest('POST', 'Не удалось вернуть�
   if (!isGameListItem(data) || data.id !== body.gameId || data.occupiedSeatCount < 1) {
     return jsonError(500, 'Некорректный ответ сервера')
   }
-  const {id, seat_count, occupiedSeatCount, hasPassword, turnDurationMinutes} = data
-  return Response.json({id, seat_count, occupiedSeatCount, hasPassword, turnDurationMinutes}, {headers: corsHeaders})
+  const {id, seat_count, occupiedSeatCount, hasPassword, turnDurationMinutes, display_name} = data
+  return Response.json({
+    id,
+    seat_count,
+    occupiedSeatCount,
+    hasPassword,
+    turnDurationMinutes,
+    display_name
+  }, {headers: corsHeaders})
 }))

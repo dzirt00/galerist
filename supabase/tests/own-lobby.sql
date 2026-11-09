@@ -12,7 +12,7 @@ BEGIN
   PERFORM public.join_game(room_id, visitor, 'private-hash');
   SELECT count(*) INTO before_count FROM public.game_players;
   result := public.get_own_lobby(room_id, u);
-  IF result IS DISTINCT FROM jsonb_build_object('id', room_id, 'seat_count', 2,
+  IF (result - 'display_name') IS DISTINCT FROM jsonb_build_object('id', room_id, 'seat_count', 2,
     'occupiedSeatCount', 2, 'hasPassword', true, 'turnDurationMinutes', 7) THEN
     RAISE EXCEPTION 'Restoration must expose only the safe current lobby DTO: %', result;
   END IF;

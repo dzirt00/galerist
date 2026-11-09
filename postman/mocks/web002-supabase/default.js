@@ -72,6 +72,13 @@ http.createServer(async (req, res) => {
       if (req.method === 'GET') {
         const table = url.pathname.slice('/rest/v1/'.length);
         if (options.readError === table) return reply(res, 400, { code: '42501', message: 'Private read diagnostic' });
+        if (table === 'profiles') {
+          if (url.searchParams.get('select') !== 'display_name'
+            || url.searchParams.get('id') !== 'eq.' + userId) {
+            return reply(res, 400, {message: 'Wrong profile projection or creator filter'});
+          }
+          return reply(res, 200, 'profileResult' in options ? options.profileResult : {display_name: 'anna'});
+        }
         const filter = url.searchParams.get(table === 'games' ? 'id' : 'game_id');
         const game = state.games[filter?.replace(/^eq\./, '')];
         if (table === 'games') {

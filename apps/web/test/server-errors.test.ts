@@ -8,7 +8,7 @@ import CreateGameForm from '../app/CreateGameForm.vue'
 const api = vi.hoisted(() => ({invoke: vi.fn()}))
 vi.mock('nuxt/app', () => ({useNuxtApp: () => ({$supabase: {...passiveRealtime, functions: {invoke: api.invoke}}})}))
 enableAutoUnmount(afterEach)
-const room = {id: '11111111-1111-4111-8111-111111111111', seat_count: 3,
+const room = {display_name: 'anna', id: '11111111-1111-4111-8111-111111111111', seat_count: 3,
   occupiedSeatCount: 1, hasPassword: false, turnDurationMinutes: 3}
 const serverMessage = 'Новая формулировка сервера <b>без HTML</b>'
 beforeEach(() => {

@@ -16,11 +16,11 @@ vi.mock('../app/composable/auth', async () => {
 })
 enableAutoUnmount(afterEach)
 
-const room = {id: '11111111-1111-4111-8111-111111111111', seat_count: 3,
+const room = {display_name: 'anna', id: '11111111-1111-4111-8111-111111111111', seat_count: 3,
   occupiedSeatCount: 2, hasPassword: false, turnDurationMinutes: 3}
 const user = '22222222-2222-4222-8222-222222222222'
 const roster = (isReady: boolean) => ({data: {gameId: room.id,
-  players: [{user_id: user, isReady}]}, error: null})
+  players: [{display_name: 'boris', user_id: user, isReady}]}, error: null})
 type Connection = {
   topic: string
   options: unknown
@@ -79,7 +79,7 @@ describe('WEB-004: уведомление Realtime → подтверждённ�
     connections[0]!.status('SUBSCRIBED')
     await flushPromises()
     expect(reads()).toEqual([['get-game-players', {body: {gameId: room.id}}]])
-    expect(rows(wrapper)).toEqual([`${user}не готов`])
+    expect(rows(wrapper)).toEqual([`borisне готов`])
     expect(wrapper.emitted('busyChange')?.at(-1)).toEqual([false])
   })
 
@@ -90,10 +90,10 @@ describe('WEB-004: уведомление Realtime → подтверждённ�
     api.invoke.mockResolvedValueOnce(roster(true))
     connections[0]!.receive()
     await flushPromises()
-    expect(rows(wrapper)).toEqual([`${user}готов`])
+    expect(rows(wrapper)).toEqual([`borisготов`])
     connections[0]!.receive()
     await flushPromises()
-    expect(rows(wrapper)).toEqual([`${user}не готов`])
+    expect(rows(wrapper)).toEqual([`borisне готов`])
     expect(reads()).toHaveLength(3)
   })
 
@@ -108,7 +108,7 @@ describe('WEB-004: уведомление Realtime → подтверждённ�
     pending.resolve(roster(false))
     await flushPromises()
     expect(reads()).toHaveLength(2)
-    expect(rows(wrapper)).toEqual([`${user}готов`])
+    expect(rows(wrapper)).toEqual([`borisготов`])
   })
 
   it.each(['ready', 'settings'])('откладывает сигнал до завершения %s', async (operation) => {
@@ -134,7 +134,7 @@ describe('WEB-004: уведомление Realtime → подтверждённ�
     expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось подключить')
     await wrapper.findAll('button')[1]!.trigger('click')
     await flushPromises()
-    expect(rows(wrapper)).toEqual([`${user}не готов`])
+    expect(rows(wrapper)).toEqual([`borisне готов`])
   })
 
   it('отклоняет состав другой комнаты и позволяет повтор по сигналу', async () => {
@@ -146,7 +146,7 @@ describe('WEB-004: уведомление Realtime → подтверждённ�
     expect(wrapper.find('[role="alert"]').exists()).toBe(true)
     connections[0]!.receive()
     await flushPromises()
-    expect(rows(wrapper)).toEqual([`${user}не готов`])
+    expect(rows(wrapper)).toEqual([`borisне готов`])
   })
 
   it('после закрытия удаляет канал, игнорирует старые сигналы и не запускает отложенный запрос', async () => {
@@ -189,20 +189,20 @@ describe('WEB-004: уведомление Realtime → подтверждённ�
     await flushPromises()
     expect(lobby.text()).toContain('Занято: 1')
     pending.resolve({data: {gameId: room.id, players: [
-      {user_id: user, isReady: false}, {user_id: 'new-participant', isReady: false},
+      {display_name: 'boris', user_id: user, isReady: false}, {display_name: 'charlie', user_id: 'new-participant', isReady: false},
     ]}, error: null})
     await flushPromises()
     expect(lobby.text()).toContain('Занято: 2')
     expect(lobby.text()).toContain('Свободно: 1')
     expect(lobby.text()).toContain('Всего мест: 3')
-    expect(lobby.text()).toContain('new-participant')
+    expect(lobby.text()).toContain('charlie')
     // Readiness notification still uses the same roster path and does not add seats.
     api.invoke.mockResolvedValueOnce({data: {gameId: room.id, players: [
-      {user_id: user, isReady: true}, {user_id: 'new-participant', isReady: false},
+      {display_name: 'boris', user_id: user, isReady: true}, {display_name: 'charlie', user_id: 'new-participant', isReady: false},
     ]}, error: null})
     connections[0]!.receive()
     await flushPromises()
-    expect(rows(wrapper)[0]).toBe(`${user}готов`)
+    expect(rows(wrapper)[0]).toBe(`borisготов`)
     expect(lobby.text()).toContain('Занято: 2')
   })
 
@@ -221,7 +221,7 @@ describe('WEB-004: уведомление Realtime → подтверждённ�
     expect(wrapper.get('[aria-label="Лобби"]').text()).toContain('Занято: 1')
     expect(wrapper.find('[role="alert"]').exists()).toBe(true)
     api.invoke.mockResolvedValueOnce({data: {gameId: room.id, players: [
-      {user_id: user, isReady: false}, {user_id: 'new-participant', isReady: false},
+      {display_name: 'boris', user_id: user, isReady: false}, {display_name: 'charlie', user_id: 'new-participant', isReady: false},
     ]}, error: null})
     connections[0]!.receive()
     await flushPromises()

@@ -9,7 +9,7 @@ vi.mock('nuxt/app', () => ({
 }))
 enableAutoUnmount(afterEach)
 
-const room = {
+const room = {display_name: 'anna',
   id: '11111111-1111-4111-8111-111111111111',
   seat_count: 4, occupiedSeatCount: 2, hasPassword: true, turnDurationMinutes: 3,
 }
@@ -21,6 +21,41 @@ beforeEach(() => {
 })
 
 describe('WEB-003: загрузка списка комнат', () => {
+  it('WEB-009: показывает имя из DTO текстом, сохраняя UUID только в запросе входа', async () => {
+    const named = {...room, display_name: '<b>anna</b>'}
+    api.invoke.mockResolvedValueOnce({data: [named], error: null})
+    const wrapper = mount(GameList)
+    await flushPromises()
+    const card = wrapper.get('article')
+    expect(card.attributes('aria-label')).toBe('Комната <b>anna</b>')
+    expect(card.text()).toContain('Комната <b>anna</b>')
+    expect(card.text()).not.toContain(room.id)
+    expect(card.find('b').exists()).toBe(false)
+    api.invoke.mockResolvedValueOnce({data: named, error: null})
+    await card.get('form').trigger('submit')
+    await flushPromises()
+    expect(api.invoke).toHaveBeenLastCalledWith('join-game', {body: {gameId: room.id}})
+    expect(wrapper.emitted('gameJoined')).toEqual([[named]])
+  })
+
+  it.each([undefined, null, '', '   ', 42])('WEB-009: отклоняет имя комнаты %s и разрешает повтор', async display_name => {
+    api.invoke.mockResolvedValueOnce({data: [{...room, display_name}], error: null})
+    const wrapper = mount(GameList)
+    await flushPromises()
+    expect(wrapper.find('article').exists()).toBe(false)
+    expect(wrapper.get('[role="alert"]').text()).toBe(errorMessage)
+    await wrapper.get('button').trigger('click')
+    await flushPromises()
+    expect(wrapper.get('article').text()).toContain(room.display_name)
+  })
+
+  it('WEB-009: сохраняет имя длиной 30 символов', async () => {
+    const display_name = 'abcdefghijklmnopqrstuvwxyz1234'
+    api.invoke.mockResolvedValueOnce({data: [{...room, display_name}], error: null})
+    const wrapper = mount(GameList)
+    await flushPromises()
+    expect(wrapper.get('article').text()).toContain(display_name)
+  })
   it('при монтировании запрашивает список и показывает ожидание без ложного пустого результата', async () => {
     const wrapper = mount(GameList)
     expect(api.invoke).toHaveBeenCalledExactlyOnceWith('game-list', { method: 'GET' })
@@ -31,7 +66,7 @@ describe('WEB-003: загрузка списка комнат', () => {
   })
 
   it('при монтировании отправляет GET и показывает отдельные данные каждой комнаты', async () => {
-    const second = { ...room, id: '22222222-2222-4222-8222-222222222222',
+    const second = { ...room, display_name: 'boris', id: '22222222-2222-4222-8222-222222222222',
       seat_count: 2, occupiedSeatCount: 2, hasPassword: false, turnDurationMinutes: 3 }
     api.invoke.mockResolvedValueOnce({ data: [room, second], error: null })
     const wrapper = mount(GameList)
@@ -40,12 +75,12 @@ describe('WEB-003: загрузка списка комнат', () => {
     const rows = wrapper.findAll('p').filter((p) => p.text().startsWith('Комната '))
       .map((p) => p.element.parentElement!.textContent)
     expect(rows).toHaveLength(2)
-    expect(rows[0]).toContain(room.id)
+    expect(rows[0]).toContain(room.display_name)
     expect(rows[0]).toContain('Всего мест: 4')
     expect(rows[0]).toContain('Занято: 2')
     expect(rows[0]).toContain('Свободно: 2')
     expect(rows[0]).toContain('Пароль: требуется')
-    expect(rows[1]).toContain(second.id)
+    expect(rows[1]).toContain(second.display_name)
     expect(rows[1]).toContain('Свободно: 0')
     expect(rows[1]).toContain('Пароль: не требуется')
     expect(wrapper.text()).not.toContain('Комнат пока нет')
@@ -76,24 +111,24 @@ describe('WEB-003: загрузка списка комнат', () => {
     await flushPromises()
     expect(wrapper.text()).toContain(errorMessage)
     expect(wrapper.text()).not.toContain('Private diagnostic')
-    expect(wrapper.text()).not.toContain(room.id)
+    expect(wrapper.text()).not.toContain(room.display_name)
     expect(wrapper.text()).not.toContain('Комнат пока нет')
     expect(wrapper.get('button').attributes('disabled')).toBeUndefined()
     await wrapper.get('button').trigger('click')
     await flushPromises()
     expect(api.invoke).toHaveBeenCalledTimes(2)
-    expect(wrapper.text()).toContain(room.id)
+    expect(wrapper.text()).toContain(room.display_name)
     expect(wrapper.text()).not.toContain(errorMessage)
   })
 
   it('повторная загрузка заменяет прежний список актуальным пустым ответом', async () => {
     const wrapper = mount(GameList)
     await flushPromises()
-    expect(wrapper.text()).toContain(room.id)
+    expect(wrapper.text()).toContain(room.display_name)
     api.invoke.mockResolvedValueOnce({ data: [], error: null })
     await wrapper.get('button').trigger('click')
     await flushPromises()
-    expect(wrapper.text()).not.toContain(room.id)
+    expect(wrapper.text()).not.toContain(room.display_name)
     expect(wrapper.text()).toContain('Комнат пока нет')
   })
 
@@ -119,12 +154,12 @@ describe('WEB-003: загрузка списка комнат', () => {
     const wrapper = mount(GameList)
     await flushPromises()
     expect(wrapper.text()).toContain(errorMessage)
-    expect(wrapper.text()).not.toContain(room.id)
+    expect(wrapper.text()).not.toContain(room.display_name)
     expect(wrapper.text()).not.toContain('Комнат пока нет')
     expect(wrapper.get('button').attributes('disabled')).toBeUndefined()
     await wrapper.get('button').trigger('click')
     await flushPromises()
-    expect(wrapper.text()).toContain(room.id)
+    expect(wrapper.text()).toContain(room.display_name)
     expect(wrapper.text()).not.toContain(errorMessage)
   })
 })

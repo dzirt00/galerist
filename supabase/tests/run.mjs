@@ -99,6 +99,7 @@ try {
   const sql = [
     'BEGIN;',
     setup,
+    fixture('lobby-display-names.sql'),
     readFileSync(new URL('game-list.sql', testRoot), 'utf8'),
     readFileSync(new URL('profiles.sql', testRoot), 'utf8'),
     isolatedFixture(creationTests),

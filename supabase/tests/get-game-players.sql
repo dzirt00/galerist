@@ -39,7 +39,7 @@ BEGIN
   IF result IS DISTINCT FROM expected THEN
     RAISE EXCEPTION 'Another participant must read the same roster, not just their own row';
   END IF;
-  SELECT jsonb_agg(to_jsonb(p)) INTO result
+  SELECT jsonb_agg(to_jsonb(p) - 'display_name') INTO result
     FROM public.get_game_players(other_room_id, first_user) p;
   IF result IS DISTINCT FROM jsonb_build_array(
     jsonb_build_object('user_id', first_user, 'is_ready', false)) THEN
@@ -51,7 +51,7 @@ BEGIN
   END IF;
 
   PERFORM public.ready_to_game(room_id, first_user, false);
-  SELECT jsonb_agg(to_jsonb(p) ORDER BY p.user_id) INTO result
+  SELECT jsonb_agg(to_jsonb(p) - 'display_name' ORDER BY p.user_id) INTO result
     FROM public.get_game_players(room_id, second_user) p;
   IF result IS DISTINCT FROM jsonb_build_array(
     jsonb_build_object('user_id', first_user, 'is_ready', false),

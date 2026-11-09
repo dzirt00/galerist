@@ -16,12 +16,12 @@ vi.mock('../app/composable/auth', async () => {
 })
 enableAutoUnmount(afterEach)
 
-const room = {id: '11111111-1111-4111-8111-111111111111',
+const room = {display_name: 'anna', id: '11111111-1111-4111-8111-111111111111',
   seat_count: 3, occupiedSeatCount: 2, hasPassword: false, turnDurationMinutes: 3}
 const otherRoom = {...room, id: '22222222-2222-4222-8222-222222222222'}
 const firstUser = '33333333-3333-4333-8333-333333333333'
 const secondUser = '44444444-4444-4444-8444-444444444444'
-const players = [{user_id: firstUser, isReady: true}, {user_id: secondUser, isReady: false}]
+const players = [{display_name: 'anna', user_id: firstUser, isReady: true}, {display_name: 'boris', user_id: secondUser, isReady: false}]
 const roster = {gameId: room.id, players}
 const lobbySelector = '[aria-label="Лобби"]'
 type View = ReturnType<typeof mount>
@@ -49,6 +49,20 @@ async function openLobby(index = 0) {
 }
 
 describe('WEB-004: чтение состава лобби', () => {
+  it.each([undefined, null, '', ' ', 42])('WEB-009: отклоняет имя участника %s, затем читает состав повторно', async display_name => {
+    const wrapper = await openLobby()
+    api.invoke.mockResolvedValueOnce({data: {gameId: room.id,
+      players: [{...players[0], display_name}]}, error: null})
+    await refreshButton(wrapper).trigger('click')
+    await flushPromises()
+    expect(playerRows(wrapper)).toHaveLength(0)
+    expect(wrapper.find('[role="alert"]').exists()).toBe(true)
+    await refreshButton(wrapper).trigger('click')
+    await flushPromises()
+    expect(playerRows(wrapper).map(row => row.findAll('span')[0]!.text())).toEqual(['anna', 'boris'])
+    expect(wrapper.get(lobbySelector).text()).not.toContain(firstUser)
+    expect(wrapper.get(lobbySelector).text()).not.toContain(secondUser)
+  })
   it('загружает состав выбранной комнаты по кнопке и показывает готовность каждого', async () => {
     const wrapper = await openLobby()
     expect(playerRows(wrapper)).toHaveLength(0)
@@ -57,7 +71,7 @@ describe('WEB-004: чтение состава лобби', () => {
     await flushPromises()
     expect(api.invoke).toHaveBeenLastCalledWith('get-game-players', {body: {gameId: room.id}})
     expect(playerRows(wrapper).map((row) => row.findAll('span').map((span) => span.text())))
-      .toEqual([[firstUser, 'готов'], [secondUser, 'не готов']])
+      .toEqual([['anna', 'готов'], ['boris', 'не готов']])
     expect(wrapper.find('[role="alert"]').exists()).toBe(false)
   })
 
@@ -66,11 +80,11 @@ describe('WEB-004: чтение состава лобби', () => {
     await refreshButton(wrapper).trigger('click')
     await flushPromises()
     api.invoke.mockResolvedValueOnce({data: {gameId: room.id,
-      players: [{user_id: firstUser, isReady: false}]}, error: null})
+      players: [{display_name: 'anna', user_id: firstUser, isReady: false}]}, error: null})
     await refreshButton(wrapper).trigger('click')
     await flushPromises()
     expect(playerRows(wrapper)).toHaveLength(1)
-    expect(playerRows(wrapper)[0]!.findAll('span').map((span) => span.text())).toEqual([firstUser, 'не готов'])
+    expect(playerRows(wrapper)[0]!.findAll('span').map((span) => span.text())).toEqual(['anna', 'не готов'])
     expect(wrapper.get(lobbySelector).text()).not.toContain(secondUser)
   })
 
@@ -134,8 +148,8 @@ describe('WEB-004: чтение состава лобби', () => {
   it.each([null, [], true, {}, {players}, {gameId: otherRoom.id, players},
     {gameId: room.id, players: null}, {gameId: room.id, players: [null]},
     {gameId: room.id, players: [7]}, {gameId: room.id, players: [[]]},
-    {gameId: room.id, players: [{user_id: '', isReady: true}]},
-    {gameId: room.id, players: [{user_id: firstUser, isReady: 'true'}]},
+    {gameId: room.id, players: [{display_name: 'boris', user_id: '', isReady: true}]},
+    {gameId: room.id, players: [{display_name: 'anna', user_id: firstUser, isReady: 'true'}]},
     {gameId: room.id, players: [players[0], {user_id: secondUser}]}])(
     'отклоняет неверный DTO целиком: %j', async (data) => {
       const wrapper = await openLobby()
@@ -159,7 +173,7 @@ describe('WEB-004: чтение состава лобби', () => {
     await flushPromises()
     previous.unmount()
     const wrapper = await openLobby(1)
-    expect(wrapper.get(lobbySelector).text()).toContain(otherRoom.id)
+    expect(wrapper.get(lobbySelector).text()).toContain(otherRoom.display_name)
     expect(playerRows(wrapper)).toHaveLength(0)
     await refreshButton(wrapper).trigger('click')
     await flushPromises()

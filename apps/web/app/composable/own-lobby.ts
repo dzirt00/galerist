@@ -47,9 +47,9 @@ export function useOwnLobby(onReturned: (game: GameListItem) => void) {
         returnMessage.value = 'Некорректный ответ сервера'
         return
       }
-      const {id, seat_count, occupiedSeatCount, hasPassword, turnDurationMinutes} = response.data
+      const {id, seat_count, occupiedSeatCount, hasPassword, turnDurationMinutes, display_name} = response.data
       ownLobbyId.value = null
-      onReturned({id, seat_count, occupiedSeatCount, hasPassword, turnDurationMinutes})
+      onReturned({id, seat_count, occupiedSeatCount, hasPassword, turnDurationMinutes, display_name})
     } catch {
       if (current()) returnMessage.value = fallback
     } finally {

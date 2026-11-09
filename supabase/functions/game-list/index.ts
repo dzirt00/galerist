@@ -11,8 +11,15 @@ Deno.serve(withAuthenticatedRequest('GET', 'Ошибка чтения запис
     return jsonError(500, 'Ошибка чтения записей')
   }
 
-  const gameList: GameListItem[] = data.map(({id, seat_count, occupiedSeatCount, hasPassword, turnDurationMinutes}) =>
-    ({id, seat_count, occupiedSeatCount, hasPassword, turnDurationMinutes}))
+  const gameList: GameListItem[] = data.map(({
+                                               id,
+                                               seat_count,
+                                               occupiedSeatCount,
+                                               hasPassword,
+                                               turnDurationMinutes,
+                                               display_name
+                                             }) =>
+    ({id, seat_count, occupiedSeatCount, hasPassword, turnDurationMinutes, display_name}))
 
   return Response.json(gameList, {status: 200, headers: corsHeaders})
 }))

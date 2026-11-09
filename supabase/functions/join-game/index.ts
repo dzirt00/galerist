@@ -58,6 +58,13 @@ Deno.serve(withAuthenticatedRequest('POST', 'Не удалось присоед�
     return fail(500, 'Не удалось присоединиться к комнате. Попробуйте ещё раз')
   }
 
-  const {id, seat_count, occupiedSeatCount, hasPassword, turnDurationMinutes} = result.data
-  return Response.json({id, seat_count, occupiedSeatCount, hasPassword, turnDurationMinutes}, {headers: corsHeaders})
+  const {id, seat_count, occupiedSeatCount, hasPassword, turnDurationMinutes, display_name} = result.data
+  return Response.json({
+    id,
+    seat_count,
+    occupiedSeatCount,
+    hasPassword,
+    turnDurationMinutes,
+    display_name
+  }, {headers: corsHeaders})
 }, {requireAdminKeyBeforeAuth: true}))

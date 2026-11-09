@@ -1,6 +1,6 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 import {enableAutoUnmount, flushPromises, mount} from '@vue/test-utils'
-import {passiveRealtime} from './helpers/passive-realtime'
+import {passiveRealtime} from './helpers/passive-realtime.js'
 import App from '../app/app.vue'
 import CreateGameForm from '../app/CreateGameForm.vue'
 import GameList from '../app/GameList.vue'
@@ -16,7 +16,8 @@ vi.mock('../app/composable/auth', async () => {
 })
 enableAutoUnmount(afterEach)
 const ownId = '22222222-2222-4222-8222-222222222222'
-const foreign = {id: '33333333-3333-4333-8333-333333333333', seat_count: 4,
+const foreign = {
+  display_name: 'anna', id: '33333333-3333-4333-8333-333333333333', seat_count: 4,
   occupiedSeatCount: 1, hasPassword: false, turnDurationMinutes: 3}
 const own = {...foreign, id: ownId, seat_count: 2, occupiedSeatCount: 2, hasPassword: true, turnDurationMinutes: 7}
 function denied(code = 'OWN_LOBBY_EXISTS', gameId: unknown = ownId, status = 409) {
@@ -59,7 +60,7 @@ describe('WEB-018: возврат в своё лобби', () => {
     await flushPromises()
     expect(api.invoke).toHaveBeenLastCalledWith('get-own-lobby', {body: {gameId: ownId}})
     expect(view.findAll('[aria-label="Лобби"]')).toHaveLength(1)
-    expect(view.get('[aria-label="Лобби"]').text()).toContain(ownId)
+    expect(view.get('[aria-label="Лобби"]').text()).toContain(own.display_name)
     expect(view.get('[aria-label="Лобби"]').text()).toContain('Количество минут на ход игрока 7')
     expect(view.get('[aria-label="Лобби"]').text()).toContain('Занято: 2')
     expect(view.get('[aria-label="Лобби"]').text()).toContain('Пароль: требуется')

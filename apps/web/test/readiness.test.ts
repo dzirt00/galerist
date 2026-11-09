@@ -1,4 +1,4 @@
-import {passiveRealtime} from './helpers/passive-realtime'
+import {passiveRealtime} from './helpers/passive-realtime.js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import App from '../app/app.vue'
@@ -16,7 +16,8 @@ vi.mock('../app/composable/auth', async () => {
 })
 enableAutoUnmount(afterEach)
 
-const room = { id: '11111111-1111-4111-8111-111111111111',
+const room = {
+  display_name: 'anna', id: '11111111-1111-4111-8111-111111111111',
   seat_count: 3, occupiedSeatCount: 1, hasPassword: false, turnDurationMinutes: 3 }
 const other = { ...room, id: '22222222-2222-4222-8222-222222222222' }
 const lobbySelector = '[aria-label="Лобби"]'
@@ -74,7 +75,7 @@ describe('WEB-004: подтверждённая готовность участ�
     const callCount = api.invoke.mock.calls.length
     await lobby.get('button').trigger('click')
     expect(api.invoke).toHaveBeenCalledTimes(callCount)
-    expect(lobby.text()).toContain(room.id)
+    expect(lobby.text()).toContain(room.display_name)
     resolve({ data: { isReady: true }, error: null })
     await flushPromises()
     expect(lobby.findAll('p').map((row) => row.text())).toContain('Готов')
@@ -127,7 +128,7 @@ describe('WEB-004: подтверждённая готовность участ�
     previous.unmount()
     const wrapper = await openLobby(1)
     const lobby = wrapper.get(lobbySelector)
-    expect(lobby.text()).toContain(other.id)
+    expect(lobby.text()).toContain(other.display_name)
     expect(lobby.text()).toContain('Готовность неизвестна')
     await lobby.get('button').trigger('click')
     await flushPromises()

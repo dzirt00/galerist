@@ -35,7 +35,7 @@ const showEmptyList = computed(() => !isLoading.value && hasLoaded.value && stat
 const returnLabel = computed(() => isReturning.value ? 'Возвращаемся…' : 'Вернуться в своё лобби')
 const roomCards = computed(() => state.value.map(game => ({
   game,
-  label: `Комната ${game.id}`,
+  label: `Комната ${game.display_name}`,
   passwordInputId: `password-${game.id}`,
   freeSeatCount: game.seat_count - game.occupiedSeatCount,
   passwordLabel: game.hasPassword ? 'требуется' : 'не требуется',
@@ -130,7 +130,7 @@ const joinGame = async (game: GameListItem) => {
 
     <article v-for="card in roomCards" :key="card.game.id" :aria-label="card.label">
       <div>
-        <p>Комната {{ card.game.id }}</p>
+        <p>Комната {{ card.game.display_name }}</p>
         <p>Всего мест: {{ card.game.seat_count }}</p>
         <p>Занято: {{ card.game.occupiedSeatCount }}</p>
         <p>Свободно: {{ card.freeSeatCount }}</p>
