@@ -315,7 +315,7 @@
 | `get_game_players` | Серверная SQL-функция чтения состава комнаты: проверяет участие по `p_game_id` и `p_user_id`, возвращает `user_id` и `is_ready` всех участников выбранной комнаты в порядке `user_id`. |
 | `get-game-players` | Защищённая Edge Function чтения состава: принимает `{gameId}`, получает пользователя из Auth, вызывает `get_game_players` и возвращает `{gameId, players}`. |
 | `GamePlayer` | Элемент публичного состава лобби: `user_id` и `isReady`; не является состоянием игрока движка. |
-| `RequestGamePlayer` / `players` | Ответ чтения состава `{gameId, players: GamePlayer[]}` / массив участников выбранной комнаты. |
+| `RequestGamePlayer` / `players` | Ответ чтения состава `{gameId, seat_count, turnDurationMinutes, players: GamePlayer[]}` / массив участников выбранной комнаты. Настройки относятся к комнате; в HTTP передаются один раз рядом с составом. |
 
 ## Серверная HTTP-инфраструктура
 

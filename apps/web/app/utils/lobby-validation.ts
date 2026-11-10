@@ -22,6 +22,8 @@ export const isResponseCreateGame = isObject({
 })
 export const isGamePlayersResponse = isObject({
   gameId: isString,
+  seat_count: isSeatCount,
+  turnDurationMinutes: isTurnDurationMinutes,
 
   players: isArrayOf(isObject({user_id: isNonEmptyString, isReady: isBoolean, display_name: isNonEmptyString,})),
 })

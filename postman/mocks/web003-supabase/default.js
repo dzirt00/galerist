@@ -71,8 +71,11 @@ http.createServer(async (req, res) => {
       if (!members.some((item) => item.userId === body.p_user_id)) {
         return reply(res, 404, { code: 'P0002', message: 'Missing membership' });
       }
+      const game = (options.games || []).find((item) => item.id === body.p_game_id);
       return reply(res, 200, members.sort((a, b) => a.userId.localeCompare(b.userId))
-        .map((item) => ({ user_id: item.userId, is_ready: item.isReady })));
+        .map((item) => ({ user_id: item.userId, is_ready: item.isReady,
+          display_name: item.display_name || 'member', seat_count: game?.seat_count ?? 3,
+          turn_duration_minutes: game?.turnDurationMinutes ?? 3 })));
     }
 
     if (req.method === 'POST' && url.pathname === '/rest/v1/rpc/ready_to_game') {

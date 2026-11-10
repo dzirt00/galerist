@@ -35,7 +35,7 @@ beforeEach(() => {
     if (name === 'join-game') return {data: {...(options.body.gameId === otherRoom.id ? otherRoom : room)}, error: null}
     if (name === 'change-settings-game') return {data: {seat_count: options.body.seatCount, turnDurationMinutes: options.body.turnDurationMinutes}, error: null}
     if (name === 'ready-to-game') return {data: {isReady: options.body.isReady}, error: null}
-    if (name === 'get-game-players') return {data: {gameId: options.body.gameId,
+    if (name === 'get-game-players') return {data: {gameId: options.body.gameId, seat_count: 3, turnDurationMinutes: 3,
       players: [{display_name: 'boris', user_id: userId, isReady: true}]}, error: null}
     throw new Error('Unexpected function ' + name)
   })
@@ -166,7 +166,8 @@ describe('WEB-004: изменение вместимости через UI', () 
     const calls = api.invoke.mock.calls.length
     await save(view).trigger('click')
     expect(api.invoke).toHaveBeenCalledTimes(calls)
-    resolve({data: operation === 'ready-to-game' ? {isReady: true} : {gameId: room.id, players: []}, error: null})
+    resolve({data: operation === 'ready-to-game' ? {isReady: true}
+      : {gameId: room.id, seat_count: 3, turnDurationMinutes: 3, players: []}, error: null})
     await flushPromises()
     expect(save(view).attributes('disabled')).toBeUndefined()
     await save(view).trigger('click')

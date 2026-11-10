@@ -15,8 +15,12 @@ Deno.test('общая Edge-валидация: вложенные DTO, обяз�
   assert.equal(isCreateGameResult({code: 'LOBBY_NOT_OPEN', gameId: id}), false)
   assert.equal(isJoinGameRefusal({code: 'OWN_LOBBY_EXISTS', gameId: id}), true)
   assert.equal(isJoinGameRefusal({code: 'UNKNOWN', gameId: id}), false)
-  assert.equal(isGamePlayersRows([{user_id: id, is_ready: false, display_name: 'anna'}]), true)
-  assert.equal(isGamePlayersRows([{user_id: id, is_ready: 'false', display_name: 'anna'}]), false)
+  const row = {user_id: id, is_ready: false, display_name: 'anna', seat_count: 3, turn_duration_minutes: 3}
+  assert.equal(isGamePlayersRows([row]), true)
+  for (const value of [[], [row, {...row, seat_count: 4}], [row, {...row, turn_duration_minutes: 5}],
+    [{...row, is_ready: 'false'}], [{...row, seat_count: 1}], [{...row, turn_duration_minutes: 11}],
+    [{...row, turn_duration_minutes: undefined}]]) assert.equal(isGamePlayersRows(value), false)
+  assert.equal(isGamePlayersRows([row, {...row, user_id: '22222222-2222-4222-8222-222222222222'}]), true)
   assert.equal(isGameListItem({id, seat_count: 2, occupiedSeatCount: 3, hasPassword: false, turnDurationMinutes: 3, display_name: 'anna'}), false)
 })
 Deno.test('единый JSON ошибки сохраняет сообщение, метаданные и CORS', async () => {

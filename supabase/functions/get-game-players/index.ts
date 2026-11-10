@@ -34,9 +34,10 @@ Deno.serve(withAuthenticatedRequest('POST', 'Не удалось загрузи�
     }
 
     if (isGamePlayersRows(supabaseAdminResponse.data)) {
-
       const request = {
         gameId: body.gameId,
+        seat_count: supabaseAdminResponse.data[0].seat_count,
+        turnDurationMinutes: supabaseAdminResponse.data[0].turn_duration_minutes,
         players: supabaseAdminResponse.data.map(el => {
           return {
             isReady: el.is_ready,

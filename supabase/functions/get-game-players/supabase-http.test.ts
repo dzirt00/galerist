@@ -53,8 +53,8 @@ Deno.test('get-game-players: real HTTP and SDK against local Postman simulation'
       const response = await post({gameId, userId: otherUser, p_user_id: otherUser})
       assert.equal(response.status, 200)
       assert.equal(response.headers.get('access-control-allow-origin'), '*')
-      assert.deepEqual(await response.json(), {gameId, players: [
-        {user_id: userId, isReady: true}, {user_id: otherUser, isReady: false}]})
+      assert.deepEqual(await response.json(), {gameId, seat_count: 3, turnDurationMinutes: 3, players: [
+        {user_id: userId, isReady: true, display_name: 'member'}, {user_id: otherUser, isReady: false, display_name: 'member'}]})
       const snapshot = await state()
       assert.deepEqual(snapshot.options.readyMembers, readyMembers)
       assert.equal(snapshot.calls.length, 2)
@@ -73,13 +73,13 @@ Deno.test('get-game-players: real HTTP and SDK against local Postman simulation'
       await reset()
       const response = await post()
       assert.equal(response.status, 200)
-      assert.deepEqual(await response.json(), {gameId, players: [{user_id: userId, isReady: false}]})
+      assert.deepEqual(await response.json(), {gameId, seat_count: 3, turnDurationMinutes: 3, players: [{user_id: userId, isReady: false, display_name: 'member'}]})
     })
     await test.step('fresh reads reflect saved true and false', async () => {
       for (const isReady of [true, false]) {
         await reset({readyMembers: [{gameId, userId, isReady}, {gameId, userId: otherUser, isReady: true}]})
-        assert.deepEqual(await (await post()).json(), {gameId, players: [
-          {user_id: userId, isReady}, {user_id: otherUser, isReady: true}]})
+        assert.deepEqual(await (await post()).json(), {gameId, seat_count: 3, turnDurationMinutes: 3, players: [
+          {user_id: userId, isReady, display_name: 'member'}, {user_id: otherUser, isReady: true, display_name: 'member'}]})
       }
     })
     for (const payload of [null, [], {}, 'room', {gameId: null}, {gameId: 1}, {gameId: 'wrong'}]) {
@@ -112,7 +112,28 @@ Deno.test('get-game-players: real HTTP and SDK against local Postman simulation'
         assert.equal((await state()).calls.length, 1)
       })
     }
-    const validRow = {user_id: userId, is_ready: true}
+    const validRow = {user_id: userId, is_ready: true, display_name: 'anna', seat_count: 4, turn_duration_minutes: 5}
+    await test.step('saved settings are returned once beside the roster with snake-case SQL conversion', async () => {
+      await reset({rpcResult: [validRow, {...validRow, user_id: otherUser, display_name: 'boris'}]})
+      assert.deepEqual(await (await post()).json(), {gameId, seat_count: 4, turnDurationMinutes: 5,
+        players: [{user_id: userId, isReady: true, display_name: 'anna'},
+          {user_id: otherUser, isReady: true, display_name: 'boris'}]})
+      assert.deepEqual((await state()).calls.map((call: {path: string}) => call.path),
+        ['/auth/v1/user', '/rest/v1/rpc/get_game_players'])
+    })
+    for (const rpcResult of [[], [validRow, {...validRow, seat_count: 3}],
+      [validRow, {...validRow, turn_duration_minutes: 7}], [{...validRow, seat_count: 1}],
+      [{...validRow, turn_duration_minutes: 11}], [{...validRow, seat_count: undefined}],
+      [{...validRow, turn_duration_minutes: undefined}]]) {
+      await test.step('invalid settings result ' + JSON.stringify(rpcResult), async () => {
+        await reset({rpcResult})
+        await failure(await post(), 500)
+        await reset({rpcResult: [validRow]})
+        const retry = await post()
+        assert.equal(retry.status, 200)
+        await retry.json()
+      })
+    }
     for (const rpcResult of [null, {}, true, [null], [1], ['text'], [[]], [{}],
       [{user_id: 'wrong', is_ready: true}], [{user_id: userId}],
       [{user_id: userId, is_ready: 'true'}], [validRow, null]]) {
@@ -123,7 +144,8 @@ Deno.test('get-game-players: real HTTP and SDK against local Postman simulation'
     }
     await test.step('private DB fields are excluded from the HTTP response', async () => {
       await reset({rpcResult: [{...validRow, password_hash: 'Private hash', privateField: 'Private diagnostic'}]})
-      assert.deepEqual(await (await post()).json(), {gameId, players: [{user_id: userId, isReady: true}]})
+      assert.deepEqual(await (await post()).json(), {gameId, seat_count: 4, turnDurationMinutes: 5,
+        players: [{user_id: userId, isReady: true, display_name: 'anna'}]})
     })
     await test.step('preflight, method and authorization checks prevent dependency calls', async () => {
       await reset()
@@ -157,7 +179,8 @@ Deno.test('get-game-players: real HTTP and SDK against local Postman simulation'
       Deno.env.set('SUPABASE_URL', 'http://127.0.0.1:' + port)
       await failure(await post(), 503)
       await reset()
-      assert.deepEqual(await (await post()).json(), {gameId, players: [{user_id: userId, isReady: false}]})
+      assert.deepEqual(await (await post()).json(), {gameId, seat_count: 3, turnDurationMinutes: 3,
+        players: [{user_id: userId, isReady: false, display_name: 'member'}]})
     })
   } finally {
     for (const [key, value] of Object.entries(saved)) {

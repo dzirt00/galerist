@@ -19,7 +19,7 @@ enableAutoUnmount(afterEach)
 const room = {display_name: 'anna', id: '11111111-1111-4111-8111-111111111111', seat_count: 3,
   occupiedSeatCount: 2, hasPassword: false, turnDurationMinutes: 3}
 const user = '22222222-2222-4222-8222-222222222222'
-const roster = (isReady: boolean) => ({data: {gameId: room.id,
+const roster = (isReady: boolean) => ({data: {gameId: room.id, seat_count: 3, turnDurationMinutes: 3,
   players: [{display_name: 'boris', user_id: user, isReady}]}, error: null})
 type Connection = {
   topic: string
@@ -71,6 +71,66 @@ beforeEach(() => {
 })
 
 describe('WEB-004: уведомление Realtime → подтверждённый состав', () => {
+  it('обновляет сохранённые настройки после ответа, сохраняя личный выбор формы', async () => {
+    const wrapper = mount(App)
+    await flushPromises()
+    await wrapper.findAll('form')[0]!.trigger('submit')
+    await flushPromises()
+    const lobby = wrapper.get('[aria-label="Лобби"]')
+    await wrapper.get('#lobby-seat-count').setValue('2')
+    await wrapper.get('#lobby-turn-duration').setValue('7')
+    const pending = deferred()
+    api.invoke.mockReturnValueOnce(pending.promise)
+    connections[0]!.receive()
+    await flushPromises()
+    expect(lobby.text()).toContain('Всего мест: 3')
+    expect(lobby.text()).toContain('Количество минут на ход игрока 3')
+    pending.resolve({data: {...roster(false).data, seat_count: 4, turnDurationMinutes: 5}, error: null})
+    await flushPromises()
+    expect(lobby.text()).toContain('Всего мест: 4')
+    expect(lobby.text()).toContain('Количество минут на ход игрока 5')
+    expect(lobby.text()).toContain('Свободно: 3')
+    expect((wrapper.get('#lobby-seat-count').element as HTMLSelectElement).value).toBe('2')
+    expect((wrapper.get('#lobby-turn-duration').element as HTMLSelectElement).value).toBe('7')
+  })
+
+  it.each(['error', 'wrong-room', 'capacity', 'duration', 'missing'])('сохраняет настройки при %s и принимает ручной повтор', async kind => {
+    const wrapper = mount(App)
+    await flushPromises()
+    await wrapper.findAll('form')[0]!.trigger('submit')
+    await flushPromises()
+    const updated = {...roster(false).data, seat_count: 4, turnDurationMinutes: 5}
+    const data = kind === 'wrong-room' ? {...updated, gameId: 'other'}
+      : kind === 'capacity' ? {...updated, seat_count: 1}
+      : kind === 'duration' ? {...updated, turnDurationMinutes: 11}
+      : kind === 'missing' ? {gameId: room.id, players: updated.players} : updated
+    api.invoke.mockResolvedValueOnce({data, error: kind === 'error' ? new Error('network') : null})
+    connections[0]!.receive()
+    await flushPromises()
+    const lobby = wrapper.get('[aria-label="Лобби"]')
+    expect(lobby.text()).toContain('Всего мест: 3')
+    expect(lobby.text()).toContain('Количество минут на ход игрока 3')
+    expect(wrapper.find('[role="alert"]').exists()).toBe(true)
+    api.invoke.mockResolvedValueOnce({data: updated, error: null})
+    await lobby.findAll('button')[1]!.trigger('click')
+    await flushPromises()
+    expect(lobby.text()).toContain('Всего мест: 4')
+    expect(lobby.text()).toContain('Количество минут на ход игрока 5')
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+  })
+
+  it('не применяет настройки из ответа после размонтирования', async () => {
+    const onChangeData = vi.fn()
+    const wrapper = mount(GameLobby, {props: {joinedGame: room}, attrs: {onChangeData}})
+    const pending = deferred()
+    api.invoke.mockReturnValueOnce(pending.promise)
+    connections[0]!.receive()
+    wrapper.unmount()
+    pending.resolve({data: {...roster(false).data, seat_count: 4, turnDurationMinutes: 5}, error: null})
+    await flushPromises()
+    expect(onChangeData).not.toHaveBeenCalled()
+  })
+
   it('подписывается на приватную комнату и читает состав только после подключения', async () => {
     const wrapper = mount(GameLobby, {props: {joinedGame: room}})
     expect(api.channel).toHaveBeenCalledWith(`lobby:${room.id}`, {config: {private: true}})
@@ -139,7 +199,7 @@ describe('WEB-004: уведомление Realtime → подтверждённ�
 
   it('отклоняет состав другой комнаты и позволяет повтор по сигналу', async () => {
     const wrapper = mount(GameLobby, {props: {joinedGame: room}})
-    api.invoke.mockResolvedValueOnce({data: {gameId: 'other', players: roster(true).data.players}, error: null})
+    api.invoke.mockResolvedValueOnce({data: {...roster(true).data, gameId: 'other'}, error: null})
     connections[0]!.status('SUBSCRIBED')
     await flushPromises()
     expect(rows(wrapper)).toEqual([])
@@ -188,7 +248,7 @@ describe('WEB-004: уведомление Realtime → подтверждённ�
     connections[0]!.receive()
     await flushPromises()
     expect(lobby.text()).toContain('Занято: 1')
-    pending.resolve({data: {gameId: room.id, players: [
+    pending.resolve({data: {gameId: room.id, seat_count: 3, turnDurationMinutes: 3, players: [
       {display_name: 'boris', user_id: user, isReady: false}, {display_name: 'charlie', user_id: 'new-participant', isReady: false},
     ]}, error: null})
     await flushPromises()
@@ -197,7 +257,7 @@ describe('WEB-004: уведомление Realtime → подтверждённ�
     expect(lobby.text()).toContain('Всего мест: 3')
     expect(lobby.text()).toContain('charlie')
     // Readiness notification still uses the same roster path and does not add seats.
-    api.invoke.mockResolvedValueOnce({data: {gameId: room.id, players: [
+    api.invoke.mockResolvedValueOnce({data: {gameId: room.id, seat_count: 3, turnDurationMinutes: 3, players: [
       {display_name: 'boris', user_id: user, isReady: true}, {display_name: 'charlie', user_id: 'new-participant', isReady: false},
     ]}, error: null})
     connections[0]!.receive()
@@ -220,7 +280,7 @@ describe('WEB-004: уведомление Realtime → подтверждённ�
     await flushPromises()
     expect(wrapper.get('[aria-label="Лобби"]').text()).toContain('Занято: 1')
     expect(wrapper.find('[role="alert"]').exists()).toBe(true)
-    api.invoke.mockResolvedValueOnce({data: {gameId: room.id, players: [
+    api.invoke.mockResolvedValueOnce({data: {gameId: room.id, seat_count: 3, turnDurationMinutes: 3, players: [
       {display_name: 'boris', user_id: user, isReady: false}, {display_name: 'charlie', user_id: 'new-participant', isReady: false},
     ]}, error: null})
     connections[0]!.receive()

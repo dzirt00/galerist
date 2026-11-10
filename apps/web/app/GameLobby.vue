@@ -134,6 +134,10 @@ const refreshGame = async () => {
     if (isGamePlayersResponse(data) && data.gameId === props.joinedGame?.id) {
       playerList.value = data.players
       emit('occupiedSeatCountChange', data.players.length)
+      emit('changeData', {
+        seat_count: data['seat_count'],
+        turnDurationMinutes: data['turnDurationMinutes']
+      })
     } else {
       message.value = 'Что то пошло не так'
     }

@@ -28,7 +28,7 @@ BEGIN
   expected := jsonb_build_array(
     jsonb_build_object('user_id', owner_id, 'is_ready', false, 'display_name', 'anna'),
     jsonb_build_object('user_id', member_id, 'is_ready', false, 'display_name', 'boris'));
-  SELECT jsonb_agg(to_jsonb(p) ORDER BY p.user_id) INTO roster
+  SELECT jsonb_agg(to_jsonb(p) - 'seat_count' - 'turn_duration_minutes' ORDER BY p.user_id) INTO roster
     FROM public.get_game_players(room_id, member_id) p;
   IF roster IS DISTINCT FROM expected THEN
     RAISE EXCEPTION 'Roster must expose only each member ID, readiness and their own normalized name: %', roster;

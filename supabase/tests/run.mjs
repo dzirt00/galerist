@@ -110,6 +110,7 @@ try {
     fixture('get-game-players.sql'),
     fixture('change-seat-count.sql'),
     fixture('lobby-realtime.sql'),
+    fixture('lobby-settings-realtime.sql'),
     'ROLLBACK;',
   ].join('\n')
   const output = docker([

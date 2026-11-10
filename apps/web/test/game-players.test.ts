@@ -22,7 +22,7 @@ const otherRoom = {...room, id: '22222222-2222-4222-8222-222222222222'}
 const firstUser = '33333333-3333-4333-8333-333333333333'
 const secondUser = '44444444-4444-4444-8444-444444444444'
 const players = [{display_name: 'anna', user_id: firstUser, isReady: true}, {display_name: 'boris', user_id: secondUser, isReady: false}]
-const roster = {gameId: room.id, players}
+const roster = {gameId: room.id, seat_count: 3, turnDurationMinutes: 3, players}
 const lobbySelector = '[aria-label="Лобби"]'
 type View = ReturnType<typeof mount>
 const refreshButton = (wrapper: View) => wrapper.get(lobbySelector).findAll('button')[1]!
@@ -51,7 +51,7 @@ async function openLobby(index = 0) {
 describe('WEB-004: чтение состава лобби', () => {
   it.each([undefined, null, '', ' ', 42])('WEB-009: отклоняет имя участника %s, затем читает состав повторно', async display_name => {
     const wrapper = await openLobby()
-    api.invoke.mockResolvedValueOnce({data: {gameId: room.id,
+    api.invoke.mockResolvedValueOnce({data: {...roster,
       players: [{...players[0], display_name}]}, error: null})
     await refreshButton(wrapper).trigger('click')
     await flushPromises()
@@ -79,7 +79,7 @@ describe('WEB-004: чтение состава лобби', () => {
     const wrapper = await openLobby()
     await refreshButton(wrapper).trigger('click')
     await flushPromises()
-    api.invoke.mockResolvedValueOnce({data: {gameId: room.id,
+    api.invoke.mockResolvedValueOnce({data: {...roster,
       players: [{display_name: 'anna', user_id: firstUser, isReady: false}]}, error: null})
     await refreshButton(wrapper).trigger('click')
     await flushPromises()
@@ -145,12 +145,12 @@ describe('WEB-004: чтение состава лобби', () => {
     expect(wrapper.find('[role="alert"]').exists()).toBe(false)
   })
 
-  it.each([null, [], true, {}, {players}, {gameId: otherRoom.id, players},
-    {gameId: room.id, players: null}, {gameId: room.id, players: [null]},
-    {gameId: room.id, players: [7]}, {gameId: room.id, players: [[]]},
-    {gameId: room.id, players: [{display_name: 'boris', user_id: '', isReady: true}]},
-    {gameId: room.id, players: [{display_name: 'anna', user_id: firstUser, isReady: 'true'}]},
-    {gameId: room.id, players: [players[0], {user_id: secondUser}]}])(
+  it.each([null, [], true, {}, {players}, {...roster, gameId: otherRoom.id},
+    {...roster, players: null}, {...roster, players: [null]},
+    {...roster, players: [7]}, {...roster, players: [[]]},
+    {...roster, players: [{display_name: 'boris', user_id: '', isReady: true}]},
+    {...roster, players: [{display_name: 'anna', user_id: firstUser, isReady: 'true'}]},
+    {...roster, players: [players[0], {user_id: secondUser}]}])(
     'отклоняет неверный DTO целиком: %j', async (data) => {
       const wrapper = await openLobby()
       await refreshButton(wrapper).trigger('click')

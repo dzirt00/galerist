@@ -21,6 +21,10 @@ it('проверки DTO сохраняют границы вместимост�
   expect(isGameListItem(room)).toBe(true)
   expect(isGameListItem({...room, occupiedSeatCount: 3})).toBe(false)
   expect(isGameListItem({...room, turnDurationMinutes: 11})).toBe(false)
-  expect(isGamePlayersResponse({gameId: 'room', players: [{display_name: 'boris', user_id: 'user', isReady: false}]})).toBe(true)
-  expect(isGamePlayersResponse({gameId: 'room', players: [{display_name: 'boris', user_id: 'user', isReady: 0}]})).toBe(false)
+  const roster = {gameId: 'room', seat_count: 4, turnDurationMinutes: 5,
+    players: [{display_name: 'boris', user_id: 'user', isReady: false}]}
+  expect(isGamePlayersResponse(roster)).toBe(true)
+  expect(isGamePlayersResponse({...roster, players: [{...roster.players[0], isReady: 0}]})).toBe(false)
+  expect(isGamePlayersResponse({...roster, seat_count: 1})).toBe(false)
+  expect(isGamePlayersResponse({...roster, turnDurationMinutes: 11})).toBe(false)
 })

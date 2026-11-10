@@ -1,5 +1,13 @@
 import {isArrayOf, isBoolean, isIntegerInRange, isNonEmptyString, isObject, isOneOf, isUUID} from './validation.ts'
 
+interface GetGamePlayers {
+  user_id: string,
+  is_ready: boolean,
+  seat_count: number,
+  turn_duration_minutes: number,
+  display_name: string
+}
+
 export const isSeatCount = isOneOf([2, 3, 4])
 export const isTurnDurationMinutes = isOneOf([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 const isGameListItemShape = isObject({
@@ -27,11 +35,19 @@ export const isChangeSettingsGameRequest = isObject({
   gameId: isUUID, seatCount: isSeatCount, turnDurationMinutes: isTurnDurationMinutes,
 })
 export const isSettingsRow = isObject({seat_count: isSeatCount, turn_duration_minutes: isTurnDurationMinutes})
-export const isGamePlayersRows = isArrayOf(isObject({
-  user_id: isUUID,
-  is_ready: isBoolean,
-  display_name: isNonEmptyString
-}))
+const isGamePlayersRowsShape =
+  isArrayOf(isObject({
+    user_id: isUUID,
+    is_ready: isBoolean,
+    display_name: isNonEmptyString,
+    seat_count: isSeatCount,
+    turn_duration_minutes: isTurnDurationMinutes,
+  }))
+
+export function isGamePlayersRows(value: unknown): value is GetGamePlayers[] {
+  return isGamePlayersRowsShape(value) && value.length > 0 && value.every(item => item.seat_count === value[0].seat_count && item.turn_duration_minutes === value[0].turn_duration_minutes)
+}
+
 export const isGameRow = isObject({
   id: isUUID,
   creator_id: isUUID,
