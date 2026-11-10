@@ -2,7 +2,7 @@
 import {useNuxtApp} from 'nuxt/app'
 import {computed, ref, onMounted, onUnmounted} from 'vue'
 
-import type {GameListItem} from './types/lobby'
+import type {CardRoom, GameListItem} from './types/lobby'
 import {isGameList, isGameListItem} from './utils/lobby-validation'
 import {getFunctionError, getFunctionErrorMessage} from './utils/api-errors'
 import {useOwnLobby} from './composable/own-lobby'
@@ -33,13 +33,21 @@ const isBusy = computed(() => isLoading.value || pendingGameId.value !== null ||
 const isReturnDisabled = computed(() => isReturning.value || pendingGameId.value !== null)
 const showEmptyList = computed(() => !isLoading.value && hasLoaded.value && state.value.length === 0 && message.value === '')
 const returnLabel = computed(() => isReturning.value ? 'Возвращаемся…' : 'Вернуться в своё лобби')
-const roomCards = computed(() => state.value.map(game => ({
+const searchQuery = ref('')
+const searchRoom = computed(() => {
+  const search = searchQuery.value.trim().toLowerCase()
+  return state.value.filter((game) => game.display_name.includes(search))
+})
+const messageFailSearch = computed(() => searchRoom.value.length === 0 && state.value.length > 0 && hasLoaded.value)
+const roomCards = computed(() => searchRoom.value.map(game => ({
   game,
   label: `Комната ${game.display_name}`,
   passwordInputId: `password-${game.id}`,
   freeSeatCount: game.seat_count - game.occupiedSeatCount,
   passwordLabel: game.hasPassword ? 'требуется' : 'не требуется',
   joinLabel: pendingGameId.value === game.id ? 'Присоединяемся…' : 'Присоединиться',
+  isFull: (game.seat_count - game.occupiedSeatCount) === 0,
+  isJoinDisabled: (game.seat_count - game.occupiedSeatCount) === 0 || isBusy.value
 })))
 
 onMounted(() => {
@@ -79,17 +87,20 @@ const loadList = async () => {
   }
 }
 
-const joinGame = async (game: GameListItem) => {
-
+const joinGame = async (game: CardRoom) => {
   if (isBusy.value) return
+  if (game.isJoinDisabled) {
+    joinMessage.value = 'Не удалось присоединиться к комнате. Попробуйте ещё раз'
+    return
+  }
   clearOwnLobby()
 
-  pendingGameId.value = game.id
+  pendingGameId.value = game.game.id
   joinMessage.value = ''
   try {
-    const password = passwords.value[game.id] ?? ''
+    const password = passwords.value[game.game.id] ?? ''
     const response = await $supabase.functions.invoke('join-game', {
-      body: {gameId: game.id, ...(password !== '' && {password})},
+      body: {gameId: game.game.id, ...(password !== '' && {password})},
     })
     if (!active) return
 
@@ -101,19 +112,19 @@ const joinGame = async (game: GameListItem) => {
       offerOwnLobby(failure)
       return
     }
-    if (!isGameListItem(response.data) || response.data.id !== game.id || response.data.occupiedSeatCount < 1) {
+    if (!isGameListItem(response.data) || response.data.id !== game.game.id || response.data.occupiedSeatCount < 1) {
       joinMessage.value = 'Не удалось присоединиться к комнате. Попробуйте ещё раз'
       return
     }
     emit('gameJoined', response.data)
-    state.value = state.value.map((item) => item.id === game.id ? response.data : item)
-    passwords.value[game.id] = ''
+    state.value = state.value.map((item) => item.id === game.game.id ? response.data : item)
+    passwords.value[game.game.id] = ''
   } catch {
 
     if (active) joinMessage.value = 'Не удалось присоединиться к комнате. Попробуйте ещё раз'
 
   } finally {
-    if (pendingGameId.value === game.id && active) pendingGameId.value = null
+    if (pendingGameId.value === game.game.id && active) pendingGameId.value = null
   }
 }
 
@@ -121,13 +132,18 @@ const joinGame = async (game: GameListItem) => {
 </script>
 
 <template>
+
   <section aria-label="Список комнат">
     <h2>Комнаты</h2>
+    <section v-if="hasLoaded">
+      <label for="searchQuery">поиск комнат</label>
+      <input id="searchQuery" v-model="searchQuery">
+    </section>
     <button :disabled="isBusy" type="button" @click="loadList">Обновить</button>
     <p v-if="message" role="alert">{{ message }}</p>
     <p v-if="isLoading" role="status">Загружаем комнаты…</p>
     <p v-if="showEmptyList">Комнат пока нет</p>
-
+    <p v-if="messageFailSearch">По вашему запросу ничего не найдено</p>
     <article v-for="card in roomCards" :key="card.game.id" :aria-label="card.label">
       <div>
         <p>Комната {{ card.game.display_name }}</p>
@@ -137,12 +153,13 @@ const joinGame = async (game: GameListItem) => {
         <p>Количество минут на ход игрока {{ card.game.turnDurationMinutes }}</p>
         <p>Пароль: {{ card.passwordLabel }}</p>
       </div>
-      <form @submit.prevent="joinGame(card.game)">
+      <div v-if="card.isFull">Нет свободных мест</div>
+      <form @submit.prevent="joinGame(card)">
         <template v-if="card.game.hasPassword">
           <label :for="card.passwordInputId">Пароль комнаты</label>
           <input :id="card.passwordInputId" v-model="passwords[card.game.id]" type="password" autocomplete="off">
         </template>
-        <button type="submit" :disabled="isBusy">
+        <button type="submit" :disabled="card.isJoinDisabled">
           {{ card.joinLabel }}
         </button>
       </form>

@@ -165,6 +165,89 @@ describe('WEB-003: загрузка списка комнат', () => {
 })
 
 
+describe('WEB-014: поиск и заполненные комнаты', () => {
+  const noMatches = 'По вашему запросу ничего не найдено'
+  const anna = {...room, display_name: 'анна'}
+  const boris = {...room, id: '22222222-2222-4222-8222-222222222222',
+    display_name: 'борис', seat_count: 2, occupiedSeatCount: 2}
+
+  it('ищет по части имени без регистра и крайних пробелов, очистка возвращает все карточки без запроса', async () => {
+    api.invoke.mockResolvedValueOnce({data: [anna, boris], error: null})
+    const view = mount(GameList)
+    await flushPromises()
+    const search = view.get('#searchQuery')
+    expect(view.get('label[for="searchQuery"]').text()).toContain('поиск')
+    await search.setValue(' АН ')
+    expect(view.findAll('article')).toHaveLength(1)
+    expect(view.get('article').text()).toContain('анна')
+    await search.setValue('неттакого')
+    expect(view.findAll('article')).toHaveLength(0)
+    expect(view.text()).toContain(noMatches)
+    expect(view.text()).not.toContain('Комнат пока нет')
+    expect(view.find('#searchQuery').exists()).toBe(true)
+    await search.setValue('')
+    expect(view.findAll('article')).toHaveLength(2)
+    expect(view.text()).not.toContain(noMatches)
+    expect(api.invoke).toHaveBeenCalledTimes(1)
+  })
+
+  it('отличает пустой список от отсутствия совпадений и оставляет поиск доступным', async () => {
+    api.invoke.mockResolvedValueOnce({data: [], error: null})
+    const view = mount(GameList)
+    await flushPromises()
+    await view.get('#searchQuery').setValue('анна')
+    expect(view.text()).toContain('Комнат пока нет')
+    expect(view.text()).not.toContain(noMatches)
+  })
+
+  it('скрывает отсутствие совпадений при обновлении и ошибке, повтор применяет сохранённый запрос', async () => {
+    api.invoke.mockResolvedValueOnce({data: [anna], error: null})
+    const view = mount(GameList)
+    await flushPromises()
+    await view.get('#searchQuery').setValue('бор')
+    expect(view.text()).toContain(noMatches)
+    let resolve!: (value: unknown) => void
+    api.invoke.mockReturnValueOnce(new Promise(done => {resolve = done}))
+    await view.get('button').trigger('click')
+    expect(view.text()).toContain('Загружаем комнаты…')
+    expect(view.text()).not.toContain(noMatches)
+    resolve({data: null, error: {context: Response.json({error: 'Ошибка списка'}, {status: 500})}})
+    await flushPromises()
+    expect(view.get('[role="alert"]').text()).toBe('Ошибка списка')
+    expect(view.text()).not.toContain(noMatches)
+    api.invoke.mockResolvedValueOnce({data: [anna, boris], error: null})
+    await view.get('button').trigger('click')
+    await flushPromises()
+    expect(view.findAll('article')).toHaveLength(1)
+    expect(view.get('article').text()).toContain('борис')
+    expect(view.text()).not.toContain('Ошибка списка')
+  })
+
+  it('показывает полную комнату и не отправляет её форму, свободная комната сохраняет серверную проверку', async () => {
+    api.invoke.mockResolvedValueOnce({data: [anna, boris], error: null})
+    const view = mount(GameList)
+    await flushPromises()
+    await view.get('#searchQuery').setValue('бор')
+    const full = view.get('article')
+    expect(full.text()).toContain('Нет свободных мест')
+    expect(full.get('button').attributes('disabled')).toBeDefined()
+    await full.get('form').trigger('submit')
+    expect(api.invoke).toHaveBeenCalledTimes(1)
+    expect(view.emitted('gameJoined')).toBeUndefined()
+    await view.get('#searchQuery').setValue('ан')
+    expect(view.get('article button').attributes('disabled')).toBeUndefined()
+    api.invoke.mockResolvedValueOnce({data: null, error: {
+      context: Response.json({error: 'В комнате больше нет мест'}, {status: 409}),
+    }})
+    await view.get('article form').trigger('submit')
+    await flushPromises()
+    expect(api.invoke).toHaveBeenLastCalledWith('join-game', {body: {gameId: anna.id}})
+    expect(view.text()).toContain('В комнате больше нет мест')
+    expect(view.emitted('gameJoined')).toBeUndefined()
+    expect(view.get('article').text()).toContain('Занято: 2')
+  })
+})
+
 describe('WEB-006: ответ после размонтирования', () => {
   it('не читает тело поздней серверной ошибки после удаления списка', async () => {
     let resolve!: (value: unknown) => void
