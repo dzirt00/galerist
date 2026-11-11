@@ -285,7 +285,13 @@
 | `code` / `gameId` в SQL-результате WEB-018 | Код исхода и ID соответствующей комнаты. `SUCCESS` — созданная/ранее созданная тем же запросом комната; `OWN_LOBBY_EXISTS` — своё открытое лобби; `LOBBY_MEMBERSHIP_EXISTS` — чужое открытое лобби с участием пользователя; `GAME_IN_PROGRESS` — незавершённая партия с его участием; `LOBBY_NOT_OPEN` — выбранная комната не принимает вход. Последний код используется в `join_game`; успешный ответ входа сохраняет форму `GameListItem`. HTTP-обработка этих SQL-результатов реализуется отдельно. |
 | `seat_count/seatCount`   | вместимость комнаты, от 2 до 4;                               |
 | `game_id`                | ID комнаты, к которой относится занятое место;                |
-| `user_id`                | ID профиля пользователя, занимающего место.                   |
+| `user_id`                | ID профиля пользователя, занимающего место; у бота NULL. Внешний ключ на profiles сохраняется. |
+| `seat_id` | Уникальный ID занятого места game_players; первичный ключ, создаётся автоматически. Есть у человека и бота. |
+| `is_bot` | Вид участника места game_players: true — бот без user_id, false — человек с user_id. Обязательный boolean, по умолчанию false; один человек занимает не более одного места в комнате. |
+| `bot_addition_requests` | Серверные результаты добавления бота: уникальная тройка user_id, game_id, request_id и сохранённый JSON result. Request ID не является ID места; таблица закрыта для клиентских ролей. |
+| `add-bot` | Защищённая POST Edge Function: принимает {gameId, requestId}, получает user.id через Auth и вызывает add_bot. Успех {gameId, seat_id}; ошибки — через jsonError без SQL/SDK-диагностики. |
+| `isAddBot` / `isResponseAddBot` / `isResponseAddBotError` | Серверные проверки DTO добавления бота в общем lobby-validation.ts: запрос с двумя UUID, успех с gameId/seat_id и ожидаемый отказ LOBBY_NOT_OPEN. Обработчик дополнительно проверяет совпадение gameId результата и запроса. |
+| `add_bot` | SQL-команда (p_game_id, p_user_id, p_request_id), доступная только service_role. Под блокировкой комнаты проверяет текущего создателя и участие; повтор возвращает сохранённый result, новое добавление требует OPEN_LOBBY и свободного места. Атомарно создаёт место бота и result {gameId, seat_id}; новый запрос в закрытом/начатом лобби возвращает {code: LOBBY_NOT_OPEN, gameId}. Состав читается отдельно. |
 | `game_creation_requests` | результаты запросов создания комнаты                          |
 | `request_id/requestId`   | идентификатор запроса, сохраняемый при повторной отправке     |
 | `game_passwords`         | хеши паролей защищённых комнат;                               |
@@ -312,9 +318,10 @@
 | `change-settings-game` / `ChangeSettingsGameRequest` | Защищённая Edge Function / её входной DTO: POST `{gameId, seatCount, turnDurationMinutes}`, пользователь только из Auth; ответ `{seat_count, turnDurationMinutes}`. Заменяет прежний endpoint `change-seat-count`. |
 | `changeData` / `ChangeData` | Событие GameLobby и его DTO `{seat_count, turnDurationMinutes}` с обеими подтверждёнными настройками; app.vue заменяет настройки выбранной комнаты в createdGame, сохраняя остальные поля. В шаблоне `change-data`; заменяет `seatCountChange`. |
 | `ready_to_game` / `ready-to-game` | SQL-функция изменения готовности участника комнаты / защищённая Edge Function, передающая ID пользователя только из проверенной авторизации. |
-| `get_game_players` | Серверная SQL-функция чтения состава комнаты: проверяет участие по `p_game_id` и `p_user_id`, возвращает `user_id` и `is_ready` всех участников выбранной комнаты в порядке `user_id`. |
-| `get-game-players` | Защищённая Edge Function чтения состава: принимает `{gameId}`, получает пользователя из Auth, вызывает `get_game_players` и возвращает `{gameId, players}`. |
-| `GamePlayer` | Элемент публичного состава лобби: `user_id` и `isReady`; не является состоянием игрока движка. |
+| `get_game_players` | Серверная SQL-функция чтения состава комнаты: проверяет участие человека по p_game_id/p_user_id, возвращает user_id, is_ready, seat_count, turn_duration_minutes, display_name, is_bot и seat_id. LEFT JOIN сохраняет места ботов с NULL в user_id/display_name; порядок user_id, затем seat_id. Доступна только service_role; HTTP-преобразование — отдельный контракт get-game-players. |
+| `get-game-players` | Защищённая Edge Function чтения состава: принимает {gameId}, получает пользователя из Auth, вызывает get_game_players и возвращает {gameId, seat_count, turnDurationMinutes, players}. Каждый элемент содержит user_id, isReady, display_name, is_bot, seat_id; у бота user_id равен NULL, публичная подпись — «Бот». В SQL имя бота NULL; несогласованные поля отклоняются общим валидатором. |
+| `GamePlayer` | Элемент публичного состава лобби: user_id (UUID человека или NULL бота), isReady, непустой display_name, is_bot, seat_id. Клиентский тип и общая валидация поддерживают оба вида участников; ключ строки — seat_id. Не является состоянием игрока движка. |
+| `PendingBotRequest` / `pendingBotRequest` | Локальный незавершённый запрос добавления {gameId, requestId} в GameLobby. Создаётся перед первой отправкой, сохраняется при ошибке/исключении/неверном DTO и очищается после проверенного успеха; следующее добавление получает новый requestId. Успех ставит подтверждённое чтение состава в существующую очередь refreshPending. |
 | `RequestGamePlayer` / `players` | Ответ чтения состава `{gameId, seat_count, turnDurationMinutes, players: GamePlayer[]}` / массив участников выбранной комнаты. Настройки относятся к комнате; в HTTP передаются один раз рядом с составом. |
 
 ## Серверная HTTP-инфраструктура

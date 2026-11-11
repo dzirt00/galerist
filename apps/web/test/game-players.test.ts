@@ -1,4 +1,4 @@
-import {passiveRealtime} from './helpers/passive-realtime'
+import {passiveRealtime} from './helpers/passive-realtime.js'
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 import {enableAutoUnmount, flushPromises, mount} from '@vue/test-utils'
 import App from '../app/app.vue'
@@ -21,7 +21,8 @@ const room = {display_name: 'anna', id: '11111111-1111-4111-8111-111111111111',
 const otherRoom = {...room, id: '22222222-2222-4222-8222-222222222222'}
 const firstUser = '33333333-3333-4333-8333-333333333333'
 const secondUser = '44444444-4444-4444-8444-444444444444'
-const players = [{display_name: 'anna', user_id: firstUser, isReady: true}, {display_name: 'boris', user_id: secondUser, isReady: false}]
+const players = [{display_name: 'anna', user_id: firstUser, isReady: true, is_bot: false, seat_id: firstUser},
+  {display_name: 'boris', user_id: secondUser, isReady: false, is_bot: false, seat_id: secondUser}]
 const roster = {gameId: room.id, seat_count: 3, turnDurationMinutes: 3, players}
 const lobbySelector = '[aria-label="Лобби"]'
 type View = ReturnType<typeof mount>
@@ -80,7 +81,7 @@ describe('WEB-004: чтение состава лобби', () => {
     await refreshButton(wrapper).trigger('click')
     await flushPromises()
     api.invoke.mockResolvedValueOnce({data: {...roster,
-      players: [{display_name: 'anna', user_id: firstUser, isReady: false}]}, error: null})
+      players: [{...players[0], isReady: false}]}, error: null})
     await refreshButton(wrapper).trigger('click')
     await flushPromises()
     expect(playerRows(wrapper)).toHaveLength(1)

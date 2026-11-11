@@ -32,6 +32,16 @@ http.createServer(async (req, res) => {
     await pm.state.set(stateKey, state);
     const options = state.options;
 
+    // HTTP envelope only; real add_bot persistence/locks are tested in PostgreSQL.
+    if (req.method === 'POST' && url.pathname === '/rest/v1/rpc/add_bot') {
+      if (req.headers.authorization !== 'Bearer fixture-service-key' || req.headers.apikey !== 'fixture-service-key') {
+        return reply(res, 403, { code: '42501', message: 'Wrong server credentials' });
+      }
+      if (options.rpcError) return reply(res, 400, { code: options.rpcError, message: 'Private RPC diagnostic' });
+      if ('rpcResult' in options) return reply(res, 200, options.rpcResult);
+      return reply(res, 200, { gameId: body.p_game_id, seat_id: '44444444-4444-4444-8444-444444444444' });
+    }
+
     if (req.method === 'POST' && url.pathname === '/rest/v1/rpc/change_settings_game') {
       if (req.headers.authorization !== 'Bearer fixture-service-key' || req.headers.apikey !== 'fixture-service-key') {
         return reply(res, 403, { code: '42501', message: 'Wrong server credentials' });
@@ -75,7 +85,8 @@ http.createServer(async (req, res) => {
       return reply(res, 200, members.sort((a, b) => a.userId.localeCompare(b.userId))
         .map((item) => ({ user_id: item.userId, is_ready: item.isReady,
           display_name: item.display_name || 'member', seat_count: game?.seat_count ?? 3,
-          turn_duration_minutes: game?.turnDurationMinutes ?? 3 })));
+          turn_duration_minutes: game?.turnDurationMinutes ?? 3,
+          is_bot: false, seat_id: item.seat_id || item.userId })));
     }
 
     if (req.method === 'POST' && url.pathname === '/rest/v1/rpc/ready_to_game') {

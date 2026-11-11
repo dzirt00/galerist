@@ -8,10 +8,14 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
 export const isString: Validator<string> = (value): value is string => typeof value === 'string'
 export const isNonEmptyString: Validator<string> = (value): value is string =>
   isString(value) && value.trim().length > 0
+export const isNonEmptyStringOrNull: Validator<string | null> = (value): value is string =>
+  (isString(value) && value.trim().length > 0) || (value === null)
 export const isBoolean: Validator<boolean> = (value): value is boolean => typeof value === 'boolean'
 export const isUUID: Validator<string> = (value): value is string =>
   isString(value) && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(value)
 
+export const isUUIDorNull: Validator<string | null> = (value): value is string =>
+  (isString(value) && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(value)) || value === null
 export function isIntegerInRange(min: number, max: number): Validator<number> {
   return (value): value is number =>
     typeof value === 'number' && Number.isSafeInteger(value) && value >= min && value <= max

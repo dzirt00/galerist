@@ -36,7 +36,7 @@ beforeEach(() => {
     if (name === 'change-settings-game') return {data: {seat_count: options.body.seatCount, turnDurationMinutes: options.body.turnDurationMinutes}, error: null}
     if (name === 'ready-to-game') return {data: {isReady: options.body.isReady}, error: null}
     if (name === 'get-game-players') return {data: {gameId: options.body.gameId, seat_count: 3, turnDurationMinutes: 3,
-      players: [{display_name: 'boris', user_id: userId, isReady: true}]}, error: null}
+      players: [{display_name: 'boris', user_id: userId, isReady: true, is_bot: false, seat_id: userId}]}, error: null}
     throw new Error('Unexpected function ' + name)
   })
 })

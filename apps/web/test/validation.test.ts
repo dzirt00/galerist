@@ -22,9 +22,18 @@ it('проверки DTO сохраняют границы вместимост�
   expect(isGameListItem({...room, occupiedSeatCount: 3})).toBe(false)
   expect(isGameListItem({...room, turnDurationMinutes: 11})).toBe(false)
   const roster = {gameId: 'room', seat_count: 4, turnDurationMinutes: 5,
-    players: [{display_name: 'boris', user_id: 'user', isReady: false}]}
+    players: [{display_name: 'boris', user_id: '11111111-1111-4111-8111-111111111111',
+      isReady: false, is_bot: false, seat_id: '22222222-2222-4222-8222-222222222222'}]}
   expect(isGamePlayersResponse(roster)).toBe(true)
   expect(isGamePlayersResponse({...roster, players: [{...roster.players[0], isReady: 0}]})).toBe(false)
   expect(isGamePlayersResponse({...roster, seat_count: 1})).toBe(false)
   expect(isGamePlayersResponse({...roster, turnDurationMinutes: 11})).toBe(false)
+  const bot = {display_name: 'Бот', user_id: null, isReady: false,
+    is_bot: true, seat_id: '33333333-3333-4333-8333-333333333333'}
+  expect(isGamePlayersResponse({...roster, players: [...roster.players, bot]})).toBe(true)
+  for (const invalid of [{...bot, user_id: roster.players[0]!.user_id},
+    {...bot, is_bot: false}, {...bot, display_name: null}, {...bot, seat_id: null},
+    {...bot, is_bot: undefined}]) {
+    expect(isGamePlayersResponse({...roster, players: [...roster.players, invalid]})).toBe(false)
+  }
 })

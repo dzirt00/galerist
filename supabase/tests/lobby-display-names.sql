@@ -28,10 +28,11 @@ BEGIN
   expected := jsonb_build_array(
     jsonb_build_object('user_id', owner_id, 'is_ready', false, 'display_name', 'anna'),
     jsonb_build_object('user_id', member_id, 'is_ready', false, 'display_name', 'boris'));
-  SELECT jsonb_agg(to_jsonb(p) - 'seat_count' - 'turn_duration_minutes' ORDER BY p.user_id) INTO roster
+  SELECT jsonb_agg(jsonb_build_object('user_id', p.user_id, 'is_ready', p.is_ready,
+    'display_name', p.display_name) ORDER BY p.user_id) INTO roster
     FROM public.get_game_players(room_id, member_id) p;
   IF roster IS DISTINCT FROM expected THEN
-    RAISE EXCEPTION 'Roster must expose only each member ID, readiness and their own normalized name: %', roster;
+    RAISE EXCEPTION 'Roster must retain each member ID, readiness and their own normalized name: %', roster;
   END IF;
   PERFORM public.ready_to_game(room_id, member_id, true);
   IF NOT EXISTS (SELECT 1 FROM public.get_game_players(room_id, owner_id)

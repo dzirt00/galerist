@@ -2,7 +2,14 @@
 import {computed, onUnmounted, ref} from 'vue'
 import {useNuxtApp} from 'nuxt/app'
 import type {GameListItem} from './types/lobby'
-import {isGamePlayersResponse, isReadyResult, isSettingsResult, isSeatCount, isTurnDurationMinutes} from './utils/lobby-validation'
+import {
+  isGamePlayersResponse,
+  isReadyResult,
+  isSettingsResult,
+  isSeatCount,
+  isTurnDurationMinutes,
+  isAddBot
+} from './utils/lobby-validation'
 import {getFunctionErrorMessage} from './utils/api-errors'
 
 
@@ -11,12 +18,18 @@ interface ChangeData {
   turnDurationMinutes: number
 }
 
-interface GamePlayer {
+export interface GamePlayer {
   isReady: boolean,
-  user_id: string
+  user_id: string | null
   display_name: string
+  seat_id: string;
+  is_bot: boolean;
 }
 
+export interface PendingBotRequest {
+  gameId: string
+  requestId: string
+}
 const props = defineProps<{ joinedGame: GameListItem | null }>()
 const emit = defineEmits<{
   busyChange: [value: boolean]
@@ -55,7 +68,7 @@ const playerRows = computed(() => (playerList.value ?? []).map(player => ({
   ...player, readinessLabel: player.isReady ? 'готов' : 'не готов',
 })))
 const toggleReady = () => isReady(changeReady.value)
-
+let pendingBotRequest: PendingBotRequest | null = null
 if (props.joinedGame && props.joinedGame.id !== null) {
   const channel = $supabase
       .channel(`lobby:${props.joinedGame.id}`, {config: {private: true}})
@@ -150,7 +163,56 @@ const refreshGame = async () => {
     if (active && refreshPending) await refreshGame()
   }
 }
+const addBot = async () => {
+  message.value = ''
+  if (props.joinedGame === null) {
+    message.value = 'вы не присоединены ни к одной игре'
+    return
+  }
+  if (areSettingsDisabled.value) return
 
+  isChangeSeatCount.value = true
+  waiting.value = true
+  emit('busyChange', true)
+
+  try {
+    if (pendingBotRequest === null) {
+      pendingBotRequest = {
+        gameId: props.joinedGame.id,
+        requestId: crypto.randomUUID()
+      }
+    }
+    const response = await $supabase.functions.invoke('add-bot', {
+      body: pendingBotRequest
+    })
+    if (!active) return
+    if (response.error) {
+      const errorMessage = await getFunctionErrorMessage(response.error, 'Что то пошло не так')
+      if (!active) return
+      message.value = errorMessage
+      return
+    }
+    const data = response.data
+
+    if ((isAddBot(data) && data.gameId === props.joinedGame?.id)) {
+      pendingBotRequest = null
+      refreshPending = true
+      return
+    }
+    message.value = 'Что то пошло не так'
+
+
+  } catch {
+    message.value = 'Что то пошло не так'
+
+  } finally {
+    isRefreshGame.value = false
+    isChangeSeatCount.value = false
+    waiting.value = false
+    if (active) emit('busyChange', false)
+    if (active && refreshPending) await refreshGame()
+  }
+}
 const editChangeSeatCount = async () => {
   message.value = ''
   if (!isSeatCount(changeSeatCount.value)) {
@@ -223,7 +285,7 @@ const editChangeSeatCount = async () => {
     <p>{{ readinessLabel }}</p>
 
     <div v-if="hasPlayerList">
-      <p v-for="el of playerRows" :key="el.user_id">
+      <p v-for="el of playerRows" :key="el.seat_id">
         <span>{{ el.display_name }}</span>
         <span>{{ el.readinessLabel }}</span>
       </p>
@@ -261,6 +323,7 @@ const editChangeSeatCount = async () => {
     <button type="button" :disabled="areSettingsDisabled" @click="editChangeSeatCount">
       Изменить
     </button>
+    <button type="button" :disabled="areSettingsDisabled" @click="addBot">Добавить бота</button>
   </section>
 
 </template>

@@ -1,6 +1,6 @@
 import {afterEach, beforeEach, expect, it, vi} from 'vitest'
 import {enableAutoUnmount, flushPromises, mount} from '@vue/test-utils'
-import {passiveRealtime} from './helpers/passive-realtime'
+import {passiveRealtime} from './helpers/passive-realtime.js'
 import GameLobby from '../app/GameLobby.vue'
 import GameList from '../app/GameList.vue'
 import CreateGameForm from '../app/CreateGameForm.vue'
@@ -18,9 +18,10 @@ beforeEach(() => {
   }))
 })
 
-it.each(['ready-to-game', 'get-game-players', 'change-settings-game'])('лобби показывает текст %s без клиентской таблицы', async (name) => {
+it.each(['ready-to-game', 'get-game-players', 'change-settings-game', 'add-bot'])('лобби показывает текст %s без клиентской таблицы', async (name) => {
   const wrapper = mount(GameLobby, {props: {joinedGame: room}})
-  const label = name === 'ready-to-game' ? 'Подтвердить готовность' : name === 'get-game-players' ? 'Обновить' : 'Изменить'
+  const label = name === 'ready-to-game' ? 'Подтвердить готовность' : name === 'get-game-players' ? 'Обновить'
+    : name === 'add-bot' ? 'Добавить бота' : 'Изменить'
   await wrapper.findAll('button').find(button => button.text() === label)!.trigger('click')
   await flushPromises()
   expect(api.invoke.mock.calls[0][0]).toBe(name)

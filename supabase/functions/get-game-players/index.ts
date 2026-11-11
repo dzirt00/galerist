@@ -42,7 +42,9 @@ Deno.serve(withAuthenticatedRequest('POST', 'Не удалось загрузи�
           return {
             isReady: el.is_ready,
             user_id: el.user_id,
-            display_name: el.display_name
+            display_name: (el.display_name) ? el.display_name : 'Бот',
+            is_bot: el.is_bot,
+            seat_id: el.seat_id,
           }
         })
       }

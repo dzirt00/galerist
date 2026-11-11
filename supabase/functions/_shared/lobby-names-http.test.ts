@@ -5,7 +5,8 @@ const user = '11111111-1111-4111-8111-111111111111'
 const gameId = '22222222-2222-4222-8222-222222222222'
 const room = {id: gameId, seat_count: 3, occupiedSeatCount: 2, hasPassword: false,
   turnDurationMinutes: 3, display_name: 'anna'}
-const roster = [{user_id: user, is_ready: false, display_name: 'boris', seat_count: 3, turn_duration_minutes: 3}]
+const roster = [{user_id: user, is_ready: false, display_name: 'boris', seat_count: 3,
+  turn_duration_minutes: 3, is_bot: false, seat_id: user}]
 const modules = {
   'game-list': () => import('../game-list/index.ts'),
   'get-game-players': () => import('../get-game-players/index.ts'),
@@ -56,7 +57,8 @@ Deno.test('WEB-009: names survive real Edge handlers and SDK HTTP; invalid profi
           const body = await response.json()
           if (name === 'game-list') assert.deepEqual(body, [room])
           else if (name === 'get-game-players') assert.deepEqual(body,
-            {gameId, seat_count: 3, turnDurationMinutes: 3, players: [{user_id: user, isReady: false, display_name: 'anna'}]})
+            {gameId, seat_count: 3, turnDurationMinutes: 3,
+              players: [{user_id: user, isReady: false, display_name: 'anna', is_bot: false, seat_id: user}]})
           else if (name === 'create-game') assert.equal(body.display_name, 'anna')
           else assert.deepEqual(body, room)
           assert.doesNotMatch(JSON.stringify(body), /email|password_hash|fixture-service-key/)

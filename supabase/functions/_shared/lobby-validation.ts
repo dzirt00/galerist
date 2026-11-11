@@ -1,11 +1,22 @@
-import {isArrayOf, isBoolean, isIntegerInRange, isNonEmptyString, isObject, isOneOf, isUUID} from './validation.ts'
+import {
+  isArrayOf,
+  isBoolean,
+  isIntegerInRange,
+  isNonEmptyString, isNonEmptyStringOrNull,
+  isObject,
+  isOneOf,
+  isUUID,
+  isUUIDorNull
+} from './validation.ts'
 
 interface GetGamePlayers {
-  user_id: string,
+  user_id: string | null,
   is_ready: boolean,
   seat_count: number,
   turn_duration_minutes: number,
-  display_name: string
+  display_name: string | null,
+  is_bot: boolean,
+  seat_id: string
 }
 
 export const isSeatCount = isOneOf([2, 3, 4])
@@ -27,6 +38,10 @@ export type GameListItem = {
   turnDurationMinutes: number
   display_name: string
 }
+export type ResponseAddBotError = {
+  code: 'LOBBY_NOT_OPEN';
+  gameId: string;
+}
 export const isGameList = isArrayOf(isGameListItem)
 export const isGameIdRequest = isObject({gameId: isUUID})
 export const isReadyRequest = isObject({gameId: isUUID, isReady: isBoolean})
@@ -34,18 +49,31 @@ export const isReadyResult = isObject({isReady: isBoolean})
 export const isChangeSettingsGameRequest = isObject({
   gameId: isUUID, seatCount: isSeatCount, turnDurationMinutes: isTurnDurationMinutes,
 })
+export const isResponseAddBot = isObject({gameId: isUUID, seat_id: isUUID})
+const isResponseAddBotErrorShare = isObject({code: isNonEmptyString, gameId: isUUID})
+
+export function isResponseAddBotError(value: unknown): value is ResponseAddBotError {
+  return isResponseAddBotErrorShare(value) && value.code === 'LOBBY_NOT_OPEN'
+}
+
+export const isAddBot = isObject({gameId: isUUID, requestId: isUUID})
 export const isSettingsRow = isObject({seat_count: isSeatCount, turn_duration_minutes: isTurnDurationMinutes})
 const isGamePlayersRowsShape =
   isArrayOf(isObject({
-    user_id: isUUID,
+    user_id: isUUIDorNull,
     is_ready: isBoolean,
-    display_name: isNonEmptyString,
+    display_name: isNonEmptyStringOrNull,
     seat_count: isSeatCount,
     turn_duration_minutes: isTurnDurationMinutes,
+    is_bot: isBoolean,
+    seat_id: isUUID,
   }))
 
 export function isGamePlayersRows(value: unknown): value is GetGamePlayers[] {
-  return isGamePlayersRowsShape(value) && value.length > 0 && value.every(item => item.seat_count === value[0].seat_count && item.turn_duration_minutes === value[0].turn_duration_minutes)
+  return isGamePlayersRowsShape(value) &&
+    value.length > 0 &&
+    value.every(item => item.seat_count === value[0].seat_count && item.turn_duration_minutes === value[0].turn_duration_minutes) &&
+    value.every(el => (el.is_bot && el.user_id === null && el.display_name === null) || (!el.is_bot && el.user_id !== null && el.display_name !== null))
 }
 
 export const isGameRow = isObject({
