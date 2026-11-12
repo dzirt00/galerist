@@ -16,6 +16,7 @@ interface isGamePlayersResponse {
   gameId: string,
   seat_count: number,
   turnDurationMinutes: number,
+  creator_id: string
 }
 export const isSeatCount = isOneOf([2, 3, 4])
 export const isTurnDurationMinutes = isOneOf([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
@@ -39,6 +40,7 @@ export const isResponseCreateGame = isObject({
 
 const isGamePlayersResponseShape = isObject({
   gameId: isString,
+  creator_id: isUUID,
   seat_count: isSeatCount,
   turnDurationMinutes: isTurnDurationMinutes,
   players: isArrayOf(isObject({

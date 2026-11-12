@@ -30,7 +30,11 @@ export interface PendingBotRequest {
   gameId: string
   requestId: string
 }
-const props = defineProps<{ joinedGame: GameListItem | null }>()
+
+const props = defineProps<{
+  joinedGame: GameListItem | null,
+  profileId: string
+}>()
 const emit = defineEmits<{
   busyChange: [value: boolean]
   changeData: [value: ChangeData]
@@ -53,7 +57,7 @@ const changeSeatCount = ref<number | null>(props.joinedGame?.seat_count ?? null)
 const turnDurationMinutes = ref<number | null>(props.joinedGame?.turnDurationMinutes ?? null)
 const changeReady = computed(() => playerIsReady.value !== true)
 const isBusy = computed(() => waiting.value || isRefreshGame.value)
-const areSettingsDisabled = computed(() => isBusy.value || isChangeSeatCount.value)
+const areSettingsDisabled = computed(() => isBusy.value || isChangeSeatCount.value || !isCanEditLobby.value)
 const freeSeatCount = computed(() => props.joinedGame
   ? props.joinedGame.seat_count - props.joinedGame.occupiedSeatCount
   : 0)
@@ -68,19 +72,21 @@ const playerRows = computed(() => (playerList.value ?? []).map(player => ({
   ...player, readinessLabel: player.isReady ? 'готов' : 'не готов',
 })))
 const toggleReady = () => isReady(changeReady.value)
+const creatorId = ref<string | null>(null)
+const isCanEditLobby = computed(() => creatorId.value === props.profileId)
 let pendingBotRequest: PendingBotRequest | null = null
 if (props.joinedGame && props.joinedGame.id !== null) {
   const channel = $supabase
-      .channel(`lobby:${props.joinedGame.id}`, {config: {private: true}})
-      .on('broadcast', {event: 'data is changed'}, () => {
-        refreshGame()
-      })
-      .subscribe((status) => {
-        if (!active) return
-        if (status === 'CLOSED') return
-        if (status === 'SUBSCRIBED') refreshGame()
-        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') message.value = 'Не удалось подключить автоматическое обновление. Состав можно обновить вручную'
-      })
+    .channel(`lobby:${props.joinedGame.id}`, {config: {private: true}})
+    .on('broadcast', {event: 'data is changed'}, () => {
+      refreshGame()
+    })
+    .subscribe((status) => {
+      if (!active) return
+      if (status === 'CLOSED') return
+      if (status === 'SUBSCRIBED') refreshGame()
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') message.value = 'Не удалось подключить автоматическое обновление. Состав можно обновить вручную'
+    })
   onUnmounted(() => $supabase.removeChannel(channel))
 }
 
@@ -130,6 +136,7 @@ const refreshGame = async () => {
   message.value = ''
   playerList.value = null
   refreshPending = false
+  creatorId.value = null
   try {
     const response = await $supabase.functions.invoke('get-game-players', {
       body: {
@@ -151,12 +158,12 @@ const refreshGame = async () => {
         seat_count: data['seat_count'],
         turnDurationMinutes: data['turnDurationMinutes']
       })
+      creatorId.value = data.creator_id
     } else {
       message.value = 'Что то пошло не так'
     }
   } catch {
     message.value = 'Что то пошло не так'
-
   } finally {
     isRefreshGame.value = false
     if (active) emit('busyChange', false)
@@ -297,7 +304,7 @@ const editChangeSeatCount = async () => {
     >
       {{ refreshLabel }}
     </button>
-    <div>
+    <div v-if="isCanEditLobby">
       <label for="lobby-seat-count">Количество игроков</label>
       <select
         id="lobby-seat-count"
@@ -310,7 +317,7 @@ const editChangeSeatCount = async () => {
         <option :value="4">4 игрока</option>
       </select>
     </div>
-    <div>
+    <div v-if="isCanEditLobby">
       <label for="lobby-turn-duration">Количество минут на ход игрока</label>
       <select
         id="lobby-turn-duration"
@@ -320,10 +327,10 @@ const editChangeSeatCount = async () => {
         <option v-for="minutes in 10" :key="minutes" :value="minutes">{{ minutes }}</option>
       </select>
     </div>
-    <button type="button" :disabled="areSettingsDisabled" @click="editChangeSeatCount">
+    <button type="button" v-if="isCanEditLobby" :disabled="areSettingsDisabled" @click="editChangeSeatCount">
       Изменить
     </button>
-    <button type="button" :disabled="areSettingsDisabled" @click="addBot">Добавить бота</button>
+    <button type="button" v-if="isCanEditLobby" :disabled="areSettingsDisabled" @click="addBot">Добавить бота</button>
   </section>
 
 </template>

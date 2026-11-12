@@ -16,7 +16,8 @@ interface GetGamePlayers {
   turn_duration_minutes: number,
   display_name: string | null,
   is_bot: boolean,
-  seat_id: string
+  seat_id: string,
+  creator_id: string
 }
 
 export const isSeatCount = isOneOf([2, 3, 4])
@@ -67,12 +68,13 @@ const isGamePlayersRowsShape =
     turn_duration_minutes: isTurnDurationMinutes,
     is_bot: isBoolean,
     seat_id: isUUID,
+    creator_id: isUUID,
   }))
 
 export function isGamePlayersRows(value: unknown): value is GetGamePlayers[] {
   return isGamePlayersRowsShape(value) &&
     value.length > 0 &&
-    value.every(item => item.seat_count === value[0].seat_count && item.turn_duration_minutes === value[0].turn_duration_minutes) &&
+    value.every(item => item.seat_count === value[0].seat_count && item.turn_duration_minutes === value[0].turn_duration_minutes && item.creator_id === value[0].creator_id) &&
     value.every(el => (el.is_bot && el.user_id === null && el.display_name === null) || (!el.is_bot && el.user_id !== null && el.display_name !== null))
 }
 

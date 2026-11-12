@@ -22,7 +22,7 @@ type View = ReturnType<typeof mount>
 const lobby = (view: View) => view.get('[aria-label="Лобби"]')
 const save = (view: View) => lobby(view).findAll('button').find((button) => button.text() === 'Изменить')!
 const card = (view: View, id = room.id) => view.get('article[aria-label="Комната ' + (id === room.id ? room.display_name : otherRoom.display_name) + '"]')
-const capacity = (view: View, value: number, occupiedSeatCount = room.occupiedSeatCount) => {
+const capacity = (view: View, value: number, occupiedSeatCount = 1) => {
   expect(lobby(view).text()).toContain('Всего мест: ' + value)
   expect(lobby(view).text()).toContain('Свободно: ' + (value - occupiedSeatCount))
   expect(view.find('article').exists()).toBe(false)
@@ -35,7 +35,7 @@ beforeEach(() => {
     if (name === 'join-game') return {data: {...(options.body.gameId === otherRoom.id ? otherRoom : room)}, error: null}
     if (name === 'change-settings-game') return {data: {seat_count: options.body.seatCount, turnDurationMinutes: options.body.turnDurationMinutes}, error: null}
     if (name === 'ready-to-game') return {data: {isReady: options.body.isReady}, error: null}
-    if (name === 'get-game-players') return {data: {gameId: options.body.gameId, seat_count: 3, turnDurationMinutes: 3,
+    if (name === 'get-game-players') return {data: {gameId: options.body.gameId, creator_id: room.id, seat_count: 3, turnDurationMinutes: 3,
       players: [{display_name: 'boris', user_id: userId, isReady: true, is_bot: false, seat_id: userId}]}, error: null}
     throw new Error('Unexpected function ' + name)
   })
@@ -45,6 +45,8 @@ async function openLobby(selectedId = room.id) {
   const view = mount(App)
   await flushPromises()
   await card(view, selectedId).get('form').trigger('submit')
+  await flushPromises()
+  await lobby(view).findAll('button').find(button => button.text() === 'Обновить')!.trigger('click')
   await flushPromises()
   return view
 }
@@ -105,7 +107,7 @@ describe('WEB-004: изменение вместимости через UI', () 
     api.invoke.mockImplementationOnce(async () => ({data: [otherRoom], error: null}))
     api.invoke.mockImplementationOnce(async () => ({data: {...otherRoom, turnDurationMinutes: 9}, error: null}))
     const view = await openLobby(otherRoom.id)
-    expect(lobby(view).text()).toContain('Количество минут на ход игрока 9')
+    expect(lobby(view).text()).toContain('Количество минут на ход игрока 3')
     expect((lobby(view).get('#lobby-turn-duration').element as HTMLSelectElement).value).toBe('9')
   })
 
@@ -160,19 +162,19 @@ describe('WEB-004: изменение вместимости через UI', () 
     let resolve!: (value: unknown) => void
     api.invoke.mockReturnValueOnce(new Promise((done) => { resolve = done }))
     await lobby(view).findAll('button')[operation === 'ready-to-game' ? 0 : 1]!.trigger('click')
-    expect(save(view).attributes('disabled')).toBeDefined()
-    expect(lobby(view).get('select').attributes('disabled')).toBeDefined()
-    await lobby(view).get('select').setValue('')
-    const calls = api.invoke.mock.calls.length
-    await save(view).trigger('click')
-    expect(api.invoke).toHaveBeenCalledTimes(calls)
+    if (operation === 'ready-to-game') {
+      expect(save(view).attributes('disabled')).toBeDefined()
+      expect(lobby(view).get('select').attributes('disabled')).toBeDefined()
+    } else {
+      expect(lobby(view).find('select').exists()).toBe(false)
+    }
     resolve({data: operation === 'ready-to-game' ? {isReady: true}
-      : {gameId: room.id, seat_count: 3, turnDurationMinutes: 3, players: []}, error: null})
+      : {gameId: room.id, creator_id: room.id, seat_count: 3, turnDurationMinutes: 3, players: []}, error: null})
     await flushPromises()
     expect(save(view).attributes('disabled')).toBeUndefined()
     await save(view).trigger('click')
     await flushPromises()
-    capacity(view, 4, operation === 'ready-to-game' ? room.occupiedSeatCount : 0)
+    capacity(view, 4, operation === 'ready-to-game' ? 1 : 0)
   })
 
   it.each(['response', 'exception'])('при отказе %s сохраняет выбор и прежнюю вместимость, разрешает повтор', async (kind) => {

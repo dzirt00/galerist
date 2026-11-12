@@ -20,7 +20,7 @@ const room = {display_name: 'anna', id: '11111111-1111-4111-8111-111111111111', 
   occupiedSeatCount: 2, hasPassword: false, turnDurationMinutes: 3}
 const user = '22222222-2222-4222-8222-222222222222'
 const newUser = '33333333-3333-4333-8333-333333333333'
-const roster = (isReady: boolean) => ({data: {gameId: room.id, seat_count: 3, turnDurationMinutes: 3,
+const roster = (isReady: boolean) => ({data: {gameId: room.id, creator_id: room.id, seat_count: 3, turnDurationMinutes: 3,
   players: [{display_name: 'boris', user_id: user, isReady, is_bot: false, seat_id: user}]}, error: null})
 type Connection = {
   topic: string
@@ -77,6 +77,8 @@ describe('WEB-004: уведомление Realtime → подтверждённ�
     await flushPromises()
     await wrapper.findAll('form')[0]!.trigger('submit')
     await flushPromises()
+    connections[0]!.status('SUBSCRIBED')
+    await flushPromises()
     const lobby = wrapper.get('[aria-label="Лобби"]')
     await wrapper.get('#lobby-seat-count').setValue('2')
     await wrapper.get('#lobby-turn-duration').setValue('7')
@@ -122,7 +124,7 @@ describe('WEB-004: уведомление Realtime → подтверждённ�
 
   it('не применяет настройки из ответа после размонтирования', async () => {
     const onChangeData = vi.fn()
-    const wrapper = mount(GameLobby, {props: {joinedGame: room}, attrs: {onChangeData}})
+    const wrapper = mount(GameLobby, {props: {joinedGame: room, profileId: room.id}, attrs: {onChangeData}})
     const pending = deferred()
     api.invoke.mockReturnValueOnce(pending.promise)
     connections[0]!.receive()
@@ -133,7 +135,7 @@ describe('WEB-004: уведомление Realtime → подтверждённ�
   })
 
   it('подписывается на приватную комнату и читает состав только после подключения', async () => {
-    const wrapper = mount(GameLobby, {props: {joinedGame: room}})
+    const wrapper = mount(GameLobby, {props: {joinedGame: room, profileId: room.id}})
     expect(api.channel).toHaveBeenCalledWith(`lobby:${room.id}`, {config: {private: true}})
     expect(connections[0]!.event).toBe('data is changed')
     expect(reads()).toHaveLength(0)
@@ -145,7 +147,7 @@ describe('WEB-004: уведомление Realtime → подтверждённ�
   })
 
   it('по сигналам показывает подтверждение и снятие готовности другого участника', async () => {
-    const wrapper = mount(GameLobby, {props: {joinedGame: room}})
+    const wrapper = mount(GameLobby, {props: {joinedGame: room, profileId: room.id}})
     connections[0]!.status('SUBSCRIBED')
     await flushPromises()
     api.invoke.mockResolvedValueOnce(roster(true))
@@ -159,7 +161,7 @@ describe('WEB-004: уведомление Realtime → подтверждённ�
   })
 
   it('объединяет сигналы во время чтения в один запрос после текущего', async () => {
-    const wrapper = mount(GameLobby, {props: {joinedGame: room}})
+    const wrapper = mount(GameLobby, {props: {joinedGame: room, profileId: room.id}})
     const pending = deferred()
     api.invoke.mockReturnValueOnce(pending.promise).mockResolvedValueOnce(roster(true))
     connections[0]!.status('SUBSCRIBED')
@@ -173,7 +175,10 @@ describe('WEB-004: уведомление Realtime → подтверждённ�
   })
 
   it.each(['ready', 'settings'])('откладывает сигнал до завершения %s', async (operation) => {
-    const wrapper = mount(GameLobby, {props: {joinedGame: room}})
+    const wrapper = mount(GameLobby, {props: {joinedGame: room, profileId: room.id}})
+    connections[0]!.status('SUBSCRIBED')
+    await flushPromises()
+    api.invoke.mockClear()
     const pending = deferred()
     api.invoke.mockReturnValueOnce(pending.promise)
     const buttons = wrapper.findAll('button')
@@ -189,7 +194,7 @@ describe('WEB-004: уведомление Realtime → подтверждённ�
   })
 
   it.each(['CHANNEL_ERROR', 'TIMED_OUT'])('показывает %s и позволяет ручное чтение', async (status) => {
-    const wrapper = mount(GameLobby, {props: {joinedGame: room}})
+    const wrapper = mount(GameLobby, {props: {joinedGame: room, profileId: room.id}})
     connections[0]!.status(status)
     await flushPromises()
     expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось подключить')
@@ -199,7 +204,7 @@ describe('WEB-004: уведомление Realtime → подтверждённ�
   })
 
   it('отклоняет состав другой комнаты и позволяет повтор по сигналу', async () => {
-    const wrapper = mount(GameLobby, {props: {joinedGame: room}})
+    const wrapper = mount(GameLobby, {props: {joinedGame: room, profileId: room.id}})
     api.invoke.mockResolvedValueOnce({data: {...roster(true).data, gameId: 'other'}, error: null})
     connections[0]!.status('SUBSCRIBED')
     await flushPromises()
@@ -212,7 +217,7 @@ describe('WEB-004: уведомление Realtime → подтверждённ�
 
   it('после закрытия удаляет канал, игнорирует старые сигналы и не запускает отложенный запрос', async () => {
     const onBusyChange = vi.fn()
-    const wrapper = mount(GameLobby, {props: {joinedGame: room}, attrs: {onBusyChange}})
+    const wrapper = mount(GameLobby, {props: {joinedGame: room, profileId: room.id}, attrs: {onBusyChange}})
     const pending = deferred()
     api.invoke.mockReturnValueOnce(pending.promise)
     connections[0]!.status('SUBSCRIBED')
@@ -230,7 +235,7 @@ describe('WEB-004: уведомление Realtime → подтверждённ�
   })
 
   it('без комнаты не создаёт подписку', () => {
-    mount(GameLobby, {props: {joinedGame: null}})
+    mount(GameLobby, {props: {joinedGame: null, profileId: room.id}})
     expect(api.channel).not.toHaveBeenCalled()
   })
 
@@ -249,7 +254,7 @@ describe('WEB-004: уведомление Realtime → подтверждённ�
     connections[0]!.receive()
     await flushPromises()
     expect(lobby.text()).toContain('Занято: 1')
-    pending.resolve({data: {gameId: room.id, seat_count: 3, turnDurationMinutes: 3, players: [
+    pending.resolve({data: {gameId: room.id, creator_id: room.id, seat_count: 3, turnDurationMinutes: 3, players: [
       {display_name: 'boris', user_id: user, isReady: false, is_bot: false, seat_id: user}, {display_name: 'charlie', user_id: newUser, isReady: false, is_bot: false, seat_id: newUser},
     ]}, error: null})
     await flushPromises()
@@ -258,7 +263,7 @@ describe('WEB-004: уведомление Realtime → подтверждённ�
     expect(lobby.text()).toContain('Всего мест: 3')
     expect(lobby.text()).toContain('charlie')
     // Readiness notification still uses the same roster path and does not add seats.
-    api.invoke.mockResolvedValueOnce({data: {gameId: room.id, seat_count: 3, turnDurationMinutes: 3, players: [
+    api.invoke.mockResolvedValueOnce({data: {gameId: room.id, creator_id: room.id, seat_count: 3, turnDurationMinutes: 3, players: [
       {display_name: 'boris', user_id: user, isReady: true, is_bot: false, seat_id: user}, {display_name: 'charlie', user_id: newUser, isReady: false, is_bot: false, seat_id: newUser},
     ]}, error: null})
     connections[0]!.receive()
@@ -281,7 +286,7 @@ describe('WEB-004: уведомление Realtime → подтверждённ�
     await flushPromises()
     expect(wrapper.get('[aria-label="Лобби"]').text()).toContain('Занято: 1')
     expect(wrapper.find('[role="alert"]').exists()).toBe(true)
-    api.invoke.mockResolvedValueOnce({data: {gameId: room.id, seat_count: 3, turnDurationMinutes: 3, players: [
+    api.invoke.mockResolvedValueOnce({data: {gameId: room.id, creator_id: room.id, seat_count: 3, turnDurationMinutes: 3, players: [
       {display_name: 'boris', user_id: user, isReady: false, is_bot: false, seat_id: user}, {display_name: 'charlie', user_id: newUser, isReady: false, is_bot: false, seat_id: newUser},
     ]}, error: null})
     connections[0]!.receive()

@@ -23,7 +23,7 @@ const firstUser = '33333333-3333-4333-8333-333333333333'
 const secondUser = '44444444-4444-4444-8444-444444444444'
 const players = [{display_name: 'anna', user_id: firstUser, isReady: true, is_bot: false, seat_id: firstUser},
   {display_name: 'boris', user_id: secondUser, isReady: false, is_bot: false, seat_id: secondUser}]
-const roster = {gameId: room.id, seat_count: 3, turnDurationMinutes: 3, players}
+const roster = {gameId: room.id, creator_id: room.id, seat_count: 3, turnDurationMinutes: 3, players}
 const lobbySelector = '[aria-label="Лобби"]'
 type View = ReturnType<typeof mount>
 const refreshButton = (wrapper: View) => wrapper.get(lobbySelector).findAll('button')[1]!

@@ -15,12 +15,14 @@ Deno.test('общая Edge-валидация: вложенные DTO, обяз�
   assert.equal(isCreateGameResult({code: 'LOBBY_NOT_OPEN', gameId: id}), false)
   assert.equal(isJoinGameRefusal({code: 'OWN_LOBBY_EXISTS', gameId: id}), true)
   assert.equal(isJoinGameRefusal({code: 'UNKNOWN', gameId: id}), false)
-  const row = {user_id: id, is_ready: false, display_name: 'anna', seat_count: 3,
+  const row = {creator_id: id, user_id: id, is_ready: false, display_name: 'anna', seat_count: 3,
     turn_duration_minutes: 3, is_bot: false, seat_id: id}
   assert.equal(isGamePlayersRows([row]), true)
   for (const value of [[], [row, {...row, seat_count: 4}], [row, {...row, turn_duration_minutes: 5}],
     [{...row, is_ready: 'false'}], [{...row, seat_count: 1}], [{...row, turn_duration_minutes: 11}],
-    [{...row, turn_duration_minutes: undefined}]]) assert.equal(isGamePlayersRows(value), false)
+    [{...row, turn_duration_minutes: undefined}], [{...row, creator_id: undefined}],
+    [{...row, creator_id: null}], [{...row, creator_id: 'wrong'}],
+    [row, {...row, creator_id: '22222222-2222-4222-8222-222222222222'}]]) assert.equal(isGamePlayersRows(value), false)
   assert.equal(isGamePlayersRows([row, {...row, user_id: '22222222-2222-4222-8222-222222222222',
     seat_id: '22222222-2222-4222-8222-222222222222'}]), true)
   const bot = {...row, user_id: null, display_name: null, is_bot: true,

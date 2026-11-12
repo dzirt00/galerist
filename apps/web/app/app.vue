@@ -76,6 +76,7 @@ const updateOccupiedSeatCount = (value: number) => {
     <GameLobby
       v-if="createdGame"
       :key="createdGame.id"
+      :profile-id="profile.id"
       :joined-game="createdGame"
       @change-data="editState"
       @occupied-seat-count-change="updateOccupiedSeatCount"

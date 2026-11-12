@@ -1,0 +1,23 @@
+purpose:
+  stands_in_for: Supabase Auth and PostgREST over the existing local web003 mock.
+  unblocks: HTTP verification of get-game-players creator_id projection; historical evidence remains in web003.context.md.
+assumptions:
+  - id: roster-creator-projection
+    status: supported
+    claim: The changed handler returns the stored creator_id once at room level and rejects missing, invalid or inconsistent creator IDs in the simulated RPC response.
+    reason: The real handler and installed SDK were exercised through HTTP against the project-owned mock; support is limited to the local caller scenarios.
+    verification: On 2026-11-12 the Deno get-game-players HTTP test passed 65 steps. The simulation request log showed Auth and get_game_players RPC calls, including malformed-response rejection and recovery. No cloud verification was performed.
+    source: supabase/functions/get-game-players/supabase-http.test.ts; postman/mocks/web003-supabase/default.js; supabase/functions/_shared/lobby-validation.ts
+    updated_at: "2026-11-12"
+  - id: deployed-rpc-creator-column
+    status: supported
+    claim: The deployed get_game_players SQL signature includes creator_id UUID as its eighth result field, with EXECUTE granted to service_role and denied to authenticated and anon.
+    reason: After the user fixed the filename and authorized deployment, CLI 2.109.0 applied the sole pending migration to mrbrfnxpepogfhmwvdbx. Read-only cloud SQL confirmed the signature and role privileges.
+    verification: On 2026-11-12 cloud pg_get_function_result and has_function_privilege confirmed eight fields and service_role/authenticated/anon privileges true/false/false. get-game-players v6 is ACTIVE, verify_jwt=false, with Auth.getUser retained. OPTIONS/GET/POST without token/POST with invalid token returned 204/405/401/401 with CORS. Successful authenticated HTTP reads and the two-browser UI scenario remain unverified. Historical local SQL/RLS tests passed; the existing project-owned mock was reused without a provider-mock search.
+    source: supabase/migrations/20261112000000_creator_id_in_game_players.sql; supabase/tests/get-game-players.sql; supabase/tests/lobby-bot-roster.sql; postman/simulations/web003.context.md
+    updated_at: "2026-11-12"
+fingerprints:
+  - id: creator-id-local-review
+    date: "2026-11-12"
+    commit: a758f1e99faac9041f43784af4718428b53b6504
+    cli: Postman 1.75.0; working tree contains uncommitted implementation and test changes.

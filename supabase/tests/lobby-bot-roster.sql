@@ -48,7 +48,8 @@ BEGIN
   IF EXISTS (SELECT 1 FROM jsonb_array_elements(actual) WITH ORDINALITY AS e(row, position)
     WHERE (row->>'seat_count')::integer IS DISTINCT FROM 4
       OR (row->>'turn_duration_minutes')::integer IS DISTINCT FROM 7
-      OR (SELECT count(*) FROM jsonb_object_keys(row)) <> 7
+      OR (row->>'creator_id')::uuid IS DISTINCT FROM owner_id
+      OR (SELECT count(*) FROM jsonb_object_keys(row)) <> 8
       OR (position > 2 AND (row->'user_id' IS DISTINCT FROM 'null'::jsonb
         OR row->'display_name' IS DISTINCT FROM 'null'::jsonb
         OR row->'is_bot' IS DISTINCT FROM 'true'::jsonb

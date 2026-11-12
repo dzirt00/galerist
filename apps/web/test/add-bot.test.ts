@@ -33,7 +33,7 @@ function deferred() {
   const promise = new Promise(done => { resolve = done })
   return {promise, resolve}
 }
-const roster = (players = [human, bot]) => ({data: {gameId: room.id,
+const roster = (players = [human, bot]) => ({data: {gameId: room.id, creator_id: human.user_id,
   seat_count: 4, turnDurationMinutes: 3, players}, error: null})
 let serverPlayers: Array<typeof human | typeof bot>
 // The mocked command supplies confirmed replies, not an implementation of SQL idempotency.
@@ -57,6 +57,9 @@ async function openLobby() {
   await flushPromises()
   await view.get('form').trigger('submit')
   await flushPromises()
+  await lobby(view).findAll('button').find(b => b.text() === 'Обновить')!.trigger('click')
+  await flushPromises()
+  api.invoke.mockClear()
   return view
 }
 
@@ -88,7 +91,7 @@ describe('WEB-004: добавление бота через подтверждё
     command.resolve({data: {gameId: room.id, seat_id: bot.seat_id}, error: null})
     await flushPromises()
     expect(reads()).toHaveLength(1)
-    expect(button(view).attributes('disabled')).toBeDefined()
+    expect(lobby(view).findAll('button').some(b => b.text() === 'Добавить бота')).toBe(false)
     expect(lobby(view).text()).toContain('Занято: 1')
     read.resolve(roster())
     await flushPromises()

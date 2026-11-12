@@ -30,6 +30,7 @@ beforeEach(() => {
     if (name === 'change-settings-game') return {data: {
       seat_count: options.body.seatCount, turnDurationMinutes: options.body.turnDurationMinutes,
     }, error: null}
+    if (name === 'get-game-players') return {data: {gameId: game.id, creator_id: dto.creator_id, seat_count: 3, turnDurationMinutes: 7, players: [{user_id: dto.creator_id, display_name: 'anna', isReady: false, is_bot: false, seat_id: dto.creator_id}]}, error: null}
     if (name === 'game-list') return {data: [game], error: null}
     throw new Error('Unexpected call ' + name)
   })
@@ -54,6 +55,8 @@ describe('WEB-004: созданная комната сразу открывае
     const lobby = view.get('[aria-label="Лобби"]')
     expect(lobby.text()).toContain(game.display_name)
     expect(lobby.text()).toContain('Количество минут на ход игрока 7')
+    await lobby.findAll('button').find(button => button.text() === 'Обновить')!.trigger('click')
+    await flushPromises()
     expect((lobby.get('#lobby-turn-duration').element as HTMLSelectElement).value).toBe('7')
     await lobby.get('#lobby-turn-duration').setValue('5')
     await lobby.findAll('button').find(button => button.text() === 'Изменить')!.trigger('click')
@@ -64,7 +67,7 @@ describe('WEB-004: созданная комната сразу открывае
     expect(lobby.text()).toContain('Количество минут на ход игрока 5')
     expect(view.findComponent(GameList).exists()).toBe(false)
     expect(view.find('article').exists()).toBe(false)
-    expect(api.invoke.mock.calls.map(([name]) => name)).toEqual(['game-list', 'create-game', 'change-settings-game'])
+    expect(api.invoke.mock.calls.map(([name]) => name)).toEqual(['game-list', 'create-game', 'get-game-players', 'change-settings-game'])
   })
 
   it.each(['error', 'invalid'])('после %s не открывает лобби, повтор открывает сохранённую комнату', async (kind) => {

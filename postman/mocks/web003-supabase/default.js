@@ -86,6 +86,7 @@ http.createServer(async (req, res) => {
         .map((item) => ({ user_id: item.userId, is_ready: item.isReady,
           display_name: item.display_name || 'member', seat_count: game?.seat_count ?? 3,
           turn_duration_minutes: game?.turnDurationMinutes ?? 3,
+          creator_id: game?.creator_id ?? options.creatorId ?? '11111111-1111-4111-8111-111111111111',
           is_bot: false, seat_id: item.seat_id || item.userId })));
     }
 

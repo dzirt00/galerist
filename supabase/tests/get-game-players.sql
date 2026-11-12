@@ -20,6 +20,12 @@ BEGIN
   INSERT INTO public.game_players(game_id, user_id) VALUES (other_room_id, first_user);
   PERFORM public.join_game(room_id, second_user);
   PERFORM public.ready_to_game(room_id, first_user, true);
+  IF EXISTS (SELECT FROM public.get_game_players(room_id, first_user) p
+    WHERE p.creator_id IS DISTINCT FROM first_user)
+    OR EXISTS (SELECT FROM public.get_game_players(room_id, second_user) p
+    WHERE p.creator_id IS DISTINCT FROM first_user) THEN
+    RAISE EXCEPTION 'Creator and participant must receive the same stored room creator';
+  END IF;
   expected := jsonb_build_array(
     jsonb_build_object('user_id', first_user, 'is_ready', true),
     jsonb_build_object('user_id', second_user, 'is_ready', false));

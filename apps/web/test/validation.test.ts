@@ -21,7 +21,7 @@ it('проверки DTO сохраняют границы вместимост�
   expect(isGameListItem(room)).toBe(true)
   expect(isGameListItem({...room, occupiedSeatCount: 3})).toBe(false)
   expect(isGameListItem({...room, turnDurationMinutes: 11})).toBe(false)
-  const roster = {gameId: 'room', seat_count: 4, turnDurationMinutes: 5,
+  const roster = {gameId: 'room', creator_id: '11111111-1111-4111-8111-111111111111', seat_count: 4, turnDurationMinutes: 5,
     players: [{display_name: 'boris', user_id: '11111111-1111-4111-8111-111111111111',
       isReady: false, is_bot: false, seat_id: '22222222-2222-4222-8222-222222222222'}]}
   expect(isGamePlayersResponse(roster)).toBe(true)
