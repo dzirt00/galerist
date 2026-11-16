@@ -58,14 +58,26 @@ BEGIN
     OR reply - 'gameId' - 'seat_id' <> '{}'::jsonb
     OR NOT EXISTS (SELECT 1 FROM public.game_players
       WHERE game_id = room_id AND seat_id = (reply->>'seat_id')::uuid
-        AND is_bot AND user_id IS NULL)
+        AND is_bot AND user_id IS NULL AND is_ready)
     OR (SELECT count(*) FROM public.bot_addition_requests WHERE game_id = room_id) <> 1 THEN
     RAISE EXCEPTION 'Command must persist generated bot seat and safe result together';
+  END IF;
+  IF EXISTS (SELECT 1 FROM public.game_players
+      WHERE game_id = room_id AND NOT is_bot AND is_ready) THEN
+    RAISE EXCEPTION 'Adding a ready bot must preserve human default readiness';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.get_game_players(room_id, owner_id)
+      WHERE seat_id = (reply->>'seat_id')::uuid AND is_bot AND is_ready) THEN
+    RAISE EXCEPTION 'Roster must expose the persisted bot readiness';
   END IF;
   -- A full room must still replay success, including after settings have changed.
   PERFORM public.change_settings_game(room_id, owner_id, 3, 8);
   IF public.add_bot(room_id, owner_id, request_one) IS DISTINCT FROM reply THEN
     RAISE EXCEPTION 'Replay must return the original persisted reply';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.game_players
+      WHERE game_id = room_id AND seat_id = (reply->>'seat_id')::uuid AND is_ready) THEN
+    RAISE EXCEPTION 'Replay and settings changes must preserve bot readiness';
   END IF;
   BEGIN
     PERFORM public.add_bot(room_id, owner_id, request_two);

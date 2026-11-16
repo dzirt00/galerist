@@ -53,7 +53,7 @@ BEGIN
       OR (position > 2 AND (row->'user_id' IS DISTINCT FROM 'null'::jsonb
         OR row->'display_name' IS DISTINCT FROM 'null'::jsonb
         OR row->'is_bot' IS DISTINCT FROM 'true'::jsonb
-        OR row->'is_ready' IS DISTINCT FROM 'false'::jsonb))) THEN
+        OR row->'is_ready' IS DISTINCT FROM 'true'::jsonb))) THEN
     RAISE EXCEPTION 'Bots must have null profile/name, with correct seat fields and saved room settings';
   END IF;
   IF (SELECT jsonb_agg(to_jsonb(p) ORDER BY p.user_id, p.seat_id)

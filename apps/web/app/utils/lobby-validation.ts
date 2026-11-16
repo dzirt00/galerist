@@ -11,7 +11,7 @@ import {
 import type {GameListItem} from '../types/lobby'
 import type {GamePlayer} from '~/GameLobby.vue'
 
-interface isGamePlayersResponse {
+export interface isGamePlayersResponse {
   players: GamePlayer[],
   gameId: string,
   seat_count: number,

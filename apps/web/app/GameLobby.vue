@@ -74,6 +74,23 @@ const playerRows = computed(() => (playerList.value ?? []).map(player => ({
 const toggleReady = () => isReady(changeReady.value)
 const creatorId = ref<string | null>(null)
 const isCanEditLobby = computed(() => creatorId.value === props.profileId)
+const isReadyToGame = computed(() => {
+  if (isRefreshGame.value) {
+    return 'Идет обновление данных'
+  }
+  if (playerList.value === null) {
+    return 'неизвестная готовность'
+  }
+  if (playerList.value.length < 2) {
+    return 'Для запуска нужны минимум два участника'
+  }
+
+  if (!(playerList.value.every(el => el.isReady))) {
+    return 'Не все участники готовы'
+  }
+  return 'Комната готова к запуску'
+})
+
 let pendingBotRequest: PendingBotRequest | null = null
 if (props.joinedGame && props.joinedGame.id !== null) {
   const channel = $supabase
@@ -152,7 +169,6 @@ const refreshGame = async () => {
     }
     const data = response.data
     if (isGamePlayersResponse(data) && data.gameId === props.joinedGame?.id) {
-      playerList.value = data.players
       emit('occupiedSeatCountChange', data.players.length)
       emit('changeData', {
         seat_count: data['seat_count'],
@@ -163,6 +179,7 @@ const refreshGame = async () => {
         props.profileId)
       if (userIsReady) {
         playerIsReady.value = userIsReady.isReady
+        playerList.value = data.players
       } else {
         message.value = 'Что то пошло не так'
         playerIsReady.value = null
@@ -341,6 +358,6 @@ const editChangeSeatCount = async () => {
     </button>
     <button type="button" v-if="isCanEditLobby" :disabled="areSettingsDisabled" @click="addBot">Добавить бота</button>
   </section>
-
+  <p>{{ isReadyToGame }}</p>
 </template>
 
