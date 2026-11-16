@@ -10,7 +10,7 @@ vi.mock('nuxt/app', () => ({
 vi.mock('../app/composable/auth', async () => {
   const {ref} = await import('vue')
   return {useProfile: () => ({
-    profile: ref({id: '11111111-1111-4111-8111-111111111111'}),
+    profile: ref({id: '33333333-3333-4333-8333-333333333333'}),
     isLoadingProfile: ref(false), hasProfileError: ref(false), profileMessage: ref(''), loadProfile: vi.fn(),
   })}
 })

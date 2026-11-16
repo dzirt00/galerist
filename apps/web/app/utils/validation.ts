@@ -18,7 +18,7 @@ export function isIntegerInRange(min: number, max: number): Validator<number> {
     typeof value === 'number' && Number.isSafeInteger(value) && value >= min && value <= max
 }
 
-export const isUUIDorNull: Validator<string | null> = (value): value is string =>
+export const isUUIDorNull: Validator<string | null> = (value): value is string | null =>
   (isString(value) && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(value)) || value === null
 
 export function isOneOf<const T extends readonly (string | number)[]>(values: T): Validator<T[number]> {

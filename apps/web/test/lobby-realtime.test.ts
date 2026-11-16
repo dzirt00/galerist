@@ -18,7 +18,7 @@ enableAutoUnmount(afterEach)
 
 const room = {display_name: 'anna', id: '11111111-1111-4111-8111-111111111111', seat_count: 3,
   occupiedSeatCount: 2, hasPassword: false, turnDurationMinutes: 3}
-const user = '22222222-2222-4222-8222-222222222222'
+const user = room.id
 const newUser = '33333333-3333-4333-8333-333333333333'
 const roster = (isReady: boolean) => ({data: {gameId: room.id, creator_id: room.id, seat_count: 3, turnDurationMinutes: 3,
   players: [{display_name: 'boris', user_id: user, isReady, is_bot: false, seat_id: user}]}, error: null})

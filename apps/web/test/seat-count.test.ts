@@ -17,7 +17,7 @@ enableAutoUnmount(afterEach)
 const room = {display_name: 'anna', id: '11111111-1111-4111-8111-111111111111',
   seat_count: 3, occupiedSeatCount: 2, hasPassword: false, turnDurationMinutes: 3}
 const otherRoom = {...room, display_name: 'charlie', id: '22222222-2222-4222-8222-222222222222'}
-const userId = '33333333-3333-4333-8333-333333333333'
+const userId = '11111111-1111-4111-8111-111111111111'
 type View = ReturnType<typeof mount>
 const lobby = (view: View) => view.get('[aria-label="Лобби"]')
 const save = (view: View) => lobby(view).findAll('button').find((button) => button.text() === 'Изменить')!
@@ -212,8 +212,7 @@ describe('WEB-004: изменение вместимости через UI', () 
 
   it('успех сохраняет готовность и состав без пересоздания лобби', async () => {
     const view = await openLobby()
-    await lobby(view).get('button').trigger('click')
-    await flushPromises()
+    expect(lobby(view).get('button').text()).toBe('Снять готовность')
     await lobby(view).findAll('button')[1]!.trigger('click')
     await flushPromises()
     await lobby(view).get('select').setValue('4')

@@ -159,6 +159,15 @@ const refreshGame = async () => {
         turnDurationMinutes: data['turnDurationMinutes']
       })
       creatorId.value = data.creator_id
+      const userIsReady = data.players.find(el => el.user_id !== null && !el.is_bot && el.user_id ===
+        props.profileId)
+      if (userIsReady) {
+        playerIsReady.value = userIsReady.isReady
+      } else {
+        message.value = 'Что то пошло не так'
+        playerIsReady.value = null
+        return
+      }
     } else {
       message.value = 'Что то пошло не так'
     }

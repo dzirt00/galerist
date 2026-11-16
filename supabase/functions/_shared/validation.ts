@@ -14,7 +14,7 @@ export const isBoolean: Validator<boolean> = (value): value is boolean => typeof
 export const isUUID: Validator<string> = (value): value is string =>
   isString(value) && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(value)
 
-export const isUUIDorNull: Validator<string | null> = (value): value is string =>
+export const isUUIDorNull: Validator<string | null> = (value): value is string | null =>
   (isString(value) && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(value)) || value === null
 export function isIntegerInRange(min: number, max: number): Validator<number> {
   return (value): value is number =>

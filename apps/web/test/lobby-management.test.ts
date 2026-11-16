@@ -41,7 +41,7 @@ it.each([anna, boris])('показывает управление только �
   expect(view.findAll('button').some(b => b.text() === 'Добавить бота')).toBe(profileId === anna)
   expect(view.text()).toContain('Количество минут на ход игрока 5')
   expect(view.text()).toContain('Всего мест: 4')
-  expect(button(view, 'Подтвердить готовность').exists()).toBe(true)
+  expect(button(view, 'Снять готовность').exists()).toBe(true)
 })
 
 it('последующий ответ с другим создателем скрывает управление', async () => {
