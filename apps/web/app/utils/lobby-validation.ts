@@ -18,6 +18,10 @@ export interface isGamePlayersResponse {
   turnDurationMinutes: number,
   creator_id: string
 }
+
+export interface DeleteUser {
+  gameId: string
+}
 export const isSeatCount = isOneOf([2, 3, 4])
 export const isTurnDurationMinutes = isOneOf([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 const isGameListItemShape = isObject({
@@ -63,4 +67,9 @@ export const isAddBot = isObject({
   gameId: isUUID,
   seat_id: isUUID,
 })
+const isResponseDeleteUserShare = isObject({gameId: isUUID})
+
+export function isResponseDeleteUser(value: unknown): value is DeleteUser {
+  return isResponseDeleteUserShare(value) && !('code' in value)
+}
 export const isProfile = isObject({id: isNonEmptyString, created_at: isNonEmptyString, display_name: isNonEmptyString})

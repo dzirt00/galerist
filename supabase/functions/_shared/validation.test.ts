@@ -1,9 +1,20 @@
 import assert from 'node:assert/strict'
 import {isArrayOf, isBoolean, isIntegerInRange, isObject, isOneOf, isUUID} from './validation.ts'
-import {isCreateGameResult, isGameListItem, isGamePlayersRows, isJoinGameRefusal} from './lobby-validation.ts'
+import {isCreateGameResult, isGameListItem, isGamePlayersRows, isJoinGameRefusal, isLeaveGame, isResponseDeleteUser} from './lobby-validation.ts'
 import {jsonError} from './http.ts'
 
 const id = '11111111-1111-4111-8111-111111111111'
+Deno.test('выход из лобби: запрос и подтверждение без кода ошибки', () => {
+  assert.equal(isLeaveGame({gameId: id, requestId: id}), true)
+  for (const value of [null, [], {}, {gameId: id}, {gameId: id, requestId: 'bad'}]) {
+    assert.equal(isLeaveGame(value), false)
+  }
+  assert.equal(isResponseDeleteUser({gameId: id}), true)
+  for (const value of [null, [], {}, {gameId: 'bad'}, {gameId: id, code: 'UNKNOWN'},
+    {gameId: id, code: 'LOBBY_NOT_OPEN'}, {gameId: id, code: null}, {gameId: id, code: undefined}]) {
+    assert.equal(isResponseDeleteUser(value), false)
+  }
+})
 Deno.test('общая Edge-валидация: вложенные DTO, обязательные поля и границы', () => {
   const validate = isObject({id: isUUID, flags: isArrayOf(isBoolean)})
   assert.equal(validate({id, flags: [false], extra: 'allowed'}), true)

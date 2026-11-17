@@ -16,6 +16,13 @@ assumptions:
     verification: On 2026-11-12 cloud pg_get_function_result and has_function_privilege confirmed eight fields and service_role/authenticated/anon privileges true/false/false. get-game-players v6 is ACTIVE, verify_jwt=false, with Auth.getUser retained. OPTIONS/GET/POST without token/POST with invalid token returned 204/405/401/401 with CORS. Successful authenticated HTTP reads and the two-browser UI scenario remain unverified. Historical local SQL/RLS tests passed; the existing project-owned mock was reused without a provider-mock search.
     source: supabase/migrations/20261112000000_creator_id_in_game_players.sql; supabase/tests/get-game-players.sql; supabase/tests/lobby-bot-roster.sql; postman/simulations/web003.context.md
     updated_at: "2026-11-12"
+  - id: leave-game-http
+    status: supported
+    claim: The real leave-game handler validates requests, derives identity through Auth, calls leave_game with the server key, strips private fields and rejects unknown error codes in the local scenarios.
+    reason: The real HTTP server and installed SDK ran against the existing project-owned Auth/PostgREST fixture; this supports caller behavior only, not cloud behavior or SQL persistence.
+    verification: On 2026-11-16 Deno check passed; HTTP and shared validation tests passed (4 tests, 36 HTTP steps). Captured calls verify Auth and leave_game RPC, payload and key separation. The simulation log records dependency requests. The first test run had a missing Content-Type on the test reset request; the test was corrected and rerun successfully.
+    source: supabase/functions/leave-game/supabase-http.test.ts; supabase/functions/_shared/validation.test.ts; postman/mocks/web003-supabase/default.js; supabase/functions/leave-game/README.md
+    updated_at: "2026-11-16"
 fingerprints:
   - id: creator-id-local-review
     date: "2026-11-12"

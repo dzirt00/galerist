@@ -80,6 +80,7 @@ const updateOccupiedSeatCount = (value: number) => {
       :joined-game="createdGame"
       @change-data="editState"
       @occupied-seat-count-change="updateOccupiedSeatCount"
+      @leave-room="createdGame = null"
     />
 
   </section>

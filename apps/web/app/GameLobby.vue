@@ -8,7 +8,7 @@ import {
   isSettingsResult,
   isSeatCount,
   isTurnDurationMinutes,
-  isAddBot
+  isAddBot, isResponseDeleteUser
 } from './utils/lobby-validation'
 import {getFunctionErrorMessage} from './utils/api-errors'
 
@@ -31,6 +31,11 @@ export interface PendingBotRequest {
   requestId: string
 }
 
+export interface PendingLeaveGameRequest {
+  gameId: string
+  requestId: string
+}
+
 const props = defineProps<{
   joinedGame: GameListItem | null,
   profileId: string
@@ -39,6 +44,7 @@ const emit = defineEmits<{
   busyChange: [value: boolean]
   changeData: [value: ChangeData]
   occupiedSeatCountChange: [value: number]
+  leaveRoom: [value: string]
 }>()
 let active = true
 let refreshPending = false
@@ -51,6 +57,7 @@ const waiting = ref<boolean>(false)
 const message = ref('')
 const isChangeSeatCount = ref(false)
 const playerList = ref<GamePlayer[] | null>(null)
+const pendingLeaveGameRequest = ref<PendingLeaveGameRequest | null>(null)
 const {$supabase} = useNuxtApp()
 const playerIsReady = ref<boolean | null>(null)
 const changeSeatCount = ref<number | null>(props.joinedGame?.seat_count ?? null)
@@ -61,6 +68,13 @@ const areSettingsDisabled = computed(() => isBusy.value || isChangeSeatCount.val
 const freeSeatCount = computed(() => props.joinedGame
   ? props.joinedGame.seat_count - props.joinedGame.occupiedSeatCount
   : 0)
+const canLeaveGame = computed(() => {
+  if (props.joinedGame === null || isBusy.value) return false
+  if (pendingLeaveGameRequest.value !== null) return true
+  if (creatorId.value !== null && creatorId.value !== props.profileId) return true
+  return false
+})
+
 const passwordLabel = computed(() => props.joinedGame?.hasPassword ? 'требуется' : 'не требуется')
 const readyButtonLabel = computed(() => waiting.value ? 'Сохраняем…'
   : changeReady.value ? 'Подтвердить готовность' : 'Снять готовность')
@@ -192,6 +206,55 @@ const refreshGame = async () => {
     message.value = 'Что то пошло не так'
   } finally {
     isRefreshGame.value = false
+    if (active) emit('busyChange', false)
+    if (active && refreshPending) await refreshGame()
+  }
+}
+const leaveGame = async () => {
+  message.value = ''
+  if (props.joinedGame === null) {
+    message.value = 'вы не присоединены ни к одной игре'
+    return
+  }
+  if (!canLeaveGame.value) return
+  waiting.value = true
+  emit('busyChange', true)
+
+  try {
+    if (pendingLeaveGameRequest.value === null) {
+      pendingLeaveGameRequest.value = {
+        gameId: props.joinedGame.id,
+        requestId: crypto.randomUUID()
+      }
+    }
+    const response = await $supabase.functions.invoke('leave-game', {
+      body: pendingLeaveGameRequest.value
+    })
+    if (!active) return
+    if (response.error) {
+      const errorMessage = await getFunctionErrorMessage(response.error, 'Что то пошло не так')
+      if (!active) return
+      message.value = errorMessage
+      return
+    }
+    const data = response.data
+
+    if ((isResponseDeleteUser(data) && data.gameId === props.joinedGame?.id)) {
+      pendingLeaveGameRequest.value = null
+      refreshPending = false
+      emit('leaveRoom', 'выход подтверждён')
+      return
+    }
+    message.value = 'Что то пошло не так'
+
+
+  } catch {
+    message.value = 'Что то пошло не так'
+
+  } finally {
+    isRefreshGame.value = false
+    isChangeSeatCount.value = false
+    waiting.value = false
     if (active) emit('busyChange', false)
     if (active && refreshPending) await refreshGame()
   }
@@ -329,6 +392,13 @@ const editChangeSeatCount = async () => {
       @click="refreshGame"
     >
       {{ refreshLabel }}
+    </button>
+    <button
+      type="button"
+      :disabled="!canLeaveGame"
+      @click="leaveGame"
+    >
+      Выйти из комнаты
     </button>
     <div v-if="isCanEditLobby">
       <label for="lobby-seat-count">Количество игроков</label>

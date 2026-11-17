@@ -152,7 +152,10 @@ describe('WEB-004: изменение вместимости через UI', () 
     await flushPromises()
     capacity(view, 4)
     expect(lobby(view).get('select').attributes('disabled')).toBeUndefined()
-    expect(lobby(view).findAll('button').every((button) => button.attributes('disabled') === undefined)).toBe(true)
+    for (const button of lobby(view).findAll('button')) {
+      if (button.text() === 'Выйти из комнаты') expect(button.attributes('disabled')).toBeDefined()
+      else expect(button.attributes('disabled')).toBeUndefined()
+    }
     expect(view.find('article').exists()).toBe(false)
   })
 

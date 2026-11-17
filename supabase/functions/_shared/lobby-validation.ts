@@ -20,6 +20,9 @@ interface GetGamePlayers {
   creator_id: string
 }
 
+interface DeleteUser {
+  gameId: string
+}
 export const isSeatCount = isOneOf([2, 3, 4])
 export const isTurnDurationMinutes = isOneOf([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 const isGameListItemShape = isObject({
@@ -52,12 +55,17 @@ export const isChangeSettingsGameRequest = isObject({
 })
 export const isResponseAddBot = isObject({gameId: isUUID, seat_id: isUUID})
 const isResponseAddBotErrorShare = isObject({code: isNonEmptyString, gameId: isUUID})
+const isResponseDeleteUserShare = isObject({gameId: isUUID})
 
+export function isResponseDeleteUser(value: unknown): value is DeleteUser {
+  return isResponseDeleteUserShare(value) && !('code' in value)
+}
 export function isResponseAddBotError(value: unknown): value is ResponseAddBotError {
   return isResponseAddBotErrorShare(value) && value.code === 'LOBBY_NOT_OPEN'
 }
 
 export const isAddBot = isObject({gameId: isUUID, requestId: isUUID})
+export const isLeaveGame = isObject({gameId: isUUID, requestId: isUUID})
 export const isSettingsRow = isObject({seat_count: isSeatCount, turn_duration_minutes: isTurnDurationMinutes})
 const isGamePlayersRowsShape =
   isArrayOf(isObject({

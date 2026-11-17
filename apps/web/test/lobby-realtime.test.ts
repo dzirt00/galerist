@@ -182,7 +182,9 @@ describe('WEB-004: уведомление Realtime → подтверждённ�
     const pending = deferred()
     api.invoke.mockReturnValueOnce(pending.promise)
     const buttons = wrapper.findAll('button')
-    await buttons[operation === 'ready' ? 0 : 2]!.trigger('click')
+    await buttons.find(button => operation === 'ready'
+      ? ['Подтвердить готовность', 'Снять готовность'].includes(button.text())
+      : button.text() === 'Изменить')!.trigger('click')
     connections[0]!.receive()
     connections[0]!.receive()
     expect(reads()).toHaveLength(0)
