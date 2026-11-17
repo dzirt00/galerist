@@ -5,6 +5,7 @@ import { testRoomRestrictions } from './room-restrictions.mjs'
 import { testProfileDisplayName } from './profile-display-name.mjs'
 import { testAddBotConcurrency } from './add-bot.mjs'
 import { testLeaveGameConcurrency } from './leave-game.mjs'
+import { testRemoveBotConcurrency } from './remove-bot.mjs'
 
 const testRoot = new URL('./', import.meta.url)
 const migrationRoot = new URL('../migrations/', import.meta.url)
@@ -116,6 +117,7 @@ try {
     fixture('lobby-seat-model.sql'),
     fixture('add-bot.sql'),
     fixture('leave-game.sql'),
+    fixture('remove-bot.sql'),
     fixture('lobby-bot-roster.sql'),
     'ROLLBACK;',
   ].join('\n')
@@ -258,12 +260,16 @@ try {
     concurrentSql,
     execute: (input) => docker(['exec', '-i', containerId, ...psqlArgs], { input }),
   })
+  await testRemoveBotConcurrency({
+    concurrentSql,
+    execute: (input) => docker(['exec', '-i', containerId, ...psqlArgs], { input }),
+  })
   console.log('WEB-001/002/003/004/007 database tests passed (local PostgreSQL fixture).')
   // The container is disposable. Clear only its fixtures before exercising
   // WEB-018 against the already-applied migrations, including in the CI command.
   docker(['exec', '-i', containerId, ...psqlArgs], { input: `
     TRUNCATE auth.users, public.profiles, public.games, public.game_players,
-      public.game_passwords, public.game_creation_requests, public.bot_addition_requests, public.leave_game_requests, realtime.messages;
+      public.game_passwords, public.game_creation_requests, public.bot_addition_requests, public.leave_game_requests, public.bot_removal_requests, realtime.messages;
   ` })
   await testRoomRestrictions({
     setup: '', concurrentSql,

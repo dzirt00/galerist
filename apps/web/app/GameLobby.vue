@@ -36,6 +36,12 @@ export interface PendingLeaveGameRequest {
   requestId: string
 }
 
+export interface PendingRemoveBotRequest {
+  gameId: string
+  requestId: string
+  seat_id: string
+}
+
 const props = defineProps<{
   joinedGame: GameListItem | null,
   profileId: string
@@ -58,6 +64,7 @@ const isCommandPending = ref(false)
 const message = ref('')
 const playerList = ref<GamePlayer[] | null>(null)
 const pendingLeaveGameRequest = ref<PendingLeaveGameRequest | null>(null)
+const pendingRemoveBotRequest = ref<PendingRemoveBotRequest | null>(null)
 const {$supabase} = useNuxtApp()
 const playerIsReady = ref<boolean | null>(null)
 const changeSeatCount = ref<number | null>(props.joinedGame?.seat_count ?? null)
@@ -78,8 +85,15 @@ const canLeaveGame = computed(() => {
   if (creatorId.value !== null && creatorId.value !== props.profileId) return true
   return false
 })
+const canRemoveBot = computed(() => {
+  if (props.joinedGame === null || isBusy.value) return false
+  if (pendingRemoveBotRequest.value !== null) return true
+  if (creatorId.value !== null && creatorId.value === props.profileId) return true
+  return false
+})
 
 const isLeaveDisabled = computed(() => !canLeaveGame.value)
+const isRemoveDisabled = computed(() => !canRemoveBot.value)
 
 const passwordLabel = computed(() => props.joinedGame?.hasPassword ? 'требуется' : 'не требуется')
 const readyButtonLabel = computed(() => isCommandPending.value ? 'Сохраняем…'
@@ -89,7 +103,9 @@ const readinessLabel = computed(() => playerIsReady.value === null ? 'Готов
 const refreshLabel = computed(() => isRefreshGame.value ? 'Загружаем состав…' : 'Обновить')
 const hasPlayerList = computed(() => playerList.value !== null)
 const playerRows = computed(() => (playerList.value ?? []).map(player => ({
-  ...player, readinessLabel: player.isReady ? 'готов' : 'не готов',
+  ...player, readinessLabel: player.isReady ? 'готов' : 'не готов', buttonDisabled: isRemoveDisabled.value ||
+    (pendingRemoveBotRequest.value !== null && pendingRemoveBotRequest.value.seat_id !==
+      player.seat_id)
 })))
 const toggleReady = () => isReady(changeReady.value)
 const isReadyToGame = computed(() => {
@@ -203,6 +219,12 @@ const refreshGame = async () => {
       if (userIsReady) {
         playerIsReady.value = userIsReady.isReady
         playerList.value = data.players
+        if (data.gameId === pendingRemoveBotRequest.value?.gameId) {
+          if (!data.players.find(elem => elem.seat_id === pendingRemoveBotRequest.value?.seat_id)) {
+            pendingRemoveBotRequest.value = null
+          }
+        }
+
       } else {
         message.value = 'Что то пошло не так'
         playerIsReady.value = null
@@ -217,6 +239,52 @@ const refreshGame = async () => {
     isRefreshGame.value = false
     if (active) emit('busyChange', false)
     if (active && refreshPending) await refreshGame()
+  }
+}
+const removeBot = async (seatId: string) => {
+  message.value = ''
+  if (props.joinedGame === null) {
+    message.value = 'вы не присоединены ни к одной игре'
+    return
+  }
+  const getButtonDisabled = playerRows.value.find(el => el.seat_id === seatId)
+  if (isRemoveDisabled.value || getButtonDisabled === undefined || getButtonDisabled.buttonDisabled) return
+  isCommandPending.value = true
+  emit('busyChange', true)
+
+  try {
+    if (pendingRemoveBotRequest.value === null) {
+      pendingRemoveBotRequest.value = {
+        gameId: props.joinedGame.id,
+        requestId: crypto.randomUUID(),
+        seat_id: seatId
+      }
+    }
+    const response = await $supabase.functions.invoke('remove-bot', {
+      body: pendingRemoveBotRequest.value
+    })
+    if (!active) return
+    if (response.error) {
+      const errorMessage = await getFunctionErrorMessage(response.error, 'Что то пошло не так')
+      if (!active) return
+      message.value = errorMessage
+      return
+    }
+    const data = response.data
+
+    if ((isResponseDeleteUser(data) && data.gameId === props.joinedGame?.id)) {
+      pendingRemoveBotRequest.value = null
+      refreshPending = true
+      return
+    }
+    message.value = 'Что то пошло не так'
+
+
+  } catch {
+    message.value = 'Что то пошло не так'
+
+  } finally {
+    await finishCommand()
   }
 }
 const leaveGame = async () => {
@@ -383,6 +451,11 @@ const editChangeSeatCount = async () => {
         <p v-for="player of playerRows" :key="player.seat_id">
           <span>{{ player.display_name }}</span>
           <span>{{ player.readinessLabel }}</span>
+          <span><button type="button" v-if="player.is_bot"
+                        :disabled="player.buttonDisabled"
+                        @click="removeBot(player.seat_id)">
+            удалить
+            бота</button></span>
         </p>
       </div>
       <button type="button" :disabled="isBusy" @click="refreshGame">

@@ -54,6 +54,7 @@ export const isChangeSettingsGameRequest = isObject({
   gameId: isUUID, seatCount: isSeatCount, turnDurationMinutes: isTurnDurationMinutes,
 })
 export const isResponseAddBot = isObject({gameId: isUUID, seat_id: isUUID})
+export const isResponseRemoveBotShare = isObject({gameId: isUUID})
 const isResponseAddBotErrorShare = isObject({code: isNonEmptyString, gameId: isUUID})
 const isResponseDeleteUserShare = isObject({gameId: isUUID})
 
@@ -64,7 +65,16 @@ export function isResponseAddBotError(value: unknown): value is ResponseAddBotEr
   return isResponseAddBotErrorShare(value) && value.code === 'LOBBY_NOT_OPEN'
 }
 
+export function isResponseRemoveBotError(value: unknown): value is ResponseAddBotError {
+  return isResponseAddBotErrorShare(value) && value.code === 'LOBBY_NOT_OPEN'
+}
+
+export function isResponseRemoveBot(value: unknown): value is DeleteUser {
+  return isResponseRemoveBotShare(value) && !('code' in value)
+}
+
 export const isAddBot = isObject({gameId: isUUID, requestId: isUUID})
+export const isRemoveBot = isObject({gameId: isUUID, requestId: isUUID, seat_id: isUUID,})
 export const isLeaveGame = isObject({gameId: isUUID, requestId: isUUID})
 export const isSettingsRow = isObject({seat_count: isSeatCount, turn_duration_minutes: isTurnDurationMinutes})
 const isGamePlayersRowsShape =

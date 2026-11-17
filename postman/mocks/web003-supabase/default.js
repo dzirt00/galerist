@@ -32,6 +32,15 @@ http.createServer(async (req, res) => {
     await pm.state.set(stateKey, state);
     const options = state.options;
 
+    // HTTP envelope only; real remove_bot persistence/locks are tested in PostgreSQL.
+    if (req.method === 'POST' && url.pathname === '/rest/v1/rpc/remove_bot') {
+      if (req.headers.authorization !== 'Bearer fixture-service-key' || req.headers.apikey !== 'fixture-service-key') {
+        return reply(res, 403, { code: '42501', message: 'Wrong server credentials' });
+      }
+      if (options.rpcError) return reply(res, 400, { code: options.rpcError, message: 'Private RPC diagnostic' });
+      if ('rpcResult' in options) return reply(res, 200, options.rpcResult);
+      return reply(res, 200, { gameId: body.p_game_id });
+    }
     // HTTP envelope only; real leave_game persistence/locks are tested in PostgreSQL.
     if (req.method === 'POST' && url.pathname === '/rest/v1/rpc/leave_game') {
       if (req.headers.authorization !== 'Bearer fixture-service-key' || req.headers.apikey !== 'fixture-service-key') {

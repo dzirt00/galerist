@@ -23,6 +23,13 @@ assumptions:
     verification: On 2026-11-16 Deno check passed; HTTP and shared validation tests passed (4 tests, 36 HTTP steps). Captured calls verify Auth and leave_game RPC, payload and key separation. The simulation log records dependency requests. The first test run had a missing Content-Type on the test reset request; the test was corrected and rerun successfully.
     source: supabase/functions/leave-game/supabase-http.test.ts; supabase/functions/_shared/validation.test.ts; postman/mocks/web003-supabase/default.js; supabase/functions/leave-game/README.md
     updated_at: "2026-11-16"
+  - id: remove-bot-http
+    status: supported
+    claim: The real remove-bot handler derives identity from Auth, sends the agreed seat_id to remove_bot with the server key, strips extra fields and rejects unknown result codes in local scenarios.
+    reason: The existing project-owned Auth/PostgREST fixture was extended by one HTTP route; the real handler and SDK were exercised over HTTP. This evidence supports caller behavior, not provider persistence or cloud behavior.
+    verification: On 2026-11-17 Deno check and 7 tests passed, including 40 HTTP steps. Captured requests verify Auth identity, all four RPC parameters, key separation and unchanged request IDs on repeat. The simulation log recorded 22 remove_bot requests. SQL persistence, concurrency, rollback and RLS passed separately in disposable PostgreSQL tests. No provider-mock search was needed because the existing fixture was reused.
+    source: supabase/functions/remove-bot/supabase-http.test.ts; supabase/functions/remove-bot/contract.test.ts; postman/mocks/web003-supabase/default.js; supabase/tests/remove-bot.sql; supabase/tests/remove-bot.mjs
+    updated_at: "2026-11-17"
 fingerprints:
   - id: creator-id-local-review
     date: "2026-11-12"

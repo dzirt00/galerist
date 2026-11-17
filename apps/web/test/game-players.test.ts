@@ -71,8 +71,8 @@ describe('WEB-004: чтение состава лобби', () => {
     await refreshButton(wrapper).trigger('click')
     await flushPromises()
     expect(api.invoke).toHaveBeenLastCalledWith('get-game-players', {body: {gameId: room.id}})
-    expect(playerRows(wrapper).map((row) => row.findAll('span').map((span) => span.text())))
-      .toEqual([['anna', 'готов'], ['boris', 'не готов']])
+    expect(playerRows(wrapper)[0]!.text()).toMatch(/^anna\s*готов$/)
+    expect(playerRows(wrapper)[1]!.text()).toMatch(/^boris\s*не готов$/)
     expect(wrapper.find('[role="alert"]').exists()).toBe(false)
   })
 
@@ -85,7 +85,7 @@ describe('WEB-004: чтение состава лобби', () => {
     await refreshButton(wrapper).trigger('click')
     await flushPromises()
     expect(playerRows(wrapper)).toHaveLength(1)
-    expect(playerRows(wrapper)[0]!.findAll('span').map((span) => span.text())).toEqual(['anna', 'не готов'])
+    expect(playerRows(wrapper)[0]!.text()).toMatch(/^anna\s*не готов$/)
     expect(wrapper.get(lobbySelector).text()).not.toContain(secondUser)
   })
 
