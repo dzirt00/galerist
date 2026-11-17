@@ -175,7 +175,7 @@ describe('WEB-004: уведомление Realtime → подтверждённ�
   })
 
   it.each(['ready', 'settings'])('откладывает сигнал до завершения %s', async (operation) => {
-    const wrapper = mount(GameLobby, {props: {joinedGame: room, profileId: room.id}})
+    const wrapper = mount(GameLobby, {attachTo: document.body, props: {joinedGame: room, profileId: room.id}})
     connections[0]!.status('SUBSCRIBED')
     await flushPromises()
     api.invoke.mockClear()

@@ -19,7 +19,7 @@ beforeEach(() => {
 })
 
 it.each(['ready-to-game', 'get-game-players', 'change-settings-game', 'add-bot'])('лобби показывает текст %s без клиентской таблицы', async (name) => {
-  const wrapper = mount(GameLobby, {props: {joinedGame: room, profileId: room.id}})
+  const wrapper = mount(GameLobby, {attachTo: document.body, props: {joinedGame: room, profileId: room.id}})
   if (name === 'change-settings-game' || name === 'add-bot') {
     api.invoke.mockResolvedValueOnce({data: {gameId: room.id, creator_id: room.id, seat_count: 3, turnDurationMinutes: 3, players: []}, error: null})
     await wrapper.findAll('button').find(button => button.text() === 'Обновить')!.trigger('click')

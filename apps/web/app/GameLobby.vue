@@ -52,19 +52,23 @@ onUnmounted(() => {
   active = false
 })
 
+// Keep command execution distinct from roster loading; isBusy serializes both.
 const isRefreshGame = ref(false)
-const waiting = ref<boolean>(false)
+const isCommandPending = ref(false)
 const message = ref('')
-const isChangeSeatCount = ref(false)
 const playerList = ref<GamePlayer[] | null>(null)
 const pendingLeaveGameRequest = ref<PendingLeaveGameRequest | null>(null)
 const {$supabase} = useNuxtApp()
 const playerIsReady = ref<boolean | null>(null)
 const changeSeatCount = ref<number | null>(props.joinedGame?.seat_count ?? null)
 const turnDurationMinutes = ref<number | null>(props.joinedGame?.turnDurationMinutes ?? null)
+const creatorId = ref<string | null>(null)
+const isCanEditLobby = computed(() => creatorId.value === props.profileId)
+
 const changeReady = computed(() => playerIsReady.value !== true)
-const isBusy = computed(() => waiting.value || isRefreshGame.value)
-const areSettingsDisabled = computed(() => isBusy.value || isChangeSeatCount.value || !isCanEditLobby.value)
+const isBusy = computed(() => isCommandPending.value || isRefreshGame.value)
+const isReadyDisabled = computed(() => props.joinedGame === null || isBusy.value)
+const areSettingsDisabled = computed(() => props.joinedGame === null || isBusy.value || !isCanEditLobby.value)
 const freeSeatCount = computed(() => props.joinedGame
   ? props.joinedGame.seat_count - props.joinedGame.occupiedSeatCount
   : 0)
@@ -75,8 +79,10 @@ const canLeaveGame = computed(() => {
   return false
 })
 
+const isLeaveDisabled = computed(() => !canLeaveGame.value)
+
 const passwordLabel = computed(() => props.joinedGame?.hasPassword ? 'требуется' : 'не требуется')
-const readyButtonLabel = computed(() => waiting.value ? 'Сохраняем…'
+const readyButtonLabel = computed(() => isCommandPending.value ? 'Сохраняем…'
   : changeReady.value ? 'Подтвердить готовность' : 'Снять готовность')
 const readinessLabel = computed(() => playerIsReady.value === null ? 'Готовность неизвестна'
   : playerIsReady.value ? 'Готов' : 'Не готов')
@@ -86,8 +92,6 @@ const playerRows = computed(() => (playerList.value ?? []).map(player => ({
   ...player, readinessLabel: player.isReady ? 'готов' : 'не готов',
 })))
 const toggleReady = () => isReady(changeReady.value)
-const creatorId = ref<string | null>(null)
-const isCanEditLobby = computed(() => creatorId.value === props.profileId)
 const isReadyToGame = computed(() => {
   if (isRefreshGame.value) {
     return 'Идет обновление данных'
@@ -121,9 +125,16 @@ if (props.joinedGame && props.joinedGame.id !== null) {
   onUnmounted(() => $supabase.removeChannel(channel))
 }
 
+// Release only the state owned by the command, then drain a queued roster read.
+const finishCommand = async () => {
+  isCommandPending.value = false
+  if (active) emit('busyChange', false)
+  if (active && refreshPending) await refreshGame()
+}
+
 const isReady = async (value: boolean) => {
-  if (isBusy.value || props.joinedGame === null) return
-  waiting.value = true
+  if (isReadyDisabled.value || props.joinedGame === null) return
+  isCommandPending.value = true
   message.value = ''
   emit('busyChange', true)
   try {
@@ -148,9 +159,7 @@ const isReady = async (value: boolean) => {
   } catch {
     message.value = 'Что то пошло не так'
   } finally {
-    waiting.value = false
-    if (active) emit('busyChange', false)
-    if (active && refreshPending) await refreshGame()
+    await finishCommand()
   }
 }
 
@@ -216,8 +225,8 @@ const leaveGame = async () => {
     message.value = 'вы не присоединены ни к одной игре'
     return
   }
-  if (!canLeaveGame.value) return
-  waiting.value = true
+  if (isLeaveDisabled.value) return
+  isCommandPending.value = true
   emit('busyChange', true)
 
   try {
@@ -252,13 +261,10 @@ const leaveGame = async () => {
     message.value = 'Что то пошло не так'
 
   } finally {
-    isRefreshGame.value = false
-    isChangeSeatCount.value = false
-    waiting.value = false
-    if (active) emit('busyChange', false)
-    if (active && refreshPending) await refreshGame()
+    await finishCommand()
   }
 }
+
 const addBot = async () => {
   message.value = ''
   if (props.joinedGame === null) {
@@ -267,8 +273,7 @@ const addBot = async () => {
   }
   if (areSettingsDisabled.value) return
 
-  isChangeSeatCount.value = true
-  waiting.value = true
+  isCommandPending.value = true
   emit('busyChange', true)
 
   try {
@@ -302,11 +307,7 @@ const addBot = async () => {
     message.value = 'Что то пошло не так'
 
   } finally {
-    isRefreshGame.value = false
-    isChangeSeatCount.value = false
-    waiting.value = false
-    if (active) emit('busyChange', false)
-    if (active && refreshPending) await refreshGame()
+    await finishCommand()
   }
 }
 const editChangeSeatCount = async () => {
@@ -325,8 +326,7 @@ const editChangeSeatCount = async () => {
   }
   if (areSettingsDisabled.value) return
 
-  isChangeSeatCount.value = true
-  waiting.value = true
+  isCommandPending.value = true
   emit('busyChange', true)
 
   try {
@@ -359,11 +359,7 @@ const editChangeSeatCount = async () => {
     message.value = 'Что то пошло не так'
 
   } finally {
-    isRefreshGame.value = false
-    isChangeSeatCount.value = false
-    waiting.value = false
-    if (active) emit('busyChange', false)
-    if (active && refreshPending) await refreshGame()
+    await finishCommand()
   }
 }
 </script>
@@ -372,62 +368,51 @@ const editChangeSeatCount = async () => {
   <p v-if="message" role="alert">{{ message }}</p>
   <section v-if="joinedGame" aria-label="Лобби">
     <h2>Вы в комнате {{ joinedGame.display_name }}</h2>
-    <p>Всего мест: {{ joinedGame.seat_count }}</p>
-    <p>Занято: {{ joinedGame.occupiedSeatCount }}</p>
-    <p>Свободно: {{ freeSeatCount }}</p>
-    <p>Количество минут на ход игрока {{ joinedGame.turnDurationMinutes }}</p>
-    <p>Пароль: {{ passwordLabel }}</p>
-    <button type="button" :disabled="isBusy" @click="toggleReady">{{ readyButtonLabel }}</button>
-    <p>{{ readinessLabel }}</p>
+    <section aria-label="Сведения о комнате">
+      <p>Всего мест: {{ joinedGame.seat_count }}</p>
+      <p>Занято: {{ joinedGame.occupiedSeatCount }}</p>
+      <p>Свободно: {{ freeSeatCount }}</p>
+      <p>Количество минут на ход игрока {{ joinedGame.turnDurationMinutes }}</p>
+      <p>Пароль: {{ passwordLabel }}</p>
+    </section>
 
-    <div v-if="hasPlayerList">
-      <p v-for="el of playerRows" :key="el.seat_id">
-        <span>{{ el.display_name }}</span>
-        <span>{{ el.readinessLabel }}</span>
-      </p>
-    </div>
-    <button
-      type="button"
-      :disabled="isBusy"
-      @click="refreshGame"
-    >
-      {{ refreshLabel }}
-    </button>
-    <button
-      type="button"
-      :disabled="!canLeaveGame"
-      @click="leaveGame"
-    >
-      Выйти из комнаты
-    </button>
-    <div v-if="isCanEditLobby">
-      <label for="lobby-seat-count">Количество игроков</label>
-      <select
-        id="lobby-seat-count"
-        v-model="changeSeatCount"
-        :disabled="areSettingsDisabled"
-        required
-      >
-        <option :value="2">2 игрока</option>
-        <option :value="3">3 игрока</option>
-        <option :value="4">4 игрока</option>
-      </select>
-    </div>
-    <div v-if="isCanEditLobby">
-      <label for="lobby-turn-duration">Количество минут на ход игрока</label>
-      <select
-        id="lobby-turn-duration"
-        v-model="turnDurationMinutes"
-        :disabled="areSettingsDisabled"
-      >
-        <option v-for="minutes in 10" :key="minutes" :value="minutes">{{ minutes }}</option>
-      </select>
-    </div>
-    <button type="button" v-if="isCanEditLobby" :disabled="areSettingsDisabled" @click="editChangeSeatCount">
-      Изменить
-    </button>
-    <button type="button" v-if="isCanEditLobby" :disabled="areSettingsDisabled" @click="addBot">Добавить бота</button>
+    <section aria-label="Действия участника">
+      <button type="button" :disabled="isReadyDisabled" @click="toggleReady">{{ readyButtonLabel }}</button>
+      <p>{{ readinessLabel }}</p>
+      <div v-if="hasPlayerList" role="group" aria-label="Состав комнаты">
+        <p v-for="player of playerRows" :key="player.seat_id">
+          <span>{{ player.display_name }}</span>
+          <span>{{ player.readinessLabel }}</span>
+        </p>
+      </div>
+      <button type="button" :disabled="isBusy" @click="refreshGame">
+        {{ refreshLabel }}
+      </button>
+      <button type="button" :disabled="isLeaveDisabled" @click="leaveGame">
+        Выйти из комнаты
+      </button>
+    </section>
+
+    <section v-if="isCanEditLobby" aria-label="Управление лобби">
+      <form aria-label="Настройки лобби" novalidate @submit.prevent="editChangeSeatCount">
+        <div>
+          <label for="lobby-seat-count">Количество игроков</label>
+          <select id="lobby-seat-count" v-model="changeSeatCount" :disabled="areSettingsDisabled" required>
+            <option :value="2">2 игрока</option>
+            <option :value="3">3 игрока</option>
+            <option :value="4">4 игрока</option>
+          </select>
+        </div>
+        <div>
+          <label for="lobby-turn-duration">Количество минут на ход игрока</label>
+          <select id="lobby-turn-duration" v-model="turnDurationMinutes" :disabled="areSettingsDisabled">
+            <option v-for="minutes in 10" :key="minutes" :value="minutes">{{ minutes }}</option>
+          </select>
+        </div>
+        <button type="submit" :disabled="areSettingsDisabled">Изменить</button>
+      </form>
+      <button type="button" :disabled="areSettingsDisabled" @click="addBot">Добавить бота</button>
+    </section>
   </section>
   <p>{{ isReadyToGame }}</p>
 </template>
-

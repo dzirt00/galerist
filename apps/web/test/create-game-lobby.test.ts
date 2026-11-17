@@ -47,7 +47,7 @@ async function submit(view: ReturnType<typeof mount>) {
 
 describe('WEB-004: созданная комната сразу открывает настройки', () => {
   it('показывает единственное лобби из create-game и позволяет менять таймер без повторного join', async () => {
-    const view = mount(App)
+    const view = mount(App, {attachTo: document.body})
     await submit(view)
     expect(api.invoke.mock.calls.map(([name]) => name)).toEqual(['game-list', 'create-game'])
     expect(view.findAll('[aria-label="Лобби"]')).toHaveLength(1)

@@ -42,7 +42,7 @@ beforeEach(() => {
 })
 
 async function openLobby(selectedId = room.id) {
-  const view = mount(App)
+  const view = mount(App, {attachTo: document.body})
   await flushPromises()
   await card(view, selectedId).get('form').trigger('submit')
   await flushPromises()
