@@ -25,7 +25,7 @@ Deno.serve(withAuthenticatedRequest('POST', 'Не удалось загрузи�
 
     if (supabaseAdminResponse.error) {
       if (supabaseAdminResponse.error.code === 'P0002') {
-        return jsonError(404, 'Комната или участник не найдены')
+        return jsonError(404, 'Комната или участник не найдены', {code: 'LOBBY_ACCESS_LOST', gameId: body.gameId})
       }
       if (supabaseAdminResponse.error.code === '22023') {
         return jsonError(400, 'Некорректные параметры чтения состава')

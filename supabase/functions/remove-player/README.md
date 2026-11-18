@@ -2,7 +2,7 @@
 
 POST с Bearer-токеном и JSON `{gameId, requestId, seat_id}` (UUID).
 Личность берётся из Auth; клиентский userId не используется.
-Обработчик вызывает `remove_bot` с p_user_id из Auth и тремя параметрами запроса
+Обработчик вызывает `remove_player` с p_user_id из Auth и тремя параметрами запроса
 через service_role. SQL владеет проверкой прав/цели/статуса, блокировкой комнаты,
 удалением конкретного места и сохранённым результатом повтора.
 
@@ -15,8 +15,8 @@ POST с Bearer-токеном и JSON `{gameId, requestId, seat_id}` (UUID).
 
 ```powershell
 postman simulation run postman/simulations/web003.sim.yaml --port 4923 --no-history --output ndjson
-deno check --config supabase/functions/remove-bot/deno.json supabase/functions/remove-bot/index.ts supabase/functions/remove-bot/supabase-http.test.ts
-deno test --allow-env --allow-net --config supabase/functions/remove-bot/deno.json supabase/functions/remove-bot/supabase-http.test.ts supabase/functions/remove-bot/contract.test.ts supabase/functions/_shared/validation.test.ts
+deno check --config supabase/functions/remove-player/deno.json supabase/functions/remove-player/index.ts supabase/functions/remove-player/supabase-http.test.ts
+deno test --allow-env --allow-net --config supabase/functions/remove-player/deno.json supabase/functions/remove-player/supabase-http.test.ts supabase/functions/remove-player/contract.test.ts supabase/functions/_shared/validation.test.ts
 ```
 
 2026-11-17: Deno check и все 7 тестов (40 HTTP-шагов) прошли.

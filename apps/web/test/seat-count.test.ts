@@ -153,7 +153,7 @@ describe('WEB-004: изменение вместимости через UI', () 
     capacity(view, 4)
     expect(lobby(view).get('select').attributes('disabled')).toBeUndefined()
     for (const button of lobby(view).findAll('button')) {
-      if (button.text() === 'Выйти из комнаты') expect(button.attributes('disabled')).toBeDefined()
+      if (['Выйти из комнаты', 'Исключить'].includes(button.text())) expect(button.attributes('disabled')).toBeDefined()
       else expect(button.attributes('disabled')).toBeUndefined()
     }
     expect(view.find('article').exists()).toBe(false)
@@ -164,7 +164,7 @@ describe('WEB-004: изменение вместимости через UI', () 
     await lobby(view).get('select').setValue('4')
     let resolve!: (value: unknown) => void
     api.invoke.mockReturnValueOnce(new Promise((done) => { resolve = done }))
-    await lobby(view).findAll('button')[operation === 'ready-to-game' ? 0 : 1]!.trigger('click')
+    await (operation === 'ready-to-game' ? lobby(view).get('button') : lobby(view).findAll('button').find(button => button.text() === 'Обновить')!).trigger('click')
     if (operation === 'ready-to-game') {
       expect(save(view).attributes('disabled')).toBeDefined()
       expect(lobby(view).get('select').attributes('disabled')).toBeDefined()
@@ -216,7 +216,7 @@ describe('WEB-004: изменение вместимости через UI', () 
   it('успех сохраняет готовность и состав без пересоздания лобби', async () => {
     const view = await openLobby()
     expect(lobby(view).get('button').text()).toBe('Снять готовность')
-    await lobby(view).findAll('button')[1]!.trigger('click')
+    await lobby(view).findAll('button').find(button => button.text() === 'Обновить')!.trigger('click')
     await flushPromises()
     await lobby(view).get('select').setValue('4')
     await save(view).trigger('click')

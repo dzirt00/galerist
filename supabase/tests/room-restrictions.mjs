@@ -23,7 +23,7 @@ export async function testRoomRestrictions({ setup, execute, concurrentSql }) {
   const resultCall = (label, expression) => `BEGIN; SET LOCAL ROLE service_role;
     INSERT INTO public.restriction_test_results VALUES ('${label}', ${expression}); COMMIT;`
   const reset = () => execute(`TRUNCATE public.games, public.game_players,
-    public.game_passwords, public.game_creation_requests, public.bot_addition_requests, public.leave_game_requests, public.bot_removal_requests, public.restriction_test_results;`)
+    public.game_passwords, public.game_creation_requests, public.bot_addition_requests, public.leave_game_requests, public.player_removal_requests, public.restriction_test_results;`)
   const seedOtherRoom = () => execute(`INSERT INTO public.games(id, creator_id, seat_count)
     VALUES ('${room}', '${other}', 3);
     INSERT INTO public.game_players(game_id, user_id) VALUES ('${room}', '${other}');`)

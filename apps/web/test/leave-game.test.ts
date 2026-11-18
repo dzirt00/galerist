@@ -1,6 +1,7 @@
 import {afterEach, beforeEach, expect, it, vi} from 'vitest'
 import {enableAutoUnmount, flushPromises, mount} from '@vue/test-utils'
 import App from '../app/app.vue'
+import GameLobby from '../app/GameLobby.vue'
 
 const api = vi.hoisted(() => ({invoke: vi.fn(), removeChannel: vi.fn(), signal: () => {}}))
 vi.mock('nuxt/app', () => {
@@ -114,4 +115,51 @@ it('после потерянного ответа и отказа чтения 
   expect(exits()).toHaveLength(2)
   expect(exits()[1]![1].body).toEqual(exits()[0]![1].body)
   expect(view.find('[aria-label="Лобби"]').exists()).toBe(false)
+})
+
+const accessError = (body: unknown) => ({data: null, error: {context: new Response(JSON.stringify(body), {
+  status: 404, headers: {'Content-Type': 'application/json'},
+})}})
+it('сигнал и подтверждённая потеря доступа возвращают список, сохраняют профиль и очищают канал', async () => {
+  const view = await open()
+  api.invoke.mockResolvedValueOnce(accessError({error: 'Комната или участник не найдены', code: 'LOBBY_ACCESS_LOST', gameId: room.id}))
+  api.signal()
+  await flushPromises()
+  expect(view.find('[aria-label="Лобби"]').exists()).toBe(false)
+  expect(view.text()).toContain('Мой профиль')
+  expect(view.text()).toContain('boris')
+  expect(button(view, 'Создать комнату').exists()).toBe(true)
+  expect(api.removeChannel).toHaveBeenCalledTimes(1)
+  expect(exits()).toHaveLength(0)
+})
+it.each(['wrong-room', 'missing-code', 'unknown-code', 'network', 'invalid-body'])('чтение %s не закрывает лобби и допускает повтор', async kind => {
+  const view = await open()
+  if (kind === 'network') api.invoke.mockRejectedValueOnce(new Error('network'))
+  else api.invoke.mockResolvedValueOnce(accessError(kind === 'invalid-body' ? null : {
+    error: 'Попробуйте ещё раз',
+    gameId: kind === 'wrong-room' ? anna : room.id,
+    ...kind === 'missing-code' ? {} : {code: kind === 'unknown-code' ? 'UNKNOWN' : 'LOBBY_ACCESS_LOST'},
+  }))
+  api.signal()
+  await flushPromises()
+  expect(view.find('[aria-label="Лобби"]').exists()).toBe(true)
+  expect(view.find('[role="alert"]').exists()).toBe(true)
+  expect(button(view, 'Обновить').attributes('disabled')).toBeUndefined()
+  await button(view, 'Обновить').trigger('click')
+  await flushPromises()
+  expect(view.text()).toContain('boris')
+  expect(view.find('[aria-label="Лобби"]').exists()).toBe(true)
+})
+it('завершение чтения ошибки после размонтирования не отправляет leaveRoom', async () => {
+  const pending = deferred()
+  const response = new Response('', {status: 404})
+  vi.spyOn(response, 'json').mockReturnValue(pending.promise)
+  api.invoke.mockResolvedValueOnce({data: null, error: {context: response}})
+  const view = mount(GameLobby, {props: {joinedGame: room, profileId: boris}})
+  await button(view, 'Обновить').trigger('click')
+  await flushPromises()
+  view.unmount()
+  pending.resolve({error: 'Нет доступа', code: 'LOBBY_ACCESS_LOST', gameId: room.id})
+  await flushPromises()
+  expect(view.emitted('leaveRoom')).toBeUndefined()
 })

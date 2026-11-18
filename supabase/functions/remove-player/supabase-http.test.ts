@@ -10,7 +10,7 @@ const base = 'http://127.0.0.1:4923/supabase'
 const environment = {SUPABASE_URL: base, SUPABASE_ANON_KEY: 'fixture-anon-key',
   SUPABASE_SERVICE_ROLE_KEY: 'fixture-service-key'}
 
-Deno.test('remove-bot: real handler and SDK against local Postman simulation', async test => {
+Deno.test('remove-player: real handler and SDK against local Postman simulation', async test => {
   const saved = Object.fromEntries(Object.keys(environment).map(key => [key, Deno.env.get(key)]))
   let handler: Handler | undefined
   const originalServe = Deno.serve
@@ -60,7 +60,7 @@ Deno.test('remove-bot: real handler and SDK against local Postman simulation', a
         assert.equal(calls[i].path, '/auth/v1/user')
         assert.equal(calls[i].apikey, 'fixture-anon-key')
         assert.equal(calls[i].authorization, 'Bearer fixture-user-token')
-        assert.equal(calls[i + 1].path, '/rest/v1/rpc/remove_bot')
+        assert.equal(calls[i + 1].path, '/rest/v1/rpc/remove_player')
         assert.equal(calls[i + 1].apikey, 'fixture-service-key')
         assert.equal(calls[i + 1].authorization, 'Bearer fixture-service-key')
         assert.deepEqual(calls[i + 1].body, {p_game_id: gameId, p_user_id: userId, p_request_id: requestId, p_seat_id: seat_id})

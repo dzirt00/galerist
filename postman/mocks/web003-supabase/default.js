@@ -33,7 +33,7 @@ http.createServer(async (req, res) => {
     const options = state.options;
 
     // HTTP envelope only; real remove_bot persistence/locks are tested in PostgreSQL.
-    if (req.method === 'POST' && url.pathname === '/rest/v1/rpc/remove_bot') {
+    if (req.method === 'POST' && url.pathname === '/rest/v1/rpc/remove_player') {
       if (req.headers.authorization !== 'Bearer fixture-service-key' || req.headers.apikey !== 'fixture-service-key') {
         return reply(res, 403, { code: '42501', message: 'Wrong server credentials' });
       }

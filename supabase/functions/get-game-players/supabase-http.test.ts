@@ -39,11 +39,15 @@ Deno.test('get-game-players: real HTTP and SDK against local Postman simulation'
     method: 'POST', headers: {Authorization: 'Bearer fixture-user-token', 'Content-Type': 'application/json'},
     body: raw ? String(body) : JSON.stringify(body),
   })
-  const failure = async (response: Response, status: number) => {
+  const failure = async (response: Response, status: number, accessLost = false) => {
     assert.equal(response.status, status)
     assert.equal(response.headers.get('access-control-allow-origin'), '*')
     const body = await response.json()
-    assert.deepEqual(Object.keys(body), ['error'])
+    if (accessLost) {
+      assert.deepEqual(body, {error: 'Комната или участник не найдены', code: 'LOBBY_ACCESS_LOST', gameId})
+    } else {
+      assert.deepEqual(Object.keys(body), ['error'])
+    }
     assert.equal(typeof body.error, 'string')
     assert.doesNotMatch(JSON.stringify(body), /Private|fixture-/)
   }
@@ -99,12 +103,12 @@ Deno.test('get-game-players: real HTTP and SDK against local Postman simulation'
     await test.step('membership in another room does not authorize this room', async () => {
       await reset({readyMembers: [{gameId: otherGame, userId, isReady: false},
         {gameId, userId: otherUser, isReady: true}]})
-      await failure(await post({gameId, userId: otherUser}), 404)
+      await failure(await post({gameId, userId: otherUser}), 404, true)
     })
     for (const [code, status] of [['P0002', 404], ['22023', 400], ['42501', 500]] as const) {
       await test.step('RPC ' + code, async () => {
         await reset({rpcError: code})
-        await failure(await post(), status)
+        await failure(await post(), status, code === 'P0002')
       })
     }
     for (const authStatus of [401, 403, 503]) {

@@ -10,7 +10,7 @@ import {
   isTurnDurationMinutes,
   isAddBot, isResponseDeleteUser
 } from './utils/lobby-validation'
-import {getFunctionErrorMessage} from './utils/api-errors'
+import {getFunctionErrorMessage, getFunctionError} from './utils/api-errors'
 
 
 interface ChangeData {
@@ -103,9 +103,11 @@ const readinessLabel = computed(() => playerIsReady.value === null ? 'Готов
 const refreshLabel = computed(() => isRefreshGame.value ? 'Загружаем состав…' : 'Обновить')
 const hasPlayerList = computed(() => playerList.value !== null)
 const playerRows = computed(() => (playerList.value ?? []).map(player => ({
-  ...player, readinessLabel: player.isReady ? 'готов' : 'не готов', buttonDisabled: isRemoveDisabled.value ||
+  ...player,
+  readinessLabel: player.isReady ? 'готов' : 'не готов',
+  buttonDisabled: (isRemoveDisabled.value ||
     (pendingRemoveBotRequest.value !== null && pendingRemoveBotRequest.value.seat_id !==
-      player.seat_id)
+      player.seat_id)) || player.user_id === props.profileId
 })))
 const toggleReady = () => isReady(changeReady.value)
 const isReadyToGame = computed(() => {
@@ -201,9 +203,14 @@ const refreshGame = async () => {
     })
     if (!active) return
     if (response.error) {
-      const errorMessage = await getFunctionErrorMessage(response.error, 'Что то пошло не так')
+      const errorMessage = await getFunctionError(response.error, 'Что то пошло не так')
       if (!active) return
-      message.value = errorMessage
+      if ('code' in errorMessage && 'gameId' in errorMessage && errorMessage.code === 'LOBBY_ACCESS_LOST' &&
+        errorMessage.gameId === props.joinedGame.id) {
+        emit('leaveRoom', 'Участник удален')
+        return
+      }
+      message.value = errorMessage.message
       return
     }
     const data = response.data
@@ -241,6 +248,7 @@ const refreshGame = async () => {
     if (active && refreshPending) await refreshGame()
   }
 }
+
 const removeBot = async (seatId: string) => {
   message.value = ''
   if (props.joinedGame === null) {
@@ -260,7 +268,7 @@ const removeBot = async (seatId: string) => {
         seat_id: seatId
       }
     }
-    const response = await $supabase.functions.invoke('remove-bot', {
+    const response = await $supabase.functions.invoke('remove-player', {
       body: pendingRemoveBotRequest.value
     })
     if (!active) return
@@ -451,11 +459,10 @@ const editChangeSeatCount = async () => {
         <p v-for="player of playerRows" :key="player.seat_id">
           <span>{{ player.display_name }}</span>
           <span>{{ player.readinessLabel }}</span>
-          <span><button type="button" v-if="player.is_bot"
+          <span><button type="button"
                         :disabled="player.buttonDisabled"
                         @click="removeBot(player.seat_id)">
-            удалить
-            бота</button></span>
+            Исключить</button></span>
         </p>
       </div>
       <button type="button" :disabled="isBusy" @click="refreshGame">

@@ -46,24 +46,24 @@ BEGIN
   FOR i IN 1..4 LOOP
     args := ARRAY[owner_id, room, req, bot_b];
     args[i] := NULL;
-    PERFORM public.expect_remove_error_fixture(format('SELECT public.remove_bot(%L,%L,%L,%L)',
+    PERFORM public.expect_remove_error_fixture(format('SELECT public.remove_player(%L,%L,%L,%L)',
       args[1], args[2], args[3], args[4]), '22023');
   END LOOP;
-  PERFORM public.expect_remove_error_fixture(format('SELECT public.remove_bot(%L,%L,%L,%L)',
+  PERFORM public.expect_remove_error_fixture(format('SELECT public.remove_player(%L,%L,%L,%L)',
     owner_id, gen_random_uuid(), req, bot_b), 'P0002');
-  PERFORM public.expect_remove_error_fixture(format('SELECT public.remove_bot(%L,%L,%L,%L)',
+  PERFORM public.expect_remove_error_fixture(format('SELECT public.remove_player(%L,%L,%L,%L)',
     member_id, room, req, bot_b), '42501');
-  PERFORM public.expect_remove_error_fixture(format('SELECT public.remove_bot(%L,%L,%L,%L)',
+  PERFORM public.expect_remove_error_fixture(format('SELECT public.remove_player(%L,%L,%L,%L)',
     outsider_id, room, req, bot_b), '42501');
-  FOREACH human_seat IN ARRAY ARRAY[human_seat, foreign_bot, gen_random_uuid()] LOOP
-    PERFORM public.expect_remove_error_fixture(format('SELECT public.remove_bot(%L,%L,%L,%L)',
+  FOREACH human_seat IN ARRAY ARRAY[(SELECT seat_id FROM public.game_players WHERE game_id = room AND user_id = owner_id), foreign_bot, gen_random_uuid()] LOOP
+    PERFORM public.expect_remove_error_fixture(format('SELECT public.remove_player(%L,%L,%L,%L)',
       owner_id, room, req, human_seat), 'P1002');
   END LOOP;
   IF (SELECT count(*) FROM public.game_players WHERE game_id = room) <> 4
-    OR EXISTS (SELECT FROM public.bot_removal_requests WHERE game_id = room) THEN
+    OR EXISTS (SELECT FROM public.player_removal_requests WHERE game_id = room) THEN
     RAISE EXCEPTION 'Rejected removals changed seats or persisted success';
   END IF;
-  reply := public.remove_bot(owner_id, room, req, bot_b);
+  reply := public.remove_player(owner_id, room, req, bot_b);
   IF reply IS DISTINCT FROM jsonb_build_object('gameId', room)
     OR EXISTS (SELECT FROM public.game_players WHERE seat_id = bot_b)
     OR NOT EXISTS (SELECT FROM public.game_players WHERE seat_id = bot_c AND is_ready)
@@ -71,21 +71,21 @@ BEGIN
     OR NOT EXISTS (SELECT FROM public.game_players WHERE game_id = room AND user_id = member_id)
     OR NOT EXISTS (SELECT FROM public.game_players WHERE seat_id = foreign_bot)
     OR (SELECT seat_count FROM public.games WHERE id = room) <> 4
-    OR NOT EXISTS (SELECT FROM public.bot_removal_requests WHERE game_id = room AND request_id = req
+    OR NOT EXISTS (SELECT FROM public.player_removal_requests WHERE game_id = room AND request_id = req
       AND user_id = owner_id AND seat_id = bot_b AND result = reply) THEN
     RAISE EXCEPTION 'Removal must persist exact reply/target and preserve other seats, readiness and capacity';
   END IF;
   bot_d := (public.add_bot(room, owner_id, gen_random_uuid())->>'seat_id')::uuid;
-  IF public.remove_bot(owner_id, room, req, bot_b) IS DISTINCT FROM reply THEN
+  IF public.remove_player(owner_id, room, req, bot_b) IS DISTINCT FROM reply THEN
     RAISE EXCEPTION 'Replay must return original result';
   END IF;
-  PERFORM public.expect_remove_error_fixture(format('SELECT public.remove_bot(%L,%L,%L,%L)',
+  PERFORM public.expect_remove_error_fixture(format('SELECT public.remove_player(%L,%L,%L,%L)',
     owner_id, room, req, bot_c), 'P1002');
-  PERFORM public.expect_remove_error_fixture(format('SELECT public.remove_bot(%L,%L,%L,%L)',
+  PERFORM public.expect_remove_error_fixture(format('SELECT public.remove_player(%L,%L,%L,%L)',
     owner_id, room, gen_random_uuid(), bot_b), 'P1002');
   -- Rights precede replay, including after the future transfer of ownership.
   UPDATE public.games SET creator_id = member_id WHERE id = room;
-  PERFORM public.expect_remove_error_fixture(format('SELECT public.remove_bot(%L,%L,%L,%L)',
+  PERFORM public.expect_remove_error_fixture(format('SELECT public.remove_player(%L,%L,%L,%L)',
     owner_id, room, req, bot_b), '42501');
   UPDATE public.games SET creator_id = owner_id WHERE id = room;
   FOREACH human_seat IN ARRAY ARRAY[bot_c, bot_d] LOOP
@@ -94,14 +94,14 @@ BEGIN
     END IF;
   END LOOP;
   UPDATE public.games SET status = 'GAME_STARTED' WHERE id = room;
-  IF public.remove_bot(owner_id, room, req, bot_b) IS DISTINCT FROM reply
-    OR public.remove_bot(owner_id, room, gen_random_uuid(), bot_c) IS DISTINCT FROM
+  IF public.remove_player(owner_id, room, req, bot_b) IS DISTINCT FROM reply
+    OR public.remove_player(owner_id, room, gen_random_uuid(), bot_c) IS DISTINCT FROM
       jsonb_build_object('code', 'LOBBY_NOT_OPEN', 'gameId', room) THEN
     RAISE EXCEPTION 'Started room must replay old result and reject new removal';
   END IF;
   UPDATE public.games SET status = 'CLOSED' WHERE id = room;
-  IF public.remove_bot(owner_id, room, gen_random_uuid(), bot_c)->>'code' IS DISTINCT FROM 'LOBBY_NOT_OPEN'
-    OR (SELECT count(*) FROM public.bot_removal_requests WHERE game_id = room) <> 1
+  IF public.remove_player(owner_id, room, gen_random_uuid(), bot_c)->>'code' IS DISTINCT FROM 'LOBBY_NOT_OPEN'
+    OR (SELECT count(*) FROM public.player_removal_requests WHERE game_id = room) <> 1
     OR (SELECT count(*) FROM public.game_players WHERE game_id = room) <> 4 THEN
     RAISE EXCEPTION 'Closed room refusal must preserve seats/journal';
   END IF;
@@ -118,7 +118,7 @@ DO $$ BEGIN
 END; $$;
 CREATE FUNCTION public.reject_remove_result_fixture() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN RAISE EXCEPTION 'forced journal failure' USING ERRCODE = 'P9001'; END; $$;
-CREATE TRIGGER reject_remove_result_fixture BEFORE INSERT ON public.bot_removal_requests
+CREATE TRIGGER reject_remove_result_fixture BEFORE INSERT ON public.player_removal_requests
 FOR EACH ROW EXECUTE FUNCTION public.reject_remove_result_fixture();
 DO $$
 DECLARE signals_before bigint; room uuid := current_setting('test.remove.room')::uuid;
@@ -126,33 +126,67 @@ BEGIN
   UPDATE public.games SET status = 'OPEN_LOBBY' WHERE id = room;
   SELECT count(*) INTO signals_before FROM realtime.messages;
   SET LOCAL ROLE service_role;
-  PERFORM public.expect_remove_error_fixture(format('SELECT public.remove_bot(%L,%L,%L,%L)',
+  PERFORM public.expect_remove_error_fixture(format('SELECT public.remove_player(%L,%L,%L,%L)',
     '98000000-0000-4000-8000-000000000001', room, gen_random_uuid(), current_setting('test.remove.bot')), 'P9001');
   RESET ROLE;
   IF NOT EXISTS (SELECT FROM public.game_players WHERE seat_id = current_setting('test.remove.bot')::uuid)
     OR (SELECT count(*) FROM realtime.messages) <> signals_before
-    OR (SELECT count(*) FROM public.bot_removal_requests WHERE game_id = room) <> 1 THEN
+    OR (SELECT count(*) FROM public.player_removal_requests WHERE game_id = room) <> 1 THEN
     RAISE EXCEPTION 'Journal failure must roll back bot deletion and signal';
   END IF;
 END; $$;
-DROP TRIGGER reject_remove_result_fixture ON public.bot_removal_requests;
+DROP TRIGGER reject_remove_result_fixture ON public.player_removal_requests;
 DROP FUNCTION public.reject_remove_result_fixture();
+DO $$
+DECLARE
+  owner_id uuid := '98000000-0000-4000-8000-000000000001';
+  member_id uuid := '98000000-0000-4000-8000-000000000002';
+  room uuid := current_setting('test.remove.room')::uuid;
+  old_seat uuid;
+  new_seat uuid;
+  req uuid := gen_random_uuid();
+  reply jsonb;
+  signals_before bigint;
+BEGIN
+  SELECT seat_id INTO STRICT old_seat FROM public.game_players WHERE game_id = room AND user_id = member_id;
+  SELECT count(*) INTO signals_before FROM realtime.messages;
+  SET LOCAL ROLE service_role;
+  reply := public.remove_player(owner_id, room, req, old_seat);
+  IF reply IS DISTINCT FROM jsonb_build_object('gameId', room)
+    OR EXISTS (SELECT FROM public.game_players WHERE seat_id = old_seat)
+    OR NOT EXISTS (SELECT FROM public.game_players WHERE game_id = room AND user_id = owner_id AND is_ready) THEN
+    RAISE EXCEPTION 'Human removal must remove exact member and preserve owner';
+  END IF;
+  PERFORM public.expect_remove_error_fixture(format('SELECT public.get_game_players(%L,%L)', room, member_id), 'P0002');
+  PERFORM public.expect_remove_error_fixture(format('SELECT public.ready_to_game(%L,%L,true)', room, member_id), 'P0002');
+  PERFORM public.join_game(room, member_id);
+  SELECT seat_id INTO STRICT new_seat FROM public.game_players WHERE game_id = room AND user_id = member_id;
+  IF new_seat = old_seat OR public.remove_player(owner_id, room, req, old_seat) IS DISTINCT FROM reply
+    OR NOT EXISTS (SELECT FROM public.game_players WHERE seat_id = new_seat) THEN
+    RAISE EXCEPTION 'Replay after rejoin must preserve new human seat';
+  END IF;
+  PERFORM public.expect_remove_error_fixture(format('SELECT public.remove_player(%L,%L,%L,%L)', owner_id, room, req, new_seat), 'P1002');
+  RESET ROLE;
+  IF (SELECT count(*) FROM realtime.messages) <> signals_before + 2 THEN
+    RAISE EXCEPTION 'Human removal and rejoin must each signal once; replay must not signal';
+  END IF;
+END; $$;
 DROP FUNCTION public.expect_remove_error_fixture(text,text);
 DO $$
 DECLARE client_role text;
 BEGIN
-  IF NOT (SELECT relrowsecurity FROM pg_class WHERE oid = 'public.bot_removal_requests'::regclass)
-    OR NOT has_function_privilege('service_role', 'public.remove_bot(uuid,uuid,uuid,uuid)', 'EXECUTE') THEN
+  IF NOT (SELECT relrowsecurity FROM pg_class WHERE oid = 'public.player_removal_requests'::regclass)
+    OR NOT has_function_privilege('service_role', 'public.remove_player(uuid,uuid,uuid,uuid)', 'EXECUTE') THEN
     RAISE EXCEPTION 'Removal journal needs RLS and server must have command access';
   END IF;
   FOREACH client_role IN ARRAY ARRAY['anon', 'authenticated'] LOOP
-    IF has_function_privilege(client_role, 'public.remove_bot(uuid,uuid,uuid,uuid)', 'EXECUTE')
-      OR has_table_privilege(client_role, 'public.bot_removal_requests', 'SELECT')
-      OR has_table_privilege(client_role, 'public.bot_removal_requests', 'INSERT')
-      OR has_table_privilege(client_role, 'public.bot_removal_requests', 'UPDATE')
-      OR has_table_privilege(client_role, 'public.bot_removal_requests', 'DELETE') THEN
+    IF has_function_privilege(client_role, 'public.remove_player(uuid,uuid,uuid,uuid)', 'EXECUTE')
+      OR has_table_privilege(client_role, 'public.player_removal_requests', 'SELECT')
+      OR has_table_privilege(client_role, 'public.player_removal_requests', 'INSERT')
+      OR has_table_privilege(client_role, 'public.player_removal_requests', 'UPDATE')
+      OR has_table_privilege(client_role, 'public.player_removal_requests', 'DELETE') THEN
       RAISE EXCEPTION 'Client access to removal command/journal must be closed';
     END IF;
   END LOOP;
 END; $$;
-SELECT 'PASS: remove_bot authorization, exact target, replay, statuses, rollback, private signal and server-only journal';
+SELECT 'PASS: remove_player human/bot targets, owner protection, access revocation, replay/rejoin, statuses, rollback, private signal and server-only journal';

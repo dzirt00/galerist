@@ -269,7 +269,7 @@ try {
   // WEB-018 against the already-applied migrations, including in the CI command.
   docker(['exec', '-i', containerId, ...psqlArgs], { input: `
     TRUNCATE auth.users, public.profiles, public.games, public.game_players,
-      public.game_passwords, public.game_creation_requests, public.bot_addition_requests, public.leave_game_requests, public.bot_removal_requests, realtime.messages;
+      public.game_passwords, public.game_creation_requests, public.bot_addition_requests, public.leave_game_requests, public.player_removal_requests, realtime.messages;
   ` })
   await testRoomRestrictions({
     setup: '', concurrentSql,

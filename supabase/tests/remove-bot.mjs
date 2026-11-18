@@ -13,7 +13,7 @@ export async function testRemoveBotConcurrency({execute, concurrentSql}) {
         VALUES ('${room}', '${bot}', true, true);`)
     return {room, bot}
   }
-  const remove = (room, bot, req) => `public.remove_bot('${owner}', '${room}', '${req}', '${bot}')`
+  const remove = (room, bot, req) => `public.remove_player('${owner}', '${room}', '${req}', '${bot}')`
   const call = expression => `BEGIN; SET LOCAL ROLE service_role; SELECT ${expression}; COMMIT;`
   async function overlap(firstExpression, secondExpression) {
     const application = `remove-race-${randomUUID()}`
@@ -45,8 +45,8 @@ export async function testRemoveBotConcurrency({execute, concurrentSql}) {
   const assertState = (room, bot, seats, signals) => execute(`DO $$ BEGIN
     IF EXISTS (SELECT FROM public.game_players WHERE seat_id = '${bot}')
       OR (SELECT count(*) FROM public.game_players WHERE game_id = '${room}') <> ${seats}
-      OR (SELECT count(*) FROM public.bot_removal_requests WHERE game_id = '${room}') <> 1
-      OR NOT EXISTS (SELECT FROM public.bot_removal_requests WHERE game_id = '${room}' AND seat_id = '${bot}')
+      OR (SELECT count(*) FROM public.player_removal_requests WHERE game_id = '${room}') <> 1
+      OR NOT EXISTS (SELECT FROM public.player_removal_requests WHERE game_id = '${room}' AND seat_id = '${bot}')
       OR (SELECT count(*) FROM realtime.messages WHERE topic = 'lobby:${room}') <> ${signals} THEN
       RAISE EXCEPTION 'Concurrent removal violated target, seats, journal or signals';
     END IF;
@@ -66,7 +66,7 @@ export async function testRemoveBotConcurrency({execute, concurrentSql}) {
     const {room, bot} = seed()
     const results = await overlap(remove(room, bot, randomUUID()), remove(room, bot, randomUUID()))
     if (results[0].status !== 'fulfilled' || results[1].status !== 'rejected'
-      || !String(results[1].reason).includes('нет такого бота')) {
+      || !String(results[1].reason).includes('нет такого игрока')) {
       throw new Error('Different request after removal must refuse without storing success')
     }
     assertState(room, bot, 1, 3)

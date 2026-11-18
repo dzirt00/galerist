@@ -26,7 +26,7 @@ const players = [{display_name: 'anna', user_id: firstUser, isReady: true, is_bo
 const roster = {gameId: room.id, creator_id: room.id, seat_count: 3, turnDurationMinutes: 3, players}
 const lobbySelector = '[aria-label="Лобби"]'
 type View = ReturnType<typeof mount>
-const refreshButton = (wrapper: View) => wrapper.get(lobbySelector).findAll('button')[1]!
+const refreshButton = (wrapper: View) => wrapper.get(lobbySelector).findAll('button').find(button => ['Обновить', 'Загружаем состав…'].includes(button.text()))!
 const readyButton = (wrapper: View) => wrapper.get(lobbySelector).get('button')
 const playerRows = (wrapper: View) => wrapper.get(lobbySelector).findAll('p').filter((row) => row.find('span').exists())
 
@@ -71,8 +71,8 @@ describe('WEB-004: чтение состава лобби', () => {
     await refreshButton(wrapper).trigger('click')
     await flushPromises()
     expect(api.invoke).toHaveBeenLastCalledWith('get-game-players', {body: {gameId: room.id}})
-    expect(playerRows(wrapper)[0]!.text()).toMatch(/^anna\s*готов$/)
-    expect(playerRows(wrapper)[1]!.text()).toMatch(/^boris\s*не готов$/)
+    expect(playerRows(wrapper)[0]!.findAll('span').slice(0, 2).map(span => span.text()).join(' ')).toMatch(/^anna\s*готов$/)
+    expect(playerRows(wrapper)[1]!.findAll('span').slice(0, 2).map(span => span.text()).join(' ')).toMatch(/^boris\s*не готов$/)
     expect(wrapper.find('[role="alert"]').exists()).toBe(false)
   })
 
@@ -85,7 +85,7 @@ describe('WEB-004: чтение состава лобби', () => {
     await refreshButton(wrapper).trigger('click')
     await flushPromises()
     expect(playerRows(wrapper)).toHaveLength(1)
-    expect(playerRows(wrapper)[0]!.text()).toMatch(/^anna\s*не готов$/)
+    expect(playerRows(wrapper)[0]!.findAll('span').slice(0, 2).map(span => span.text()).join(' ')).toMatch(/^anna\s*не готов$/)
     expect(wrapper.get(lobbySelector).text()).not.toContain(secondUser)
   })
 

@@ -40,7 +40,7 @@ function deferred() {
 }
 const reads = () => api.invoke.mock.calls.filter(([name]) => name === 'get-game-players')
 const rows = (wrapper: ReturnType<typeof mount>) => wrapper.findAll('p')
-  .filter((row) => row.find('span').exists()).map((row) => row.text())
+  .filter((row) => row.find('span').exists()).map((row) => row.findAll('span').slice(0, 2).map(span => span.text()).join(''))
 
 beforeEach(() => {
   vi.resetAllMocks()
@@ -115,7 +115,7 @@ describe('WEB-004: уведомление Realtime → подтверждённ�
     expect(lobby.text()).toContain('Количество минут на ход игрока 3')
     expect(wrapper.find('[role="alert"]').exists()).toBe(true)
     api.invoke.mockResolvedValueOnce({data: updated, error: null})
-    await lobby.findAll('button')[1]!.trigger('click')
+    await lobby.findAll('button').find(button => button.text() === 'Обновить')!.trigger('click')
     await flushPromises()
     expect(lobby.text()).toContain('Всего мест: 4')
     expect(lobby.text()).toContain('Количество минут на ход игрока 5')
@@ -200,7 +200,7 @@ describe('WEB-004: уведомление Realtime → подтверждённ�
     connections[0]!.status(status)
     await flushPromises()
     expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось подключить')
-    await wrapper.findAll('button')[1]!.trigger('click')
+    await wrapper.findAll('button').find(button => button.text() === 'Обновить')!.trigger('click')
     await flushPromises()
     expect(rows(wrapper)).toEqual([`borisне готов`])
   })

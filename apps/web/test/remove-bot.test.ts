@@ -15,6 +15,9 @@ const bot = '22222222-2222-4222-8222-222222222222'
 const room = {id: '33333333-3333-4333-8333-333333333333', display_name: 'anna',
   seat_count: 4, occupiedSeatCount: 2, hasPassword: false, turnDurationMinutes: 3}
 
+const removeButtons = (view: ReturnType<typeof mount>) => view.get('[aria-label="Состав комнаты"]').findAll('p')
+  .filter(row => row.findAll('span')[0]?.text() !== 'anna').map(row => row.get('button'))
+
 it('создатель отправляет удаление выбранного бота с gameId, seat_id и requestId', async () => {
   api.invoke.mockImplementation(async name => {
     if (name === 'get-game-players') return {data: {gameId: room.id, creator_id: owner,
@@ -22,17 +25,17 @@ it('создатель отправляет удаление выбранног�
         {user_id: owner, seat_id: owner, display_name: 'anna', isReady: true, is_bot: false},
         {user_id: null, seat_id: bot, display_name: 'Бот', isReady: true, is_bot: true},
       ]}, error: null}
-    if (name === 'remove-bot') return {data: null, error: {message: 'network failure'}}
+    if (name === 'remove-player') return {data: null, error: {message: 'network failure'}}
     throw new Error('Unexpected function ' + name)
   })
   const view = mount(GameLobby, {props: {joinedGame: room, profileId: owner}})
   await view.findAll('button').find(button => button.text() === 'Обновить')!.trigger('click')
   await flushPromises()
-  const remove = view.findAll('button').find(button => button.text() === 'удалить бота')!
+  const remove = removeButtons(view)[0]!
   expect(remove.exists()).toBe(true)
   await remove.trigger('click')
   await flushPromises()
-  const calls = api.invoke.mock.calls.filter(([name]) => name === 'remove-bot')
+  const calls = api.invoke.mock.calls.filter(([name]) => name === 'remove-player')
   expect(calls).toHaveLength(1)
   expect(calls[0]![1].body).toEqual({gameId: room.id, seat_id: bot, requestId: expect.any(String)})
 })
@@ -40,7 +43,7 @@ it('создатель отправляет удаление выбранног�
 it('подтверждённое удаление перечитывает состав без ожидания Realtime и убирает бота', async () => {
   let removed = false
   api.invoke.mockImplementation(async name => {
-    if (name === 'remove-bot') {
+    if (name === 'remove-player') {
       removed = true
       return {data: {gameId: room.id}, error: null}
     }
@@ -54,10 +57,10 @@ it('подтверждённое удаление перечитывает со�
   const view = mount(GameLobby, {props: {joinedGame: room, profileId: owner}})
   await view.findAll('button').find(button => button.text() === 'Обновить')!.trigger('click')
   await flushPromises()
-  await view.findAll('button').find(button => button.text() === 'удалить бота')!.trigger('click')
+  await removeButtons(view)[0]!.trigger('click')
   await flushPromises()
   expect(api.invoke.mock.calls.filter(([name]) => name === 'get-game-players')).toHaveLength(2)
-  expect(view.findAll('button').some(button => button.text() === 'удалить бота')).toBe(false)
+  expect(removeButtons(view)).toHaveLength(0)
   expect(view.text()).toContain('Для запуска нужны минимум два участника')
   expect(view.emitted('occupiedSeatCountChange')?.at(-1)).toEqual([1])
 })
@@ -66,7 +69,7 @@ it('подтверждённое отсутствие бота после пот
   const nextBot = '44444444-4444-4444-8444-444444444444'
   let firstRemoved = false
   api.invoke.mockImplementation(async name => {
-    if (name === 'remove-bot') {
+    if (name === 'remove-player') {
       firstRemoved = true
       return {data: null, error: {message: 'response lost'}}
     }
@@ -84,14 +87,14 @@ it('подтверждённое отсутствие бота после пот
     await flushPromises()
   }
   await refresh()
-  await view.findAll('button').find(button => button.text() === 'удалить бота')!.trigger('click')
+  await removeButtons(view)[0]!.trigger('click')
   await flushPromises()
   await refresh()
-  const buttons = view.findAll('button').filter(button => button.text() === 'удалить бота')
+  const buttons = removeButtons(view)
   expect(buttons).toHaveLength(1)
   await buttons[0]!.trigger('click')
   await flushPromises()
-  const calls = api.invoke.mock.calls.filter(([name]) => name === 'remove-bot')
+  const calls = api.invoke.mock.calls.filter(([name]) => name === 'remove-player')
   expect(calls).toHaveLength(2)
   expect(calls[1]![1].body.seat_id).toBe(nextBot)
   expect(calls[1]![1].body.requestId).not.toBe(calls[0]![1].body.requestId)
@@ -100,7 +103,7 @@ it('подтверждённое отсутствие бота после пот
 it('после потери ответа и ошибки чтения восстанавливает состав и повторяет сохранённое удаление', async () => {
   let rosterUnavailable = false
   api.invoke.mockImplementation(async name => {
-    if (name === 'remove-bot') {
+    if (name === 'remove-player') {
       rosterUnavailable = true
       return {data: null, error: {message: 'response lost'}}
     }
@@ -119,17 +122,17 @@ it('после потери ответа и ошибки чтения восст
     await flushPromises()
   }
   await refresh()
-  await view.findAll('button').find(button => button.text() === 'удалить бота')!.trigger('click')
+  await removeButtons(view)[0]!.trigger('click')
   await flushPromises()
   await refresh()
   expect(view.findAll('button').some(button => button.text() === 'Обновить'
     && button.attributes('disabled') === undefined)).toBe(true)
-  expect(api.invoke.mock.calls.filter(([name]) => name === 'remove-bot')).toHaveLength(1)
+  expect(api.invoke.mock.calls.filter(([name]) => name === 'remove-player')).toHaveLength(1)
   rosterUnavailable = false
   await refresh()
-  await view.findAll('button').find(button => button.text() === 'удалить бота')!.trigger('click')
+  await removeButtons(view)[0]!.trigger('click')
   await flushPromises()
-  const calls = api.invoke.mock.calls.filter(([name]) => name === 'remove-bot')
+  const calls = api.invoke.mock.calls.filter(([name]) => name === 'remove-player')
   expect(calls).toHaveLength(2)
   expect(calls[1]![1].body).toEqual(calls[0]![1].body)
 })
@@ -137,7 +140,7 @@ it('после потери ответа и ошибки чтения восст
 it('не отправляет сохранённое удаление B при клике на другого бота C', async () => {
   const nextBot = '44444444-4444-4444-8444-444444444444'
   api.invoke.mockImplementation(async name => {
-    if (name === 'remove-bot') return {data: null, error: {message: 'response lost'}}
+    if (name === 'remove-player') return {data: null, error: {message: 'response lost'}}
     if (name === 'get-game-players') return {data: {gameId: room.id, creator_id: owner,
       seat_count: 4, turnDurationMinutes: 3, players: [
         {user_id: owner, seat_id: owner, display_name: 'anna', isReady: true, is_bot: false},
@@ -148,10 +151,40 @@ it('не отправляет сохранённое удаление B при �
   const view = mount(GameLobby, {props: {joinedGame: {...room, occupiedSeatCount: 3}, profileId: owner}})
   await view.findAll('button').find(button => button.text() === 'Обновить')!.trigger('click')
   await flushPromises()
-  const buttons = view.findAll('button').filter(button => button.text() === 'удалить бота')
+  const buttons = removeButtons(view)
   await buttons[0]!.trigger('click')
   await flushPromises()
   await buttons[1]!.trigger('click')
   await flushPromises()
-  expect(api.invoke.mock.calls.filter(([name]) => name === 'remove-bot')).toHaveLength(1)
+  expect(api.invoke.mock.calls.filter(([name]) => name === 'remove-player')).toHaveLength(1)
+})
+
+it('создатель исключает другого человека и перечитывает состав, собственное место нельзя исключить', async () => {
+  let removed = false
+  api.invoke.mockImplementation(async (name, options) => {
+    if (name === 'remove-player') {
+      expect(options.body).toEqual({gameId: room.id, seat_id: bot, requestId: expect.any(String)})
+      removed = true
+      return {data: {gameId: room.id}, error: null}
+    }
+    if (name === 'get-game-players') return {data: {gameId: room.id, creator_id: owner,
+      seat_count: 4, turnDurationMinutes: 3, players: [
+        {user_id: owner, seat_id: owner, display_name: 'anna', isReady: true, is_bot: false},
+        ...removed ? [] : [{user_id: bot, seat_id: bot, display_name: 'boris', isReady: false, is_bot: false}],
+      ]}, error: null}
+    throw new Error('Unexpected function ' + name)
+  })
+  const view = mount(GameLobby, {props: {joinedGame: room, profileId: owner}})
+  await view.findAll('button').find(button => button.text() === 'Обновить')!.trigger('click')
+  await flushPromises()
+  const rows = view.get('[aria-label="Состав комнаты"]').findAll('p')
+  expect(rows[0]!.get('button').attributes('disabled')).toBeDefined()
+  await rows[0]!.get('button').trigger('click')
+  expect(api.invoke.mock.calls.filter(([name]) => name === 'remove-player')).toHaveLength(0)
+  expect(rows[1]!.get('button').text()).toBe('Исключить')
+  await rows[1]!.get('button').trigger('click')
+  await flushPromises()
+  expect(api.invoke.mock.calls.filter(([name]) => name === 'remove-player')).toHaveLength(1)
+  expect(view.get('[aria-label="Состав комнаты"]').text()).not.toContain('boris')
+  expect(view.emitted('occupiedSeatCountChange')?.at(-1)).toEqual([1])
 })

@@ -52,5 +52,5 @@ export async function testProfileDisplayName({setup, execute, concurrentSql}) {
   console.log('PASS: overlapping normalized-name registrations persist one Auth user and profile')
   // The runner reuses this disposable DB for older scenarios.
   execute(`TRUNCATE auth.users, public.profiles, public.games, public.game_players,
-    public.game_passwords, public.game_creation_requests, public.bot_addition_requests, public.leave_game_requests, public.bot_removal_requests, realtime.messages;`)
+    public.game_passwords, public.game_creation_requests, public.bot_addition_requests, public.leave_game_requests, public.player_removal_requests, realtime.messages;`)
 }
