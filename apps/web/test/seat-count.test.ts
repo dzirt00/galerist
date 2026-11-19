@@ -35,8 +35,11 @@ beforeEach(() => {
     if (name === 'join-game') return {data: {...(options.body.gameId === otherRoom.id ? otherRoom : room)}, error: null}
     if (name === 'change-settings-game') return {data: {seat_count: options.body.seatCount, turnDurationMinutes: options.body.turnDurationMinutes}, error: null}
     if (name === 'ready-to-game') return {data: {isReady: options.body.isReady}, error: null}
-    if (name === 'get-game-players') return {data: {gameId: options.body.gameId, creator_id: room.id, seat_count: 3, turnDurationMinutes: 3,
-      players: [{display_name: 'boris', user_id: userId, isReady: true, is_bot: false, seat_id: userId}]}, error: null}
+    if (name === 'get-game-players') {
+      const selectedRoom = options.body.gameId === otherRoom.id ? otherRoom : room
+      return {data: {gameId: selectedRoom.id, creator_id: userId, seat_count: 3, turnDurationMinutes: 3,
+        players: [{display_name: selectedRoom.display_name, user_id: userId, isReady: true, is_bot: false, seat_id: userId}]}, error: null}
+    }
     throw new Error('Unexpected function ' + name)
   })
 })
@@ -153,7 +156,7 @@ describe('WEB-004: изменение вместимости через UI', () 
     capacity(view, 4)
     expect(lobby(view).get('select').attributes('disabled')).toBeUndefined()
     for (const button of lobby(view).findAll('button')) {
-      if (['Выйти из комнаты', 'Исключить'].includes(button.text())) expect(button.attributes('disabled')).toBeDefined()
+      if (button.text() === 'Исключить') expect(button.attributes('disabled')).toBeDefined()
       else expect(button.attributes('disabled')).toBeUndefined()
     }
     expect(view.find('article').exists()).toBe(false)
@@ -222,7 +225,7 @@ describe('WEB-004: изменение вместимости через UI', () 
     await save(view).trigger('click')
     await flushPromises()
     expect(lobby(view).get('button').text()).toBe('Снять готовность')
-    expect(lobby(view).text()).toContain('boris')
+    expect(lobby(view).get('[aria-label="Состав комнаты"]').text()).toContain(room.display_name)
     expect(lobby(view).get('select').element.value).toBe('4')
     capacity(view, 4, 1)
   })

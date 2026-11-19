@@ -4,11 +4,12 @@ export async function testLeaveGameConcurrency({execute, concurrentSql}) {
   const owner = randomUUID()
   const member = randomUUID()
   execute(`INSERT INTO auth.users(id) VALUES ('${owner}'), ('${member}');`)
-  const seed = () => {
+  const seed = (includeMember = true) => {
     const room = randomUUID()
+    const seats = includeMember ? [owner, member] : [owner]
     execute(`INSERT INTO public.games(id, creator_id, seat_count) VALUES ('${room}', '${owner}', 3);
       INSERT INTO public.game_players(game_id, user_id) VALUES
-        ('${room}', '${owner}'), ('${room}', '${member}');`)
+        ${seats.map(user => `('${room}', '${user}')`).join(', ')};`)
     return room
   }
   const leave = (room, req) => `public.leave_game('${room}', '${member}', '${req}')`
@@ -73,4 +74,34 @@ export async function testLeaveGameConcurrency({execute, concurrentSql}) {
     assertState(raceRoom, leaveFirst ? 2 : 1, leaveFirst ? 4 : 3)
   }
   console.log('PASS: concurrent exit repeats, distinct requests and join/exit in both orders preserve seats/results/signals')
+
+  for (const leaveFirst of [true, false]) {
+    const raceRoom = seed(false)
+    const creatorExit = `public.leave_game('${raceRoom}', '${owner}', '${randomUUID()}')`
+    const joinRequest = join(raceRoom)
+    const race = await overlap(leaveFirst ? creatorExit : joinRequest, leaveFirst ? joinRequest : creatorExit)
+    requireSuccess(race)
+    const exitReply = reply(race[leaveFirst ? 0 : 1].value)
+    const joinReply = reply(race[leaveFirst ? 1 : 0].value)
+    const joinedInOrder = leaveFirst
+      ? joinReply.code === 'LOBBY_NOT_OPEN' && joinReply.gameId === raceRoom
+      : joinReply.code === undefined && joinReply.id === raceRoom
+    if (exitReply.gameId !== raceRoom || exitReply.code !== undefined
+      || !joinedInOrder) {
+      throw new Error('Creator exit and join must return the outcome of their serialized order')
+    }
+    const expectedStatus = leaveFirst ? 'CLOSED' : 'OPEN_LOBBY'
+    const memberCount = leaveFirst ? 0 : 1
+    execute(`DO $$ BEGIN
+      IF NOT EXISTS (SELECT FROM public.games WHERE id = '${raceRoom}'
+          AND status = '${expectedStatus}' ${leaveFirst ? '' : `AND creator_id = '${member}'`})
+        OR (SELECT count(*) FROM public.game_players WHERE game_id = '${raceRoom}') <> ${memberCount}
+        OR (SELECT count(*) FROM public.game_players WHERE game_id = '${raceRoom}' AND user_id = '${member}') <> ${memberCount}
+        OR (SELECT count(*) FROM public.leave_game_requests WHERE game_id = '${raceRoom}' AND user_id = '${owner}') <> 1
+        OR (SELECT count(*) FROM realtime.messages WHERE topic = 'lobby:${raceRoom}') <> ${2 + memberCount} THEN
+        RAISE EXCEPTION 'Creator exit and join left inconsistent ownership, seats, replay or signals';
+      END IF;
+    END; $$;`)
+  }
+  console.log('PASS: creator exit before join closes the lobby; join before exit transfers ownership')
 }

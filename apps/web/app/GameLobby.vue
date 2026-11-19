@@ -71,7 +71,13 @@ const changeSeatCount = ref<number | null>(props.joinedGame?.seat_count ?? null)
 const turnDurationMinutes = ref<number | null>(props.joinedGame?.turnDurationMinutes ?? null)
 const creatorId = ref<string | null>(null)
 const isCanEditLobby = computed(() => creatorId.value === props.profileId)
-
+const nameCreatorRoom = computed(() => {
+  const fallbackName = props.joinedGame?.display_name ?? ''
+  if (!playerList.value || !creatorId.value) return fallbackName
+  return playerList.value.find(
+    el => el.user_id !== null && el.user_id === creatorId.value
+  )?.display_name ?? fallbackName
+})
 const changeReady = computed(() => playerIsReady.value !== true)
 const isBusy = computed(() => isCommandPending.value || isRefreshGame.value)
 const isReadyDisabled = computed(() => props.joinedGame === null || isBusy.value)
@@ -82,7 +88,7 @@ const freeSeatCount = computed(() => props.joinedGame
 const canLeaveGame = computed(() => {
   if (props.joinedGame === null || isBusy.value) return false
   if (pendingLeaveGameRequest.value !== null) return true
-  if (creatorId.value !== null && creatorId.value !== props.profileId) return true
+  if (creatorId.value !== null) return true
   return false
 })
 const canRemoveBot = computed(() => {
@@ -443,7 +449,7 @@ const editChangeSeatCount = async () => {
 <template>
   <p v-if="message" role="alert">{{ message }}</p>
   <section v-if="joinedGame" aria-label="Лобби">
-    <h2>Вы в комнате {{ joinedGame.display_name }}</h2>
+    <h2>Вы в комнате {{ nameCreatorRoom }}</h2>
     <section aria-label="Сведения о комнате">
       <p>Всего мест: {{ joinedGame.seat_count }}</p>
       <p>Занято: {{ joinedGame.occupiedSeatCount }}</p>

@@ -38,10 +38,6 @@ BEGIN
     RAISE EXCEPTION 'TEST: missing room accepted' USING ERRCODE = 'P9999';
   EXCEPTION WHEN no_data_found THEN NULL; END;
   BEGIN
-    PERFORM public.leave_game(room, owner_id, req);
-    RAISE EXCEPTION 'TEST: creator left' USING ERRCODE = 'P9999';
-  EXCEPTION WHEN insufficient_privilege THEN NULL; END;
-  BEGIN
     PERFORM public.leave_game(room, outsider_id, req);
     RAISE EXCEPTION 'TEST: outsider succeeded' USING ERRCODE = 'P9999';
   EXCEPTION WHEN SQLSTATE 'P1002' THEN NULL; END;
@@ -129,6 +125,41 @@ BEGIN
 END; $$;
 DROP TRIGGER reject_leave_result_fixture ON public.leave_game_requests;
 DROP FUNCTION public.reject_leave_result_fixture();
+SET LOCAL ROLE service_role;
+DO $$
+DECLARE
+  owner_id uuid := '97000000-0000-4000-8000-000000000001';
+  member_id uuid := '97000000-0000-4000-8000-000000000002';
+  room uuid := current_setting('test.leave.room')::uuid;
+  transfer_request uuid := gen_random_uuid();
+  close_request uuid := gen_random_uuid();
+  expected_reply jsonb := jsonb_build_object('gameId', room);
+BEGIN
+  IF public.leave_game(room, owner_id, transfer_request) IS DISTINCT FROM expected_reply THEN
+    RAISE EXCEPTION 'Creator exit must return the existing success DTO';
+  END IF;
+  IF public.leave_game(room, owner_id, transfer_request) IS DISTINCT FROM expected_reply
+    OR NOT EXISTS (SELECT FROM public.games WHERE id = room AND creator_id = member_id AND status = 'OPEN_LOBBY')
+    OR EXISTS (SELECT FROM public.game_players WHERE game_id = room AND user_id = owner_id)
+    OR (SELECT count(*) FROM public.game_players WHERE game_id = room) <> 2
+    OR (SELECT count(*) FROM public.leave_game_requests WHERE game_id = room AND request_id = transfer_request) <> 1 THEN
+    RAISE EXCEPTION 'Creator exit and replay must leave the remaining human in charge';
+  END IF;
+  IF public.leave_game(room, member_id, close_request) IS DISTINCT FROM expected_reply THEN
+    RAISE EXCEPTION 'Last human must be able to leave a lobby with a bot';
+  END IF;
+  IF public.leave_game(room, member_id, close_request) IS DISTINCT FROM expected_reply
+    OR NOT EXISTS (SELECT FROM public.games WHERE id = room AND status = 'CLOSED')
+    OR EXISTS (SELECT FROM public.game_players WHERE game_id = room AND NOT is_bot)
+    OR NOT EXISTS (SELECT FROM public.game_players WHERE game_id = room AND is_bot) THEN
+    RAISE EXCEPTION 'Last human exit must close the room and replay the original result';
+  END IF;
+  IF public.leave_game(room, member_id, gen_random_uuid()) IS DISTINCT FROM
+    jsonb_build_object('code', 'LOBBY_NOT_OPEN', 'gameId', room) THEN
+    RAISE EXCEPTION 'A fresh request after closing the lobby must return LOBBY_NOT_OPEN';
+  END IF;
+END; $$;
+RESET ROLE;
 DO $$
 DECLARE client_role text;
 BEGIN
